@@ -1,0 +1,5 @@
+# Final state hashes of ReplayTest's scripted 1200-tick run per example cartridge (seed 0x5EED).
+# Every loader x Minecraft cell must produce exactly these; a change here is a determinism change.
+coop_mirror=91aa3ecc2a76735d
+default_survive=1d062381a0de37af
+orb_dodge=17a9eb436d11e29d

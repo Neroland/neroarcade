@@ -1,0 +1,19 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "key": {
+    "G": "minecraft:glass_pane",
+    "N": "#nerolandcore:materials/nero_alloy",
+    "R": "minecraft:redstone_block",
+    "I": "minecraft:iron_ingot"
+  },
+  "pattern": [
+    "IGI",
+    "NRN",
+    "III"
+  ],
+  "result": {
+    "id": "neroarcade:arcade_cabinet",
+    "count": 1
+  }
+}

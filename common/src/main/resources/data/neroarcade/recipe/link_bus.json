@@ -1,0 +1,18 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "key": {
+    "C": "minecraft:copper_ingot",
+    "N": "#nerolandcore:materials/nero_alloy",
+    "R": "minecraft:redstone"
+  },
+  "pattern": [
+    "CNC",
+    "NRN",
+    "CNC"
+  ],
+  "result": {
+    "id": "neroarcade:link_bus",
+    "count": 1
+  }
+}

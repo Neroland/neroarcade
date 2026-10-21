@@ -1,0 +1,147 @@
+{
+  "parent": "minecraft:block/block",
+  "textures": {
+    "dark": "neroarcade:block/body_dark",
+    "pedestal": "neroarcade:block/exchange_pedestal",
+    "keypad": "neroarcade:block/exchange_keypad",
+    "light": "neroarcade:block/body_light",
+    "tray": "neroarcade:block/bench_tray",
+    "body": "neroarcade:block/body",
+    "particle": "neroarcade:block/exchange_pedestal"
+  },
+  "elements": [
+    {
+      "name": "base",
+      "from": [
+        0,
+        0,
+        0
+      ],
+      "to": [
+        16,
+        2,
+        16
+      ],
+      "faces": {
+        "north": {
+          "texture": "#dark"
+        },
+        "south": {
+          "texture": "#dark"
+        },
+        "east": {
+          "texture": "#dark"
+        },
+        "west": {
+          "texture": "#dark"
+        },
+        "up": {
+          "texture": "#dark"
+        },
+        "down": {
+          "texture": "#dark",
+          "cullface": "down"
+        }
+      }
+    },
+    {
+      "name": "pedestal",
+      "from": [
+        2,
+        2,
+        2
+      ],
+      "to": [
+        14,
+        12,
+        14
+      ],
+      "faces": {
+        "north": {
+          "texture": "#pedestal"
+        },
+        "south": {
+          "texture": "#pedestal"
+        },
+        "east": {
+          "texture": "#pedestal"
+        },
+        "west": {
+          "texture": "#pedestal"
+        },
+        "up": {
+          "texture": "#pedestal"
+        },
+        "down": {
+          "texture": "#pedestal"
+        }
+      }
+    },
+    {
+      "name": "keypad",
+      "from": [
+        3,
+        12,
+        2
+      ],
+      "to": [
+        13,
+        14,
+        10
+      ],
+      "faces": {
+        "up": {
+          "texture": "#keypad"
+        },
+        "north": {
+          "texture": "#light"
+        },
+        "south": {
+          "texture": "#light"
+        },
+        "east": {
+          "texture": "#light"
+        },
+        "west": {
+          "texture": "#light"
+        }
+      }
+    },
+    {
+      "name": "tray",
+      "from": [
+        3,
+        5,
+        0
+      ],
+      "to": [
+        13,
+        11,
+        2
+      ],
+      "faces": {
+        "north": {
+          "texture": "#tray",
+          "uv": [
+            3,
+            5,
+            13,
+            11
+          ]
+        },
+        "east": {
+          "texture": "#body"
+        },
+        "west": {
+          "texture": "#body"
+        },
+        "up": {
+          "texture": "#body"
+        },
+        "down": {
+          "texture": "#dark"
+        }
+      }
+    }
+  ]
+}

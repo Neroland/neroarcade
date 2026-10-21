@@ -1,0 +1,219 @@
+{
+  "parent": "minecraft:block/block",
+  "textures": {
+    "pad": "neroarcade:block/cabinet_pad",
+    "particle": "neroarcade:block/cabinet_pad"
+  },
+  "elements": [
+    {
+      "name": "pad_n",
+      "from": [
+        4.5,
+        12,
+        1
+      ],
+      "to": [
+        5.5,
+        13,
+        2.5
+      ],
+      "rotation": {
+        "origin": [
+          8,
+          9,
+          6
+        ],
+        "axis": "x",
+        "angle": -22.5
+      },
+      "faces": {
+        "north": {
+          "texture": "#pad"
+        },
+        "south": {
+          "texture": "#pad"
+        },
+        "east": {
+          "texture": "#pad"
+        },
+        "west": {
+          "texture": "#pad"
+        },
+        "up": {
+          "texture": "#pad"
+        },
+        "down": {
+          "texture": "#pad"
+        }
+      }
+    },
+    {
+      "name": "pad_s",
+      "from": [
+        4.5,
+        11,
+        3.5
+      ],
+      "to": [
+        5.5,
+        12,
+        5
+      ],
+      "rotation": {
+        "origin": [
+          8,
+          9,
+          6
+        ],
+        "axis": "x",
+        "angle": -22.5
+      },
+      "faces": {
+        "north": {
+          "texture": "#pad"
+        },
+        "south": {
+          "texture": "#pad"
+        },
+        "east": {
+          "texture": "#pad"
+        },
+        "west": {
+          "texture": "#pad"
+        },
+        "up": {
+          "texture": "#pad"
+        },
+        "down": {
+          "texture": "#pad"
+        }
+      }
+    },
+    {
+      "name": "pad_w",
+      "from": [
+        3,
+        12,
+        2.5
+      ],
+      "to": [
+        4.5,
+        13,
+        3.5
+      ],
+      "rotation": {
+        "origin": [
+          8,
+          9,
+          6
+        ],
+        "axis": "x",
+        "angle": -22.5
+      },
+      "faces": {
+        "north": {
+          "texture": "#pad"
+        },
+        "south": {
+          "texture": "#pad"
+        },
+        "east": {
+          "texture": "#pad"
+        },
+        "west": {
+          "texture": "#pad"
+        },
+        "up": {
+          "texture": "#pad"
+        },
+        "down": {
+          "texture": "#pad"
+        }
+      }
+    },
+    {
+      "name": "pad_e",
+      "from": [
+        5.5,
+        12,
+        2.5
+      ],
+      "to": [
+        7,
+        13,
+        3.5
+      ],
+      "rotation": {
+        "origin": [
+          8,
+          9,
+          6
+        ],
+        "axis": "x",
+        "angle": -22.5
+      },
+      "faces": {
+        "north": {
+          "texture": "#pad"
+        },
+        "south": {
+          "texture": "#pad"
+        },
+        "east": {
+          "texture": "#pad"
+        },
+        "west": {
+          "texture": "#pad"
+        },
+        "up": {
+          "texture": "#pad"
+        },
+        "down": {
+          "texture": "#pad"
+        }
+      }
+    },
+    {
+      "name": "pad_c",
+      "from": [
+        4.5,
+        12,
+        2.5
+      ],
+      "to": [
+        5.5,
+        13,
+        3.5
+      ],
+      "rotation": {
+        "origin": [
+          8,
+          9,
+          6
+        ],
+        "axis": "x",
+        "angle": -22.5
+      },
+      "faces": {
+        "north": {
+          "texture": "#pad"
+        },
+        "south": {
+          "texture": "#pad"
+        },
+        "east": {
+          "texture": "#pad"
+        },
+        "west": {
+          "texture": "#pad"
+        },
+        "up": {
+          "texture": "#pad"
+        },
+        "down": {
+          "texture": "#pad"
+        }
+      }
+    }
+  ]
+}

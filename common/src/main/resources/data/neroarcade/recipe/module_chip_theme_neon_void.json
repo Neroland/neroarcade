@@ -1,0 +1,23 @@
+{
+  "type": "minecraft:crafting_shapeless",
+  "category": "misc",
+  "ingredients": [
+    "neroarcade:blank_chip",
+    "minecraft:pink_dye"
+  ],
+  "result": {
+    "id": "neroarcade:module_chip",
+    "count": 1,
+    "components": {
+      "neroarcade:module_id": "neroarcade:theme/neon_void",
+      "minecraft:custom_model_data": {
+        "strings": [
+          "theme"
+        ],
+        "colors": [
+          16747727
+        ]
+      }
+    }
+  }
+}

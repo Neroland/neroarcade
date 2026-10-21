@@ -1,0 +1,19 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "key": {
+    "G": "minecraft:glass_pane",
+    "E": "minecraft:emerald",
+    "N": "#nerolandcore:materials/nero_alloy",
+    "I": "minecraft:iron_ingot"
+  },
+  "pattern": [
+    "IGI",
+    "IEI",
+    "INI"
+  ],
+  "result": {
+    "id": "neroarcade:arcade_exchange",
+    "count": 1
+  }
+}

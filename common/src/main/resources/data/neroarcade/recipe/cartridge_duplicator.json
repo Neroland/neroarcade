@@ -1,0 +1,19 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "key": {
+    "N": "#nerolandcore:materials/nero_alloy",
+    "C": "minecraft:copper_ingot",
+    "R": "minecraft:redstone",
+    "I": "minecraft:iron_ingot"
+  },
+  "pattern": [
+    "NCN",
+    "CRC",
+    "III"
+  ],
+  "result": {
+    "id": "neroarcade:cartridge_duplicator",
+    "count": 1
+  }
+}

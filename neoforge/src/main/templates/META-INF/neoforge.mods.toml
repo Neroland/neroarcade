@@ -1,0 +1,40 @@
+modLoader = "javafml"
+loaderVersion = "[1,)"
+license = "${mod_license}"
+
+[[mods]]
+modId = "${mod_id}"
+version = "${mod_version}"
+displayName = "${mod_name}"
+authors = "${mod_authors}"
+# NeoForge 26.x: logoFile is deprecated; the square logo is the mod-list icon.
+iconFile = "neroarcade_logo.png"
+description = '''
+Build, play and share mini games inside Minecraft.
+'''
+
+[[mixins]]
+config = "neroarcade-common.mixins.json"
+
+[[dependencies.${mod_id}]]
+modId = "neoforge"
+type = "required"
+versionRange = "[0,)"
+ordering = "NONE"
+side = "BOTH"
+
+[[dependencies.${mod_id}]]
+modId = "minecraft"
+type = "required"
+versionRange = "${minecraft_version_range}"
+ordering = "NONE"
+side = "BOTH"
+
+# Neroland Core — required shared foundation; must load BEFORE NeroArcade (ordering = AFTER).
+# Core is the ONLY dependency.
+[[dependencies.${mod_id}]]
+modId = "nerolandcore"
+type = "required"
+versionRange = "${nerolandcore_version_range}"
+ordering = "AFTER"
+side = "BOTH"

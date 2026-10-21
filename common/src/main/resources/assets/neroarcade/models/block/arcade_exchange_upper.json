@@ -1,0 +1,248 @@
+{
+  "parent": "minecraft:block/block",
+  "textures": {
+    "body": "neroarcade:block/body",
+    "dark": "neroarcade:block/body_dark",
+    "light": "neroarcade:block/body_light",
+    "screen": "neroarcade:block/exchange_screen",
+    "header": "neroarcade:block/exchange_header_glow",
+    "particle": "neroarcade:block/body"
+  },
+  "elements": [
+    {
+      "name": "body",
+      "from": [
+        2,
+        0,
+        7
+      ],
+      "to": [
+        14,
+        14,
+        14
+      ],
+      "faces": {
+        "north": {
+          "texture": "#body"
+        },
+        "south": {
+          "texture": "#body"
+        },
+        "east": {
+          "texture": "#body"
+        },
+        "west": {
+          "texture": "#body"
+        },
+        "up": {
+          "texture": "#body"
+        },
+        "down": {
+          "texture": "#body"
+        }
+      }
+    },
+    {
+      "name": "cheek_w",
+      "from": [
+        2,
+        0,
+        2
+      ],
+      "to": [
+        3,
+        12,
+        7
+      ],
+      "faces": {
+        "north": {
+          "texture": "#body"
+        },
+        "south": {
+          "texture": "#body"
+        },
+        "east": {
+          "texture": "#body"
+        },
+        "west": {
+          "texture": "#body"
+        },
+        "up": {
+          "texture": "#body"
+        },
+        "down": {
+          "texture": "#body"
+        }
+      }
+    },
+    {
+      "name": "cheek_e",
+      "from": [
+        13,
+        0,
+        2
+      ],
+      "to": [
+        14,
+        12,
+        7
+      ],
+      "faces": {
+        "north": {
+          "texture": "#body"
+        },
+        "south": {
+          "texture": "#body"
+        },
+        "east": {
+          "texture": "#body"
+        },
+        "west": {
+          "texture": "#body"
+        },
+        "up": {
+          "texture": "#body"
+        },
+        "down": {
+          "texture": "#body"
+        }
+      }
+    },
+    {
+      "name": "screen",
+      "from": [
+        3,
+        2,
+        2
+      ],
+      "to": [
+        13,
+        12,
+        3
+      ],
+      "rotation": {
+        "origin": [
+          8,
+          2,
+          2
+        ],
+        "axis": "x",
+        "angle": 22.5
+      },
+      "faces": {
+        "north": {
+          "texture": "#screen",
+          "uv": [
+            3,
+            2,
+            13,
+            12
+          ]
+        },
+        "up": {
+          "texture": "#dark"
+        },
+        "east": {
+          "texture": "#dark"
+        },
+        "west": {
+          "texture": "#dark"
+        },
+        "down": {
+          "texture": "#dark"
+        }
+      }
+    },
+    {
+      "name": "header_body",
+      "from": [
+        2,
+        12,
+        2.5
+      ],
+      "to": [
+        14,
+        14,
+        7
+      ],
+      "faces": {
+        "north": {
+          "texture": "#body"
+        },
+        "south": {
+          "texture": "#body"
+        },
+        "east": {
+          "texture": "#body"
+        },
+        "west": {
+          "texture": "#body"
+        },
+        "up": {
+          "texture": "#body"
+        },
+        "down": {
+          "texture": "#body"
+        }
+      }
+    },
+    {
+      "name": "header_glow",
+      "from": [
+        2,
+        12,
+        2
+      ],
+      "to": [
+        14,
+        14,
+        2.5
+      ],
+      "shade": false,
+      "faces": {
+        "north": {
+          "texture": "#header",
+          "uv": [
+            2,
+            12,
+            14,
+            14
+          ]
+        }
+      }
+    },
+    {
+      "name": "cap",
+      "from": [
+        1,
+        14,
+        2
+      ],
+      "to": [
+        15,
+        16,
+        15
+      ],
+      "faces": {
+        "north": {
+          "texture": "#light"
+        },
+        "south": {
+          "texture": "#light"
+        },
+        "east": {
+          "texture": "#light"
+        },
+        "west": {
+          "texture": "#light"
+        },
+        "up": {
+          "texture": "#light"
+        },
+        "down": {
+          "texture": "#light"
+        }
+      }
+    }
+  ]
+}

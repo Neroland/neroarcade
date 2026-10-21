@@ -1,0 +1,17 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "key": {
+    "N": "#nerolandcore:materials/nero_alloy",
+    "C": "minecraft:copper_ingot",
+    "R": "minecraft:redstone"
+  },
+  "pattern": [
+    "NCN",
+    "CRC"
+  ],
+  "result": {
+    "id": "neroarcade:blank_cartridge",
+    "count": 2
+  }
+}

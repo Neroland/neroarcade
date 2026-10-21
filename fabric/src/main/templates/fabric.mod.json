@@ -1,0 +1,27 @@
+{
+  "schemaVersion": 1,
+  "id": "${mod_id}",
+  "version": "${mod_version}",
+  "name": "${mod_name}",
+  "description": "Build, play and share mini games inside Minecraft.",
+  "authors": ["${mod_authors}"],
+  "license": "${mod_license}",
+  "icon": "neroarcade_logo.png",
+  "accessWidener": "neroarcade.accesswidener",
+  "environment": "*",
+  "entrypoints": {
+    "main": ["za.co.neroland.neroarcade.fabric.NeroArcadeFabric"],
+    "client": ["za.co.neroland.neroarcade.fabric.NeroArcadeFabricClient"]
+  },
+  "mixins": [
+    "neroarcade-common.mixins.json",
+    "neroarcade.mixins.json"
+  ],
+  "depends": {
+    "fabricloader": ">=${fabric_loader_version}",
+    "minecraft": ">=${minecraft_version} <${minecraft_version_ceiling}",
+    "java": ">=21",
+    "fabric-api": "*",
+    "nerolandcore": ">=${nerolandcore_version} <2.0.0"
+  }
+}

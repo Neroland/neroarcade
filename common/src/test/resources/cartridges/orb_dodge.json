@@ -1,0 +1,21 @@
+{
+  "schema": 1,
+  "id": "k7v2m6q4x5b2z3n6",
+  "title": "Orb Dodge",
+  "author": "0f6c1d2e-3a4b-4c5d-8e9f-a0b1c2d3e4f5",
+  "lineage": [],
+  "seed": 42,
+  "slots": {
+    "arena": [ { "id": "neroarcade:arena/grid_16", "props": { "obstacles": "pillars" } } ],
+    "pawn": [ { "id": "neroarcade:pawn/cursor", "props": { "speed": 4 } } ],
+    "rule": [ { "id": "neroarcade:rule/test_score", "props": { "target": 50 } } ],
+    "hazard": [
+      { "id": "neroarcade:hazard/test_bouncer", "props": { "count": 2, "speed": 2 } },
+      { "id": "neroarcade:hazard/test_bouncer" }
+    ],
+    "pickup": [ { "id": "neroarcade:pickup/test_orb" } ],
+    "pace": [ { "id": "neroarcade:pace/steady", "props": { "divisor": 2 } } ]
+  },
+  "created_at": 1760976000,
+  "revision": 3
+}

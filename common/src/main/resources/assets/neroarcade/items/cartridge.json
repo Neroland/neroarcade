@@ -1,0 +1,25 @@
+{
+  "model": {
+    "type": "minecraft:model",
+    "model": "neroarcade:item/cartridge",
+    "tints": [
+      {
+        "type": "minecraft:constant",
+        "value": 16777215
+      },
+      {
+        "type": "minecraft:custom_model_data",
+        "index": 0,
+        "default": 9081766
+      },
+      {
+        "type": "minecraft:constant",
+        "value": 16777215
+      },
+      {
+        "type": "minecraft:constant",
+        "value": 16777215
+      }
+    ]
+  }
+}

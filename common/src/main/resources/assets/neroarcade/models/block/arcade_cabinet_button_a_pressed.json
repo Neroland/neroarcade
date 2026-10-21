@@ -1,0 +1,52 @@
+{
+  "parent": "minecraft:block/block",
+  "textures": {
+    "glow": "neroarcade:block/cabinet_button_a_glow",
+    "particle": "neroarcade:block/cabinet_button_a_glow"
+  },
+  "elements": [
+    {
+      "name": "button_a",
+      "from": [
+        9,
+        11,
+        2
+      ],
+      "to": [
+        11,
+        13,
+        4
+      ],
+      "rotation": {
+        "origin": [
+          8,
+          9,
+          6
+        ],
+        "axis": "x",
+        "angle": -22.5
+      },
+      "shade": false,
+      "faces": {
+        "north": {
+          "texture": "#glow"
+        },
+        "south": {
+          "texture": "#glow"
+        },
+        "east": {
+          "texture": "#glow"
+        },
+        "west": {
+          "texture": "#glow"
+        },
+        "up": {
+          "texture": "#glow"
+        },
+        "down": {
+          "texture": "#glow"
+        }
+      }
+    }
+  ]
+}

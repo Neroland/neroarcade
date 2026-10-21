@@ -1,0 +1,198 @@
+{
+  "cabinet.insert": {
+    "subtitle": "subtitles.neroarcade.cabinet.insert",
+    "sounds": [
+      {
+        "name": "neroarcade:cabinet/insert"
+      }
+    ]
+  },
+  "cabinet.start": {
+    "subtitle": "subtitles.neroarcade.cabinet.start",
+    "sounds": [
+      {
+        "name": "neroarcade:cabinet/start"
+      }
+    ]
+  },
+  "cabinet.deny": {
+    "subtitle": "subtitles.neroarcade.cabinet.deny",
+    "sounds": [
+      {
+        "name": "neroarcade:cabinet/deny"
+      }
+    ]
+  },
+  "cabinet.win": {
+    "subtitle": "subtitles.neroarcade.cabinet.win",
+    "sounds": [
+      {
+        "name": "neroarcade:cabinet/win"
+      }
+    ]
+  },
+  "cabinet.lose": {
+    "subtitle": "subtitles.neroarcade.cabinet.lose",
+    "sounds": [
+      {
+        "name": "neroarcade:cabinet/lose"
+      }
+    ]
+  },
+  "game.pickup": {
+    "subtitle": "subtitles.neroarcade.game.pickup",
+    "sounds": [
+      {
+        "name": "neroarcade:game/pickup"
+      }
+    ]
+  },
+  "game.hit": {
+    "subtitle": "subtitles.neroarcade.game.hit",
+    "sounds": [
+      {
+        "name": "neroarcade:game/hit"
+      }
+    ]
+  },
+  "game.tick": {
+    "subtitle": "subtitles.neroarcade.game.tick",
+    "sounds": [
+      {
+        "name": "neroarcade:game/tick"
+      }
+    ]
+  },
+  "bench.save": {
+    "subtitle": "subtitles.neroarcade.bench.save",
+    "sounds": [
+      {
+        "name": "neroarcade:bench/save"
+      }
+    ]
+  },
+  "duplicator.spin": {
+    "subtitle": "subtitles.neroarcade.duplicator.spin",
+    "sounds": [
+      {
+        "name": "neroarcade:duplicator/spin"
+      }
+    ]
+  },
+  "exchange.publish": {
+    "subtitle": "subtitles.neroarcade.exchange.publish",
+    "sounds": [
+      {
+        "name": "neroarcade:exchange/publish"
+      }
+    ]
+  },
+  "theme.neon_void.start": {
+    "subtitle": "subtitles.neroarcade.theme.neon_void.start",
+    "sounds": [
+      {
+        "name": "neroarcade:theme/neon_void/start",
+        "volume": 1.0
+      }
+    ]
+  },
+  "theme.neon_void.loop": {
+    "subtitle": "subtitles.neroarcade.theme.neon_void.loop",
+    "sounds": [
+      {
+        "name": "neroarcade:theme/neon_void/loop",
+        "volume": 0.4
+      }
+    ]
+  },
+  "theme.neon_void.end": {
+    "subtitle": "subtitles.neroarcade.theme.neon_void.end",
+    "sounds": [
+      {
+        "name": "neroarcade:theme/neon_void/end",
+        "volume": 1.0
+      }
+    ]
+  },
+  "theme.hangar.start": {
+    "subtitle": "subtitles.neroarcade.theme.hangar.start",
+    "sounds": [
+      {
+        "name": "neroarcade:theme/hangar/start",
+        "volume": 1.0
+      }
+    ]
+  },
+  "theme.hangar.loop": {
+    "subtitle": "subtitles.neroarcade.theme.hangar.loop",
+    "sounds": [
+      {
+        "name": "neroarcade:theme/hangar/loop",
+        "volume": 0.4
+      }
+    ]
+  },
+  "theme.hangar.end": {
+    "subtitle": "subtitles.neroarcade.theme.hangar.end",
+    "sounds": [
+      {
+        "name": "neroarcade:theme/hangar/end",
+        "volume": 1.0
+      }
+    ]
+  },
+  "theme.cindara_dusk.start": {
+    "subtitle": "subtitles.neroarcade.theme.cindara_dusk.start",
+    "sounds": [
+      {
+        "name": "neroarcade:theme/cindara_dusk/start",
+        "volume": 1.0
+      }
+    ]
+  },
+  "theme.cindara_dusk.loop": {
+    "subtitle": "subtitles.neroarcade.theme.cindara_dusk.loop",
+    "sounds": [
+      {
+        "name": "neroarcade:theme/cindara_dusk/loop",
+        "volume": 0.4
+      }
+    ]
+  },
+  "theme.cindara_dusk.end": {
+    "subtitle": "subtitles.neroarcade.theme.cindara_dusk.end",
+    "sounds": [
+      {
+        "name": "neroarcade:theme/cindara_dusk/end",
+        "volume": 1.0
+      }
+    ]
+  },
+  "theme.terminal_green.start": {
+    "subtitle": "subtitles.neroarcade.theme.terminal_green.start",
+    "sounds": [
+      {
+        "name": "neroarcade:theme/terminal_green/start",
+        "volume": 0.6
+      }
+    ]
+  },
+  "theme.terminal_green.loop": {
+    "subtitle": "subtitles.neroarcade.theme.terminal_green.loop",
+    "sounds": [
+      {
+        "name": "neroarcade:theme/terminal_green/loop",
+        "volume": 0.2
+      }
+    ]
+  },
+  "theme.terminal_green.end": {
+    "subtitle": "subtitles.neroarcade.theme.terminal_green.end",
+    "sounds": [
+      {
+        "name": "neroarcade:theme/terminal_green/end",
+        "volume": 0.6
+      }
+    ]
+  }
+}

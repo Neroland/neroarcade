@@ -1,0 +1,238 @@
+// =====================================================================
+// Stonecutter controller — this IS the root project's build script.
+// (Stonecutter repoints rootProject.buildFileName here, so the old root
+// build.gradle config lives in this file now.)
+//
+// Holds: (a) the active version checked out in the IDE, (b) the shared
+// config applied to every loader node, (c) the shared-common source roots.
+// =====================================================================
+plugins {
+    id 'dev.kikugie.stonecutter'
+}
+
+// The version checked out in the IDE / used by a plain `build`. Switch with the
+// generated `stonecutterSwitchTo26_1_2` / `...26_2` tasks (or the IDE button).
+// A string LITERAL — Stonecutter rewrites it in place on switch. Groovy needs the
+// dot form (`stonecutter.active`, not the Kotlin infix `stonecutter active`).
+stonecutter.active '26.2'
+
+allprojects {
+    group = rootProject.mod_group_id
+    version = rootProject.mod_version
+}
+
+// Shared common source — pulled into every loader node (single copy -> no drift).
+// Dynamic, machine-independent paths (resolved from rootProject.projectDir).
+ext.commonJava = "${rootProject.projectDir}/common/src/main/java"
+ext.commonResources = "${rootProject.projectDir}/common/src/main/resources"
+
+subprojects {
+    apply plugin: 'java'
+
+    java {
+        toolchain.languageVersion = JavaLanguageVersion.of(25)
+    }
+
+    tasks.withType(JavaCompile).configureEach {
+        options.encoding = 'UTF-8'
+        options.release = 25
+    }
+
+    repositories {
+        mavenLocal() // Neroland Core (nerolandcore-<loader>-<mc>) published locally; see USING-CORE.md
+        // Neroland Core from GitHub Packages — resolves in CI and on fresh clones, where mavenLocal is
+        // empty. mavenLocal() above still wins for local devs who run Core's publishToMavenLocal.
+        // Auth: gradle props gpr.user/gpr.key, else env GITHUB_ACTOR/GITHUB_TOKEN. Lazy getOrNull() so a
+        // local build that resolves Core from mavenLocal never needs a token. See USING-CORE.md.
+        maven {
+            name = 'NerolandCoreGitHubPackages'
+            url = 'https://maven.pkg.github.com/Neroland/neroland-core'
+            credentials {
+                username = providers.gradleProperty('gpr.user').orElse(providers.environmentVariable('GITHUB_ACTOR')).getOrNull()
+                password = providers.gradleProperty('gpr.key').orElse(providers.environmentVariable('GITHUB_TOKEN')).getOrNull()
+            }
+            content { includeGroup 'za.co.neroland.nerolandcore' }
+        }
+        mavenCentral()
+        maven { url 'https://maven.fabricmc.net/' }
+        maven { url 'https://maven.neoforged.net/releases/' }
+        maven { url 'https://maven.minecraftforge.net/' }
+        maven { name = 'BlameJared'; url = 'https://maven.blamejared.com/' } // JEI
+        // CurseMaven — EMI Unofficial Port (optional EMI compat). Restricted to its group so nothing else resolves here.
+        maven {
+            name = 'CurseMaven'
+            url = 'https://cursemaven.com'
+            content { includeGroup 'curse.maven' }
+        }
+    }
+
+    // Generate static Eclipse projects (.project/.classpath) ONLY for the version
+    // NODES (:fabric:26.1.2, :neoforge:26.2, :forge:26.2, ...), NOT the branch-parent containers
+    // (:fabric / :neoforge / :forge) or root. A node lives INSIDE its branch dir
+    // (fabric/versions/26.2); if the branch parent ALSO carried a .project, the redhat
+    // Java extension would reject the nested node ("not a valid java project"). Keeping
+    // branch parents as plain folders lets VS Code import each node as a standalone project.
+    def isNode = project.parent != null && project.parent.parent != null
+
+    // Stonecutter only preprocesses a node's own src/ tree; the shared common/ source above is spliced
+    // in raw, so it could never carry `//? if >=26.3 {` blocks. Route it through Stonecutter's public
+    // process() API for every NON-active node (output under build/generated/stonecutter-common/java).
+    // The active node keeps the raw folder, so the IDE still edits the real files. Keep common/ in the
+    // vcsVersion state, exactly like the loader src/ trees.
+    if (isNode) {
+        afterEvaluate { node ->
+            def sc = node.extensions.findByName('stonecutter')
+            if (sc == null || sc.current.active) {
+                return
+            }
+            def raw = new File(rootProject.ext.commonJava).canonicalFile
+            def outRel = 'build/generated/stonecutter-common/java'
+            def outDir = node.file(outRel)
+            def processCommon = node.tasks.register('stonecutterProcessCommon') {
+                group = 'stonecutter'
+                description = 'Preprocesses the shared common/ Java source for this Minecraft version.'
+                inputs.dir(raw)
+                inputs.property('mc', sc.current.version)
+                outputs.dir(outDir)
+                doLast {
+                    node.delete(outDir)
+                    raw.eachFileRecurse(groovy.io.FileType.FILES) { f ->
+                        def rel = raw.toPath().relativize(f.toPath()).toString().replace('\\', '/')
+                        if (f.name.endsWith('.java') && f.getText('UTF-8').contains('//?')) {
+                            sc.process(f, "${outRel}/${rel}")
+                        } else {
+                            def dst = new File(outDir, rel)
+                            dst.parentFile.mkdirs()
+                            dst.bytes = f.bytes
+                        }
+                    }
+                }
+            }
+            // Re-setting srcDirs resolves every entry to a plain File, which would drop Stonecutter's own
+            // task dependency on its generated sources, so re-attach it to the untouched entries.
+            def scGenerate = node.tasks.findByName('stonecutterGenerate')
+            def javaSrc = node.sourceSets.main.java
+            javaSrc.srcDirs = javaSrc.srcDirs.collect {
+                if (it.canonicalFile == raw) {
+                    return node.files(outDir).builtBy(processCommon)
+                }
+                return scGenerate != null ? node.files(it).builtBy(scGenerate) : it
+            }
+        }
+    }
+
+    // Version-specific resource overlays: common/src/main/resources-<mc> is merged OVER the shared
+    // common/src/main/resources for every node whose Minecraft version is >= <mc> (later overlays win).
+    // Needed where a datapack file's format differs between versions (e.g. 26.3's worldgen/feature).
+    if (isNode) {
+        afterEvaluate { node ->
+            def sc = node.extensions.findByName('stonecutter')
+            if (sc == null) {
+                return
+            }
+            def base = new File(rootProject.ext.commonResources).canonicalFile
+            def verOf = { File d -> d.name.substring('resources-'.length()) }
+            def overlays = (base.parentFile.listFiles() ?: [] as File[]).findAll {
+                it.isDirectory() && it.name.startsWith('resources-') && sc.eval(sc.current.version, ">=" + verOf(it))
+            }.sort { a, b ->
+                def x = verOf(a).tokenize('.')*.toInteger(), y = verOf(b).tokenize('.')*.toInteger()
+                def n = [x.size(), y.size()].max()
+                for (int i = 0; i < n; i++) {
+                    int c = (i < x.size() ? x[i] : 0) <=> (i < y.size() ? y[i] : 0)
+                    if (c != 0) return c
+                }
+                return 0
+            }
+            if (overlays.isEmpty()) {
+                return
+            }
+            // Stage ONLY the overlays, and ADD that directory as an extra resource srcDir — never
+            // rebuild sourceSets.main.resources.srcDirs. Reading srcDirs resolves every entry to a
+            // plain File and discards the task that produces it; re-adding them with a blanket
+            // builtBy(stonecutterGenerate) silently replaced generateModMetadata as the producer of
+            // the generated manifest, so processResources stopped running it and the jar shipped
+            // with no fabric.mod.json / mods.toml. Incremental builds hid it (a manifest from an
+            // earlier run was still on disk); clean builds failed.
+            def outDir = node.file('build/generated/stonecutter-common/resources')
+            def mergeResources = node.tasks.register('mergeCommonResources', Sync) {
+                group = 'stonecutter'
+                description = 'Stages the version-specific common/src/main/resources-<mc> overlays.'
+                duplicatesStrategy = DuplicatesStrategy.INCLUDE // later overlays win over earlier ones
+                overlays.each { from(it) }
+                into(outDir)
+            }
+            // Appended last, so on a duplicate path the overlay wins over the shared common resources.
+            node.sourceSets.main.resources.srcDir(node.files(outDir).builtBy(mergeResources))
+            node.tasks.named('processResources') {
+                duplicatesStrategy = DuplicatesStrategy.INCLUDE
+            }
+        }
+    }
+    if (isNode) {
+        // Compute the unique name HERE (project = the Gradle project); inside
+        // `eclipse.project {}` `project` rebinds to the Eclipse model, which has no `parent`.
+        def nodeEclipseName = "neroarcade-${project.parent.name}-${project.name}"
+        apply plugin: 'eclipse'
+        eclipse {
+            project {
+                // Multiple nodes share the leaf name ('26.1.2' under fabric/neoforge/forge);
+                // give each a unique Eclipse project name.
+                name = nodeEclipseName
+                // Strip Loom's Buildship nature so VS Code imports the static .classpath
+                // instead of attempting a live (failing) Gradle import.
+                file {
+                    whenMerged { proj ->
+                        proj.natures.removeAll { it.startsWith('org.eclipse.buildship') }
+                        proj.buildCommands.removeAll { it.name.startsWith('org.eclipse.buildship') }
+                    }
+                }
+            }
+            // SINGLE SOURCE OF TRUTH: merge tools/ecj.prefs into this node's generated
+            // .settings/org.eclipse.jdt.core.prefs so the VS Code Java language server applies the
+            // EXACT same compiler-problem severities (and disabled null analysis) as the `ecjCheck`
+            // Gradle task. Edit tools/ecj.prefs, re-run `./gradlew eclipse`, reload VS Code.
+            jdt {
+                file {
+                    withProperties { props ->
+                        def prefsFile = rootProject.file('tools/ecj.prefs')
+                        if (prefsFile.exists()) {
+                            def loaded = new Properties()
+                            prefsFile.withInputStream { loaded.load(it) }
+                            loaded.stringPropertyNames().each { k ->
+                                props.setProperty(k, loaded.getProperty(k))
+                            }
+                        }
+                    }
+                }
+            }
+            // De-duplicate source-folder classpath entries. Loom/ModDevGradle + the `eclipse` plugin
+            // can emit the SAME generated source dir twice (e.g. build/generated/sources/modMetadata
+            // and build/generated/stonecutter/main/resources — once as a real entry, once with
+            // excluding="**"), which Eclipse/VS Code rejects as "Build path contains duplicate entry"
+            // and refuses to build. Keep one entry per path, preferring the non-excluded (real) one.
+            classpath {
+                file {
+                    whenMerged { cp ->
+                        def byPath = [:]
+                        cp.entries.each { e ->
+                            if (e.kind == 'src') {
+                                def prev = byPath[e.path]
+                                if (prev == null) {
+                                    byPath[e.path] = e
+                                } else {
+                                    def prevAll = (prev.hasProperty('excludes') ? prev.excludes : []).contains('**')
+                                    def curAll = (e.hasProperty('excludes') ? e.excludes : []).contains('**')
+                                    if (prevAll && !curAll) {
+                                        byPath[e.path] = e
+                                    }
+                                }
+                            }
+                        }
+                        def keep = byPath.values() as Set
+                        cp.entries.removeAll { it.kind == 'src' && !keep.contains(it) }
+                    }
+                }
+            }
+        }
+    }
+}

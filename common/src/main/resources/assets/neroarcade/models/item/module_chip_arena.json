@@ -1,0 +1,8 @@
+{
+  "parent": "minecraft:item/generated",
+  "textures": {
+    "layer0": "neroarcade:item/chip_base",
+    "layer1": "neroarcade:item/chip_band",
+    "layer2": "neroarcade:item/chip_glyph_arena"
+  }
+}

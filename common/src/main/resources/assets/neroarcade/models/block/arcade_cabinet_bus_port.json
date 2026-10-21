@@ -1,0 +1,34 @@
+{
+  "parent": "minecraft:block/block",
+  "textures": {
+    "glow": "neroarcade:block/cabinet_bus_port_glow",
+    "particle": "neroarcade:block/cabinet_bus_port_glow"
+  },
+  "elements": [
+    {
+      "name": "port",
+      "from": [
+        6,
+        3,
+        16
+      ],
+      "to": [
+        10,
+        5,
+        16.5
+      ],
+      "shade": false,
+      "faces": {
+        "south": {
+          "texture": "#glow",
+          "uv": [
+            0,
+            0,
+            16,
+            16
+          ]
+        }
+      }
+    }
+  ]
+}

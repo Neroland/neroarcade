@@ -1,0 +1,28 @@
+{
+  "schema": 1,
+  "id": "q2w3e4r5t6y7u2i3",
+  "title": "Mirror Pair",
+  "author": "0f6c1d2e-3a4b-4c5d-8e9f-a0b1c2d3e4f5",
+  "author_credit": "Nero Tester",
+  "lineage": [ "k7v2m6q4x5b2z3n6" ],
+  "slots": {
+    "arena": [ { "id": "neroarcade:arena/grid_16", "props": { "obstacles": "maze_lite" } } ],
+    "rule": [ { "id": "neroarcade:rule/survive_time", "props": { "seconds": 45, "lives": 3 } } ],
+    "hazard": [
+      { "id": "neroarcade:hazard/test_bouncer" },
+      { "id": "neroarcade:hazard/test_bouncer", "props": { "speed": 1 } },
+      { "id": "neroarcade:hazard/test_bouncer", "props": { "count": 2 } }
+    ],
+    "pickup": [
+      { "id": "neroarcade:pickup/test_orb", "props": { "count": 2 } },
+      { "id": "neroarcade:pickup/test_orb", "props": { "value": 25, "count": 1 } },
+      { "id": "neroarcade:pickup/test_orb", "props": { "value": 5 } }
+    ],
+    "control": [ { "id": "neroarcade:control/four_way", "props": { "diagonals": true } } ],
+    "modifier": [ { "id": "neroarcade:modifier/test_mirror" } ],
+    "multiplayer": [ { "id": "neroarcade:multiplayer/test_coop" } ],
+    "theme": [ { "id": "neroarcade:theme/neon_void", "props": { "variant": 2 } } ]
+  },
+  "created_at": 1760977000,
+  "revision": 1
+}

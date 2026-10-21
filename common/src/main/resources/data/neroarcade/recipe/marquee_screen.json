@@ -1,0 +1,18 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "key": {
+    "G": "minecraft:glass_pane",
+    "L": "minecraft:glowstone_dust",
+    "I": "minecraft:iron_ingot"
+  },
+  "pattern": [
+    "GGG",
+    "GLG",
+    "III"
+  ],
+  "result": {
+    "id": "neroarcade:marquee_screen",
+    "count": 1
+  }
+}

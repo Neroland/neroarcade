@@ -1,0 +1,23 @@
+{
+  "type": "minecraft:crafting_shapeless",
+  "category": "misc",
+  "ingredients": [
+    "neroarcade:blank_chip",
+    "#nerolandcore:materials/nero_alloy"
+  ],
+  "result": {
+    "id": "neroarcade:module_chip",
+    "count": 1,
+    "components": {
+      "neroarcade:module_id": "neroarcade:pawn/cursor",
+      "minecraft:custom_model_data": {
+        "strings": [
+          "pawn"
+        ],
+        "colors": [
+          16727972
+        ]
+      }
+    }
+  }
+}

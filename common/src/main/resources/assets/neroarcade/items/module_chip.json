@@ -1,0 +1,263 @@
+{
+  "model": {
+    "type": "minecraft:select",
+    "property": "minecraft:custom_model_data",
+    "index": 0,
+    "cases": [
+      {
+        "when": "arena",
+        "model": {
+          "type": "minecraft:model",
+          "model": "neroarcade:item/module_chip_arena",
+          "tints": [
+            {
+              "type": "minecraft:constant",
+              "value": 16777215
+            },
+            {
+              "type": "minecraft:custom_model_data",
+              "index": 0,
+              "default": 3138559
+            },
+            {
+              "type": "minecraft:custom_model_data",
+              "index": 0,
+              "default": 3138559
+            }
+          ]
+        }
+      },
+      {
+        "when": "pawn",
+        "model": {
+          "type": "minecraft:model",
+          "model": "neroarcade:item/module_chip_pawn",
+          "tints": [
+            {
+              "type": "minecraft:constant",
+              "value": 16777215
+            },
+            {
+              "type": "minecraft:custom_model_data",
+              "index": 0,
+              "default": 16727972
+            },
+            {
+              "type": "minecraft:custom_model_data",
+              "index": 0,
+              "default": 16727972
+            }
+          ]
+        }
+      },
+      {
+        "when": "rule",
+        "model": {
+          "type": "minecraft:model",
+          "model": "neroarcade:item/module_chip_rule",
+          "tints": [
+            {
+              "type": "minecraft:constant",
+              "value": 16777215
+            },
+            {
+              "type": "minecraft:custom_model_data",
+              "index": 0,
+              "default": 16757575
+            },
+            {
+              "type": "minecraft:custom_model_data",
+              "index": 0,
+              "default": 16757575
+            }
+          ]
+        }
+      },
+      {
+        "when": "hazard",
+        "model": {
+          "type": "minecraft:model",
+          "model": "neroarcade:item/module_chip_hazard",
+          "tints": [
+            {
+              "type": "minecraft:constant",
+              "value": 16777215
+            },
+            {
+              "type": "minecraft:custom_model_data",
+              "index": 0,
+              "default": 16735324
+            },
+            {
+              "type": "minecraft:custom_model_data",
+              "index": 0,
+              "default": 16735324
+            },
+            {
+              "type": "minecraft:custom_model_data",
+              "index": 0,
+              "default": 16735324
+            }
+          ]
+        }
+      },
+      {
+        "when": "pickup",
+        "model": {
+          "type": "minecraft:model",
+          "model": "neroarcade:item/module_chip_pickup",
+          "tints": [
+            {
+              "type": "minecraft:constant",
+              "value": 16777215
+            },
+            {
+              "type": "minecraft:custom_model_data",
+              "index": 0,
+              "default": 5824634
+            },
+            {
+              "type": "minecraft:custom_model_data",
+              "index": 0,
+              "default": 5824634
+            },
+            {
+              "type": "minecraft:custom_model_data",
+              "index": 0,
+              "default": 5824634
+            }
+          ]
+        }
+      },
+      {
+        "when": "control",
+        "model": {
+          "type": "minecraft:model",
+          "model": "neroarcade:item/module_chip_control",
+          "tints": [
+            {
+              "type": "minecraft:constant",
+              "value": 16777215
+            },
+            {
+              "type": "minecraft:custom_model_data",
+              "index": 0,
+              "default": 15265012
+            },
+            {
+              "type": "minecraft:custom_model_data",
+              "index": 0,
+              "default": 15265012
+            }
+          ]
+        }
+      },
+      {
+        "when": "pace",
+        "model": {
+          "type": "minecraft:model",
+          "model": "neroarcade:item/module_chip_pace",
+          "tints": [
+            {
+              "type": "minecraft:constant",
+              "value": 16777215
+            },
+            {
+              "type": "minecraft:custom_model_data",
+              "index": 0,
+              "default": 11832575
+            },
+            {
+              "type": "minecraft:custom_model_data",
+              "index": 0,
+              "default": 11832575
+            }
+          ]
+        }
+      },
+      {
+        "when": "modifier",
+        "model": {
+          "type": "minecraft:model",
+          "model": "neroarcade:item/module_chip_modifier",
+          "tints": [
+            {
+              "type": "minecraft:constant",
+              "value": 16777215
+            },
+            {
+              "type": "minecraft:custom_model_data",
+              "index": 0,
+              "default": 9396991
+            },
+            {
+              "type": "minecraft:custom_model_data",
+              "index": 0,
+              "default": 9396991
+            }
+          ]
+        }
+      },
+      {
+        "when": "multiplayer",
+        "model": {
+          "type": "minecraft:model",
+          "model": "neroarcade:item/module_chip_multiplayer",
+          "tints": [
+            {
+              "type": "minecraft:constant",
+              "value": 16777215
+            },
+            {
+              "type": "minecraft:custom_model_data",
+              "index": 0,
+              "default": 2275544
+            },
+            {
+              "type": "minecraft:custom_model_data",
+              "index": 0,
+              "default": 2275544
+            }
+          ]
+        }
+      },
+      {
+        "when": "theme",
+        "model": {
+          "type": "minecraft:model",
+          "model": "neroarcade:item/module_chip_theme",
+          "tints": [
+            {
+              "type": "minecraft:constant",
+              "value": 16777215
+            },
+            {
+              "type": "minecraft:custom_model_data",
+              "index": 0,
+              "default": 16747727
+            },
+            {
+              "type": "minecraft:custom_model_data",
+              "index": 0,
+              "default": 16747727
+            }
+          ]
+        }
+      }
+    ],
+    "fallback": {
+      "type": "minecraft:model",
+      "model": "neroarcade:item/blank_chip",
+      "tints": [
+        {
+          "type": "minecraft:constant",
+          "value": 16777215
+        },
+        {
+          "type": "minecraft:constant",
+          "value": 9081766
+        }
+      ]
+    }
+  }
+}

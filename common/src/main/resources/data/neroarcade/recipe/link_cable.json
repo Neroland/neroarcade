@@ -1,0 +1,15 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "key": {
+    "S": "minecraft:string",
+    "C": "minecraft:copper_ingot"
+  },
+  "pattern": [
+    "SCS"
+  ],
+  "result": {
+    "id": "neroarcade:link_cable",
+    "count": 6
+  }
+}

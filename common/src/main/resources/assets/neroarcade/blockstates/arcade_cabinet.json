@@ -1,0 +1,813 @@
+{
+  "multipart": [
+    {
+      "when": {
+        "half": "upper",
+        "facing": "north"
+      },
+      "apply": {
+        "model": "neroarcade:block/arcade_cabinet_upper"
+      }
+    },
+    {
+      "when": {
+        "half": "upper",
+        "facing": "east"
+      },
+      "apply": {
+        "model": "neroarcade:block/arcade_cabinet_upper",
+        "y": 90
+      }
+    },
+    {
+      "when": {
+        "half": "upper",
+        "facing": "south"
+      },
+      "apply": {
+        "model": "neroarcade:block/arcade_cabinet_upper",
+        "y": 180
+      }
+    },
+    {
+      "when": {
+        "half": "upper",
+        "facing": "west"
+      },
+      "apply": {
+        "model": "neroarcade:block/arcade_cabinet_upper",
+        "y": 270
+      }
+    },
+    {
+      "when": {
+        "half": "lower",
+        "facing": "north"
+      },
+      "apply": {
+        "model": "neroarcade:block/arcade_cabinet_lower"
+      }
+    },
+    {
+      "when": {
+        "half": "lower",
+        "facing": "east"
+      },
+      "apply": {
+        "model": "neroarcade:block/arcade_cabinet_lower",
+        "y": 90
+      }
+    },
+    {
+      "when": {
+        "half": "lower",
+        "facing": "south"
+      },
+      "apply": {
+        "model": "neroarcade:block/arcade_cabinet_lower",
+        "y": 180
+      }
+    },
+    {
+      "when": {
+        "half": "lower",
+        "facing": "west"
+      },
+      "apply": {
+        "model": "neroarcade:block/arcade_cabinet_lower",
+        "y": 270
+      }
+    },
+    {
+      "when": {
+        "half": "lower",
+        "pad": "none",
+        "facing": "north"
+      },
+      "apply": {
+        "model": "neroarcade:block/arcade_cabinet_pad_none"
+      }
+    },
+    {
+      "when": {
+        "half": "lower",
+        "pad": "none",
+        "facing": "east"
+      },
+      "apply": {
+        "model": "neroarcade:block/arcade_cabinet_pad_none",
+        "y": 90
+      }
+    },
+    {
+      "when": {
+        "half": "lower",
+        "pad": "none",
+        "facing": "south"
+      },
+      "apply": {
+        "model": "neroarcade:block/arcade_cabinet_pad_none",
+        "y": 180
+      }
+    },
+    {
+      "when": {
+        "half": "lower",
+        "pad": "none",
+        "facing": "west"
+      },
+      "apply": {
+        "model": "neroarcade:block/arcade_cabinet_pad_none",
+        "y": 270
+      }
+    },
+    {
+      "when": {
+        "half": "lower",
+        "pad": "n",
+        "facing": "north"
+      },
+      "apply": {
+        "model": "neroarcade:block/arcade_cabinet_pad_n"
+      }
+    },
+    {
+      "when": {
+        "half": "lower",
+        "pad": "n",
+        "facing": "east"
+      },
+      "apply": {
+        "model": "neroarcade:block/arcade_cabinet_pad_n",
+        "y": 90
+      }
+    },
+    {
+      "when": {
+        "half": "lower",
+        "pad": "n",
+        "facing": "south"
+      },
+      "apply": {
+        "model": "neroarcade:block/arcade_cabinet_pad_n",
+        "y": 180
+      }
+    },
+    {
+      "when": {
+        "half": "lower",
+        "pad": "n",
+        "facing": "west"
+      },
+      "apply": {
+        "model": "neroarcade:block/arcade_cabinet_pad_n",
+        "y": 270
+      }
+    },
+    {
+      "when": {
+        "half": "lower",
+        "pad": "s",
+        "facing": "north"
+      },
+      "apply": {
+        "model": "neroarcade:block/arcade_cabinet_pad_s"
+      }
+    },
+    {
+      "when": {
+        "half": "lower",
+        "pad": "s",
+        "facing": "east"
+      },
+      "apply": {
+        "model": "neroarcade:block/arcade_cabinet_pad_s",
+        "y": 90
+      }
+    },
+    {
+      "when": {
+        "half": "lower",
+        "pad": "s",
+        "facing": "south"
+      },
+      "apply": {
+        "model": "neroarcade:block/arcade_cabinet_pad_s",
+        "y": 180
+      }
+    },
+    {
+      "when": {
+        "half": "lower",
+        "pad": "s",
+        "facing": "west"
+      },
+      "apply": {
+        "model": "neroarcade:block/arcade_cabinet_pad_s",
+        "y": 270
+      }
+    },
+    {
+      "when": {
+        "half": "lower",
+        "pad": "e",
+        "facing": "north"
+      },
+      "apply": {
+        "model": "neroarcade:block/arcade_cabinet_pad_e"
+      }
+    },
+    {
+      "when": {
+        "half": "lower",
+        "pad": "e",
+        "facing": "east"
+      },
+      "apply": {
+        "model": "neroarcade:block/arcade_cabinet_pad_e",
+        "y": 90
+      }
+    },
+    {
+      "when": {
+        "half": "lower",
+        "pad": "e",
+        "facing": "south"
+      },
+      "apply": {
+        "model": "neroarcade:block/arcade_cabinet_pad_e",
+        "y": 180
+      }
+    },
+    {
+      "when": {
+        "half": "lower",
+        "pad": "e",
+        "facing": "west"
+      },
+      "apply": {
+        "model": "neroarcade:block/arcade_cabinet_pad_e",
+        "y": 270
+      }
+    },
+    {
+      "when": {
+        "half": "lower",
+        "pad": "w",
+        "facing": "north"
+      },
+      "apply": {
+        "model": "neroarcade:block/arcade_cabinet_pad_w"
+      }
+    },
+    {
+      "when": {
+        "half": "lower",
+        "pad": "w",
+        "facing": "east"
+      },
+      "apply": {
+        "model": "neroarcade:block/arcade_cabinet_pad_w",
+        "y": 90
+      }
+    },
+    {
+      "when": {
+        "half": "lower",
+        "pad": "w",
+        "facing": "south"
+      },
+      "apply": {
+        "model": "neroarcade:block/arcade_cabinet_pad_w",
+        "y": 180
+      }
+    },
+    {
+      "when": {
+        "half": "lower",
+        "pad": "w",
+        "facing": "west"
+      },
+      "apply": {
+        "model": "neroarcade:block/arcade_cabinet_pad_w",
+        "y": 270
+      }
+    },
+    {
+      "when": {
+        "half": "lower",
+        "btn_a": "false",
+        "facing": "north"
+      },
+      "apply": {
+        "model": "neroarcade:block/arcade_cabinet_button_a"
+      }
+    },
+    {
+      "when": {
+        "half": "lower",
+        "btn_a": "false",
+        "facing": "east"
+      },
+      "apply": {
+        "model": "neroarcade:block/arcade_cabinet_button_a",
+        "y": 90
+      }
+    },
+    {
+      "when": {
+        "half": "lower",
+        "btn_a": "false",
+        "facing": "south"
+      },
+      "apply": {
+        "model": "neroarcade:block/arcade_cabinet_button_a",
+        "y": 180
+      }
+    },
+    {
+      "when": {
+        "half": "lower",
+        "btn_a": "false",
+        "facing": "west"
+      },
+      "apply": {
+        "model": "neroarcade:block/arcade_cabinet_button_a",
+        "y": 270
+      }
+    },
+    {
+      "when": {
+        "half": "lower",
+        "btn_a": "true",
+        "facing": "north"
+      },
+      "apply": {
+        "model": "neroarcade:block/arcade_cabinet_button_a_pressed"
+      }
+    },
+    {
+      "when": {
+        "half": "lower",
+        "btn_a": "true",
+        "facing": "east"
+      },
+      "apply": {
+        "model": "neroarcade:block/arcade_cabinet_button_a_pressed",
+        "y": 90
+      }
+    },
+    {
+      "when": {
+        "half": "lower",
+        "btn_a": "true",
+        "facing": "south"
+      },
+      "apply": {
+        "model": "neroarcade:block/arcade_cabinet_button_a_pressed",
+        "y": 180
+      }
+    },
+    {
+      "when": {
+        "half": "lower",
+        "btn_a": "true",
+        "facing": "west"
+      },
+      "apply": {
+        "model": "neroarcade:block/arcade_cabinet_button_a_pressed",
+        "y": 270
+      }
+    },
+    {
+      "when": {
+        "half": "lower",
+        "btn_b": "false",
+        "facing": "north"
+      },
+      "apply": {
+        "model": "neroarcade:block/arcade_cabinet_button_b"
+      }
+    },
+    {
+      "when": {
+        "half": "lower",
+        "btn_b": "false",
+        "facing": "east"
+      },
+      "apply": {
+        "model": "neroarcade:block/arcade_cabinet_button_b",
+        "y": 90
+      }
+    },
+    {
+      "when": {
+        "half": "lower",
+        "btn_b": "false",
+        "facing": "south"
+      },
+      "apply": {
+        "model": "neroarcade:block/arcade_cabinet_button_b",
+        "y": 180
+      }
+    },
+    {
+      "when": {
+        "half": "lower",
+        "btn_b": "false",
+        "facing": "west"
+      },
+      "apply": {
+        "model": "neroarcade:block/arcade_cabinet_button_b",
+        "y": 270
+      }
+    },
+    {
+      "when": {
+        "half": "lower",
+        "btn_b": "true",
+        "facing": "north"
+      },
+      "apply": {
+        "model": "neroarcade:block/arcade_cabinet_button_b_pressed"
+      }
+    },
+    {
+      "when": {
+        "half": "lower",
+        "btn_b": "true",
+        "facing": "east"
+      },
+      "apply": {
+        "model": "neroarcade:block/arcade_cabinet_button_b_pressed",
+        "y": 90
+      }
+    },
+    {
+      "when": {
+        "half": "lower",
+        "btn_b": "true",
+        "facing": "south"
+      },
+      "apply": {
+        "model": "neroarcade:block/arcade_cabinet_button_b_pressed",
+        "y": 180
+      }
+    },
+    {
+      "when": {
+        "half": "lower",
+        "btn_b": "true",
+        "facing": "west"
+      },
+      "apply": {
+        "model": "neroarcade:block/arcade_cabinet_button_b_pressed",
+        "y": 270
+      }
+    },
+    {
+      "when": {
+        "half": "lower",
+        "status": "off",
+        "facing": "north"
+      },
+      "apply": {
+        "model": "neroarcade:block/arcade_cabinet_status_off"
+      }
+    },
+    {
+      "when": {
+        "half": "lower",
+        "status": "off",
+        "facing": "east"
+      },
+      "apply": {
+        "model": "neroarcade:block/arcade_cabinet_status_off",
+        "y": 90
+      }
+    },
+    {
+      "when": {
+        "half": "lower",
+        "status": "off",
+        "facing": "south"
+      },
+      "apply": {
+        "model": "neroarcade:block/arcade_cabinet_status_off",
+        "y": 180
+      }
+    },
+    {
+      "when": {
+        "half": "lower",
+        "status": "off",
+        "facing": "west"
+      },
+      "apply": {
+        "model": "neroarcade:block/arcade_cabinet_status_off",
+        "y": 270
+      }
+    },
+    {
+      "when": {
+        "half": "lower",
+        "status": "ready",
+        "facing": "north"
+      },
+      "apply": {
+        "model": "neroarcade:block/arcade_cabinet_status_ready"
+      }
+    },
+    {
+      "when": {
+        "half": "lower",
+        "status": "ready",
+        "facing": "east"
+      },
+      "apply": {
+        "model": "neroarcade:block/arcade_cabinet_status_ready",
+        "y": 90
+      }
+    },
+    {
+      "when": {
+        "half": "lower",
+        "status": "ready",
+        "facing": "south"
+      },
+      "apply": {
+        "model": "neroarcade:block/arcade_cabinet_status_ready",
+        "y": 180
+      }
+    },
+    {
+      "when": {
+        "half": "lower",
+        "status": "ready",
+        "facing": "west"
+      },
+      "apply": {
+        "model": "neroarcade:block/arcade_cabinet_status_ready",
+        "y": 270
+      }
+    },
+    {
+      "when": {
+        "half": "lower",
+        "status": "playing",
+        "facing": "north"
+      },
+      "apply": {
+        "model": "neroarcade:block/arcade_cabinet_status_playing"
+      }
+    },
+    {
+      "when": {
+        "half": "lower",
+        "status": "playing",
+        "facing": "east"
+      },
+      "apply": {
+        "model": "neroarcade:block/arcade_cabinet_status_playing",
+        "y": 90
+      }
+    },
+    {
+      "when": {
+        "half": "lower",
+        "status": "playing",
+        "facing": "south"
+      },
+      "apply": {
+        "model": "neroarcade:block/arcade_cabinet_status_playing",
+        "y": 180
+      }
+    },
+    {
+      "when": {
+        "half": "lower",
+        "status": "playing",
+        "facing": "west"
+      },
+      "apply": {
+        "model": "neroarcade:block/arcade_cabinet_status_playing",
+        "y": 270
+      }
+    },
+    {
+      "when": {
+        "half": "lower",
+        "status": "linked",
+        "facing": "north"
+      },
+      "apply": {
+        "model": "neroarcade:block/arcade_cabinet_status_linked"
+      }
+    },
+    {
+      "when": {
+        "half": "lower",
+        "status": "linked",
+        "facing": "east"
+      },
+      "apply": {
+        "model": "neroarcade:block/arcade_cabinet_status_linked",
+        "y": 90
+      }
+    },
+    {
+      "when": {
+        "half": "lower",
+        "status": "linked",
+        "facing": "south"
+      },
+      "apply": {
+        "model": "neroarcade:block/arcade_cabinet_status_linked",
+        "y": 180
+      }
+    },
+    {
+      "when": {
+        "half": "lower",
+        "status": "linked",
+        "facing": "west"
+      },
+      "apply": {
+        "model": "neroarcade:block/arcade_cabinet_status_linked",
+        "y": 270
+      }
+    },
+    {
+      "when": {
+        "half": "lower",
+        "status": "locked",
+        "facing": "north"
+      },
+      "apply": {
+        "model": "neroarcade:block/arcade_cabinet_status_locked"
+      }
+    },
+    {
+      "when": {
+        "half": "lower",
+        "status": "locked",
+        "facing": "east"
+      },
+      "apply": {
+        "model": "neroarcade:block/arcade_cabinet_status_locked",
+        "y": 90
+      }
+    },
+    {
+      "when": {
+        "half": "lower",
+        "status": "locked",
+        "facing": "south"
+      },
+      "apply": {
+        "model": "neroarcade:block/arcade_cabinet_status_locked",
+        "y": 180
+      }
+    },
+    {
+      "when": {
+        "half": "lower",
+        "status": "locked",
+        "facing": "west"
+      },
+      "apply": {
+        "model": "neroarcade:block/arcade_cabinet_status_locked",
+        "y": 270
+      }
+    },
+    {
+      "when": {
+        "half": "lower",
+        "status": "no_power",
+        "facing": "north"
+      },
+      "apply": {
+        "model": "neroarcade:block/arcade_cabinet_status_no_power"
+      }
+    },
+    {
+      "when": {
+        "half": "lower",
+        "status": "no_power",
+        "facing": "east"
+      },
+      "apply": {
+        "model": "neroarcade:block/arcade_cabinet_status_no_power",
+        "y": 90
+      }
+    },
+    {
+      "when": {
+        "half": "lower",
+        "status": "no_power",
+        "facing": "south"
+      },
+      "apply": {
+        "model": "neroarcade:block/arcade_cabinet_status_no_power",
+        "y": 180
+      }
+    },
+    {
+      "when": {
+        "half": "lower",
+        "status": "no_power",
+        "facing": "west"
+      },
+      "apply": {
+        "model": "neroarcade:block/arcade_cabinet_status_no_power",
+        "y": 270
+      }
+    },
+    {
+      "when": {
+        "half": "lower",
+        "cartridge": "true",
+        "facing": "north"
+      },
+      "apply": {
+        "model": "neroarcade:block/arcade_cabinet_cartridge"
+      }
+    },
+    {
+      "when": {
+        "half": "lower",
+        "cartridge": "true",
+        "facing": "east"
+      },
+      "apply": {
+        "model": "neroarcade:block/arcade_cabinet_cartridge",
+        "y": 90
+      }
+    },
+    {
+      "when": {
+        "half": "lower",
+        "cartridge": "true",
+        "facing": "south"
+      },
+      "apply": {
+        "model": "neroarcade:block/arcade_cabinet_cartridge",
+        "y": 180
+      }
+    },
+    {
+      "when": {
+        "half": "lower",
+        "cartridge": "true",
+        "facing": "west"
+      },
+      "apply": {
+        "model": "neroarcade:block/arcade_cabinet_cartridge",
+        "y": 270
+      }
+    },
+    {
+      "when": {
+        "half": "lower",
+        "linked": "true",
+        "facing": "north"
+      },
+      "apply": {
+        "model": "neroarcade:block/arcade_cabinet_bus_port"
+      }
+    },
+    {
+      "when": {
+        "half": "lower",
+        "linked": "true",
+        "facing": "east"
+      },
+      "apply": {
+        "model": "neroarcade:block/arcade_cabinet_bus_port",
+        "y": 90
+      }
+    },
+    {
+      "when": {
+        "half": "lower",
+        "linked": "true",
+        "facing": "south"
+      },
+      "apply": {
+        "model": "neroarcade:block/arcade_cabinet_bus_port",
+        "y": 180
+      }
+    },
+    {
+      "when": {
+        "half": "lower",
+        "linked": "true",
+        "facing": "west"
+      },
+      "apply": {
+        "model": "neroarcade:block/arcade_cabinet_bus_port",
+        "y": 270
+      }
+    }
+  ]
+}

@@ -1,0 +1,147 @@
+{
+  "parent": "minecraft:block/block",
+  "textures": {
+    "deck": "neroarcade:block/duplicator_deck",
+    "top": "neroarcade:block/duplicator_top",
+    "dark": "neroarcade:block/body_dark",
+    "light": "neroarcade:block/body_light",
+    "platter": "neroarcade:block/duplicator_platter",
+    "hood": "neroarcade:block/duplicator_hood",
+    "particle": "neroarcade:block/duplicator_deck"
+  },
+  "elements": [
+    {
+      "name": "deck",
+      "from": [
+        0,
+        0,
+        0
+      ],
+      "to": [
+        16,
+        8,
+        16
+      ],
+      "faces": {
+        "up": {
+          "texture": "#top"
+        },
+        "down": {
+          "texture": "#dark",
+          "cullface": "down"
+        },
+        "north": {
+          "texture": "#deck"
+        },
+        "south": {
+          "texture": "#deck"
+        },
+        "east": {
+          "texture": "#deck"
+        },
+        "west": {
+          "texture": "#deck"
+        }
+      }
+    },
+    {
+      "name": "hood_post",
+      "from": [
+        12,
+        8,
+        8
+      ],
+      "to": [
+        14,
+        14,
+        10
+      ],
+      "faces": {
+        "north": {
+          "texture": "#hood"
+        },
+        "south": {
+          "texture": "#hood"
+        },
+        "east": {
+          "texture": "#hood"
+        },
+        "west": {
+          "texture": "#hood"
+        },
+        "up": {
+          "texture": "#hood"
+        },
+        "down": {
+          "texture": "#hood"
+        }
+      }
+    },
+    {
+      "name": "hood_arm",
+      "from": [
+        6,
+        13,
+        8
+      ],
+      "to": [
+        14,
+        14,
+        10
+      ],
+      "faces": {
+        "north": {
+          "texture": "#hood"
+        },
+        "south": {
+          "texture": "#hood"
+        },
+        "east": {
+          "texture": "#hood"
+        },
+        "west": {
+          "texture": "#hood"
+        },
+        "up": {
+          "texture": "#hood"
+        },
+        "down": {
+          "texture": "#hood"
+        }
+      }
+    },
+    {
+      "name": "hood_head",
+      "from": [
+        7,
+        12,
+        8
+      ],
+      "to": [
+        9,
+        13,
+        10
+      ],
+      "faces": {
+        "north": {
+          "texture": "#dark"
+        },
+        "south": {
+          "texture": "#dark"
+        },
+        "east": {
+          "texture": "#dark"
+        },
+        "west": {
+          "texture": "#dark"
+        },
+        "up": {
+          "texture": "#dark"
+        },
+        "down": {
+          "texture": "#dark"
+        }
+      }
+    }
+  ]
+}

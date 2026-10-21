@@ -1,0 +1,197 @@
+// forge: full MinecraftForge userdev via ForgeGradle 7. Shares the common module's
+// source directly (single copy -> no drift).
+
+plugins {
+    id 'net.minecraftforge.gradle'
+    id 'net.minecraftforge.jarjar'
+    id 'eclipse'
+    id 'maven-publish'
+}
+
+// MC version comes from the Stonecutter node (e.g. :forge:26.1.2), not a global property.
+def mc = stonecutter.current.version
+// Upper bound of this cell's Minecraft range: the next minor line (26.1.2 -> 26.2, 26.2 -> 26.3), same
+// expression as Neroland Core, so each cell's jar declares only its own MC line.
+def mcCeiling = mc.tokenize('.').with { "${it[0]}.${it[1].toInteger() + 1}" }
+def forgeVersion = project.findProperty("forge_version_${mc}")
+def jeiVersion = project.findProperty("jei_version_${mc}")
+def emiFile = project.findProperty("emi_file_neoforge_${mc}")
+def nerolandcoreVersion = project.findProperty('nerolandcore_version')
+
+if (!forgeVersion) {
+    throw new GradleException("Missing forge_version_${mc} in gradle.properties")
+}
+
+// This node's projectDir is <loader>/versions/<v>; the authoritative loader source +
+// templates live in the BRANCH root (forge/). Resolve branch-root paths via the parent.
+def branchDir = project.parent.projectDir
+
+def forgeBuild = forgeVersion.toString().split('-', 2)[1]
+def forgeMajor = forgeBuild.split('\\.')[0]
+
+// Distinct, descriptive jar name per cell.
+base { archivesName = "neroarcade-forge-${mc}" }
+
+// Publish this cell's jar as a Maven artifact so other Nero mods can declare NeroArcade a dependency:
+// `za.co.neroland.neroarcade:neroarcade-forge-<mc>:<version>`. Mirrors Neroland Core's publishing setup.
+// `./gradlew publishToMavenLocal` installs all nine cells locally for dev. Dependency-free POM on purpose.
+publishing {
+    publications {
+        register('mod', MavenPublication) {
+            groupId = rootProject.mod_group_id
+            artifactId = "neroarcade-forge-${mc}"
+            version = rootProject.mod_version
+            artifact tasks.named('jar')
+        }
+    }
+    // Remote target so a fresh CI runner / clone (empty ~/.m2) can resolve NeroArcade — GitHub Packages
+    // Maven for the NeroArcade repo. `publishToMavenLocal` still works for local dev; `publish` (or
+    // publishModPublicationToGitHubPackagesRepository) pushes here. Auth: gradle props gpr.user/gpr.key,
+    // else env GITHUB_ACTOR/GITHUB_TOKEN (both present in GitHub Actions). Lazy getOrNull() means a
+    // build that doesn't touch this repo (e.g. a contributor with no token) won't fail at configuration.
+    // Privacy (POPIA/GDPR): publishes only build artifacts + version strings, no personal data.
+    repositories {
+        maven {
+            name = 'GitHubPackages'
+            url = 'https://maven.pkg.github.com/Neroland/neroarcade'
+            credentials {
+                username = providers.gradleProperty('gpr.user').orElse(providers.environmentVariable('GITHUB_ACTOR')).getOrNull()
+                password = providers.gradleProperty('gpr.key').orElse(providers.environmentVariable('GITHUB_TOKEN')).getOrNull()
+            }
+        }
+    }
+}
+
+// Enable Forge's Jar-in-Jar task for embedded Sentry, mirroring Fabric include and NeoForge JarJar.
+jarJar.register()
+
+// Pull in the shared common source + resources.
+sourceSets.main.java.srcDir rootProject.ext.commonJava
+sourceSets.main.resources.srcDir rootProject.ext.commonResources
+
+// Forge 26's ModLauncher builds a JPMS layer from the dev runtime classpath. If classes and
+// processed resources are separate entries, the mod's classes can be seen as module "main" while
+// mods.toml names the resources entry "neroarcade", producing split-package startup failures.
+sourceSets.main.output.resourcesDir = sourceSets.main.java.classesDirectory.get().asFile
+
+minecraft {
+    runs {
+        configureEach {
+            workingDir = layout.projectDirectory.dir('runs/client')
+            systemProperty 'eventbus.api.strictRuntimeChecks', 'true'
+            systemProperty 'forge.enabledGameTestNamespaces', rootProject.mod_id
+
+            if (project.hasProperty('neroarcadeDebug')) {
+                jvmArgs '-agentlib:jdwp=transport=dt_socket,server=y,suspend=y,address=*:5005'
+            }
+        }
+
+        register('client')
+
+        register('server') {
+            workingDir = layout.projectDirectory.dir('runs/server')
+            args '--nogui'
+        }
+    }
+}
+
+repositories {
+    minecraft.mavenizer(it)
+    maven fg.forgeMaven
+    maven fg.minecraftLibsMaven
+    mavenCentral()
+    maven { name = 'BlameJared'; url = 'https://maven.blamejared.com/' }
+}
+
+dependencies {
+    implementation minecraft.dependency("net.minecraftforge:forge:${forgeVersion}")
+    annotationProcessor 'net.minecraftforge:eventbus-validator:7.0.6'
+
+    // Neroland Core — REQUIRED shared foundation (config schema). Core ships as its own mod and
+    // loads BEFORE NeroArcade (see mods.toml, ordering = AFTER); it is never bundled.
+    implementation "za.co.neroland.nerolandcore:nerolandcore-forge-${mc}:${nerolandcoreVersion}"
+
+    implementation 'io.sentry:sentry:8.60.0'
+    jarJar(group: 'io.sentry', name: 'sentry', version: '8.45.0')
+
+    // JEI common API only; Forge 26.x loader artifacts are not yet published on the pinned JEI lines.
+    if (jeiVersion) {
+        compileOnly "mezz.jei:jei-${mc}-common-api:${jeiVersion}"
+    }
+
+    // EMI: compile-only, so any shared compat/emi plugin compiles in the Forge cells. The port publishes no
+    // Forge build, so this borrows the NeoForge jar for its loader-agnostic dev.emi.emi.api classes; nothing
+    // EMI-related is loaded on Forge.
+    if (emiFile) {
+        compileOnly "curse.maven:emi-unofficial-port-unstable-1544558:${emiFile}"
+    }
+}
+
+// Expand mods.toml from src/main/templates into generated resources.
+def generateModMetadata = tasks.register('generateModMetadata', ProcessResources) {
+    def props = [
+        mod_id                    : rootProject.mod_id,
+        mod_version               : rootProject.mod_version,
+        mod_name                  : rootProject.mod_name,
+        mod_authors               : rootProject.mod_authors,
+        mod_license               : rootProject.mod_license,
+        forge_loader_version_range: "[${forgeMajor},)",
+        minecraft_version_range   : "[${mc},${mcCeiling})",
+        // Floor at the compiled Core version — see the NeoForge build script for the reasoning.
+        nerolandcore_version_range: "[${nerolandcoreVersion},2.0)",
+    ]
+    inputs.properties(props)
+    expand(props)
+    from "${branchDir}/src/main/templates"
+    into layout.buildDirectory.dir('generated/sources/modMetadata')
+}
+sourceSets.main.resources.srcDir generateModMetadata
+
+// Pre-create run directories so VS Code debug-terminal cwd exists before first launch.
+def createForgeRunDirs = tasks.register('createForgeRunDirs') {
+    description = 'Pre-create Forge run directories so the IDE debug-terminal cwd exists before first launch.'
+    doLast {
+        file('runs/client').mkdirs()
+        file('runs/server').mkdirs()
+    }
+}
+tasks.matching { it.name == 'configureLaunch' }.configureEach { dependsOn createForgeRunDirs }
+
+// ecjCheck: run the Eclipse compiler over common + forge main sources, with the same prefs as VS Code.
+configurations {
+    ecj
+}
+dependencies {
+    ecj 'org.eclipse.jdt:ecj:+'
+}
+tasks.register('ecjCheck', JavaExec) {
+    group = 'verification'
+    description = 'Run the Eclipse (IDE) analyzer over common + forge main sources and report its diagnostics.'
+    notCompatibleWithConfigurationCache('assembles the analysis classpath at execution time')
+    dependsOn tasks.named('compileJava')
+    classpath = configurations.ecj
+    mainClass = 'org.eclipse.jdt.internal.compiler.batch.Main'
+    doFirst {
+        def analysisCp = (sourceSets.main.compileClasspath.files + sourceSets.main.output.files)
+                .findAll { it.exists() }
+                .join(File.pathSeparator)
+        // The source FILES, not the source dirs, so any source excludes apply here exactly as in
+        // compileJava. Passed through an @argfile (forward slashes) to keep the Windows command line short.
+        def ecjSources = project.layout.buildDirectory.file('tmp/ecjCheck/sources.txt').get().asFile
+        ecjSources.parentFile.mkdirs()
+        ecjSources.text = sourceSets.main.java.files.collect { it.absolutePath.replace('\\', '/') }.join('\n') + '\n'
+        def srcDirs = ['@' + ecjSources.absolutePath.replace('\\', '/')]
+        args = [
+                '--release', '25',
+                '-proc:none',
+                '-d', 'none',
+                '-properties', rootProject.file('tools/ecj.prefs').absolutePath,
+                // No '-warn:' override — tools/ecj.prefs is the single source of truth for severities.
+                // A CLI -warn:+token forces a category ON regardless of the prefs `ignore`, so the
+                // framework-interop nullness categories would re-appear. nullanalysis=enabled in the
+                // prefs already turns annotation-based analysis on for the genuine categories.
+                '-annotationpath', 'CLASSPATH',
+                '-classpath', analysisCp,
+        ] + srcDirs
+    }
+}

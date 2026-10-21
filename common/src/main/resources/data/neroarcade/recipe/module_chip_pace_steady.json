@@ -1,0 +1,23 @@
+{
+  "type": "minecraft:crafting_shapeless",
+  "category": "misc",
+  "ingredients": [
+    "neroarcade:blank_chip",
+    "minecraft:repeater"
+  ],
+  "result": {
+    "id": "neroarcade:module_chip",
+    "count": 1,
+    "components": {
+      "neroarcade:module_id": "neroarcade:pace/steady",
+      "minecraft:custom_model_data": {
+        "strings": [
+          "pace"
+        ],
+        "colors": [
+          11832575
+        ]
+      }
+    }
+  }
+}

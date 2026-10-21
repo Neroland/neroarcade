@@ -1,0 +1,11 @@
+{
+  "replace": false,
+  "values": [
+    "neroarcade:arcade_cabinet",
+    "neroarcade:game_bench",
+    "neroarcade:cartridge_duplicator",
+    "neroarcade:arcade_exchange",
+    "neroarcade:marquee_screen",
+    "neroarcade:link_bus"
+  ]
+}

@@ -1,0 +1,43 @@
+{
+  "parent": "minecraft:block/block",
+  "textures": {
+    "sheath": "neroarcade:block/cable_sheath",
+    "glow": "neroarcade:block/cable_glow",
+    "particle": "neroarcade:block/cable_sheath"
+  },
+  "elements": [
+    {
+      "name": "arm",
+      "from": [
+        6,
+        6,
+        0
+      ],
+      "to": [
+        10,
+        10,
+        6
+      ],
+      "faces": {
+        "north": {
+          "texture": "#sheath"
+        },
+        "south": {
+          "texture": "#sheath"
+        },
+        "east": {
+          "texture": "#sheath"
+        },
+        "west": {
+          "texture": "#sheath"
+        },
+        "up": {
+          "texture": "#sheath"
+        },
+        "down": {
+          "texture": "#sheath"
+        }
+      }
+    }
+  ]
+}

@@ -1,0 +1,35 @@
+package za.co.neroland.neroarcade.runtime;
+
+/** Cell values in {@code MatchState.cells}. The numbers are the wire/hash values: append only. */
+public final class Cell {
+
+    public static final byte EMPTY = 0;
+    public static final byte WALL = 1;
+    public static final byte VOID = 2;
+    public static final byte EXIT = 3;
+    public static final byte EXIT_LOCKED = 4;
+    public static final byte LANE = 5;
+    /** The goal line of seat 0..3: a HAZARD or another seat's PROJECTILE on it costs that seat a life. */
+    public static final byte GOAL_0 = 6;
+    public static final byte GOAL_1 = 7;
+    public static final byte GOAL_2 = 8;
+    public static final byte GOAL_3 = 9;
+
+    private Cell() {
+    }
+
+    /** True for cells a pawn cannot enter. Goal cells do not block. */
+    public static boolean blocks(byte value) {
+        return value == WALL || value == EXIT_LOCKED;
+    }
+
+    /** The goal cell of {@code seat} (0..3). */
+    public static byte goal(int seat) {
+        return (byte) (GOAL_0 + (seat & 3));
+    }
+
+    /** The seat whose goal line this cell is, or -1. */
+    public static int goalSeat(byte value) {
+        return value >= GOAL_0 && value <= GOAL_3 ? value - GOAL_0 : -1;
+    }
+}

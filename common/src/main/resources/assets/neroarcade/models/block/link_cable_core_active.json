@@ -1,0 +1,77 @@
+{
+  "parent": "minecraft:block/block",
+  "textures": {
+    "sheath": "neroarcade:block/cable_sheath",
+    "glow": "neroarcade:block/cable_glow",
+    "particle": "neroarcade:block/cable_sheath"
+  },
+  "elements": [
+    {
+      "name": "core",
+      "from": [
+        6,
+        6,
+        6
+      ],
+      "to": [
+        10,
+        10,
+        10
+      ],
+      "faces": {
+        "north": {
+          "texture": "#sheath"
+        },
+        "south": {
+          "texture": "#sheath"
+        },
+        "east": {
+          "texture": "#sheath"
+        },
+        "west": {
+          "texture": "#sheath"
+        },
+        "up": {
+          "texture": "#sheath"
+        },
+        "down": {
+          "texture": "#sheath"
+        }
+      }
+    },
+    {
+      "name": "core_glow",
+      "from": [
+        5.75,
+        5.75,
+        5.75
+      ],
+      "to": [
+        10.25,
+        10.25,
+        10.25
+      ],
+      "shade": false,
+      "faces": {
+        "north": {
+          "texture": "#glow"
+        },
+        "south": {
+          "texture": "#glow"
+        },
+        "east": {
+          "texture": "#glow"
+        },
+        "west": {
+          "texture": "#glow"
+        },
+        "up": {
+          "texture": "#glow"
+        },
+        "down": {
+          "texture": "#glow"
+        }
+      }
+    }
+  ]
+}

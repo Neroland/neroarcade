@@ -1,0 +1,20 @@
+# Commercial game names that must never appear in a module name, description or lang value.
+# One lowercase name per line; matched case-insensitively as a substring. Test-only; not published.
+tetris
+pac-man
+pacman
+pong
+space invaders
+asteroids
+galaga
+frogger
+donkey kong
+arkanoid
+breakout
+centipede
+dig dug
+q*bert
+bomberman
+lemmings
+minesweeper
+flappy

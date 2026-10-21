@@ -1,0 +1,858 @@
+{
+  "parent": "minecraft:block/block",
+  "textures": {
+    "body": "neroarcade:block/body",
+    "dark": "neroarcade:block/body_dark",
+    "light": "neroarcade:block/body_light",
+    "slot": "neroarcade:block/cabinet_slot",
+    "deck": "neroarcade:block/cabinet_deck",
+    "ink": "neroarcade:block/ink",
+    "vent": "neroarcade:block/cabinet_vent",
+    "marquee": "neroarcade:block/marquee_frame",
+    "mglow": "neroarcade:block/marquee_glow",
+    "neon": "neroarcade:block/neon_glow",
+    "pad": "neroarcade:block/cabinet_pad",
+    "glow_a": "neroarcade:block/cabinet_button_a_glow",
+    "glow_b": "neroarcade:block/cabinet_button_b_glow",
+    "status": "neroarcade:block/status_ready_glow",
+    "particle": "neroarcade:block/body"
+  },
+  "display": {
+    "gui": {
+      "rotation": [
+        30,
+        225,
+        0
+      ],
+      "translation": [
+        0,
+        0,
+        0
+      ],
+      "scale": [
+        0.625,
+        0.625,
+        0.625
+      ]
+    },
+    "thirdperson_righthand": {
+      "rotation": [
+        75,
+        45,
+        0
+      ],
+      "translation": [
+        0,
+        2.5,
+        0
+      ],
+      "scale": [
+        0.375,
+        0.375,
+        0.375
+      ]
+    },
+    "firstperson_righthand": {
+      "rotation": [
+        0,
+        45,
+        0
+      ],
+      "translation": [
+        0,
+        0,
+        0
+      ],
+      "scale": [
+        0.4,
+        0.4,
+        0.4
+      ]
+    },
+    "ground": {
+      "translation": [
+        0,
+        3,
+        0
+      ],
+      "scale": [
+        0.25,
+        0.25,
+        0.25
+      ]
+    },
+    "fixed": {
+      "scale": [
+        0.5,
+        0.5,
+        0.5
+      ]
+    }
+  },
+  "elements": [
+    {
+      "name": "kick",
+      "from": [
+        4.5,
+        0.0,
+        4.5
+      ],
+      "to": [
+        11.5,
+        1.0,
+        11.5
+      ],
+      "faces": {
+        "north": {
+          "texture": "#dark"
+        },
+        "south": {
+          "texture": "#dark"
+        },
+        "east": {
+          "texture": "#dark"
+        },
+        "west": {
+          "texture": "#dark"
+        },
+        "up": {
+          "texture": "#dark"
+        },
+        "down": {
+          "texture": "#dark"
+        }
+      }
+    },
+    {
+      "name": "body",
+      "from": [
+        4.5,
+        1.0,
+        5.0
+      ],
+      "to": [
+        11.5,
+        8.0,
+        12.0
+      ],
+      "faces": {
+        "north": {
+          "texture": "#body"
+        },
+        "south": {
+          "texture": "#body",
+          "cullface": "south"
+        },
+        "east": {
+          "texture": "#slot"
+        },
+        "west": {
+          "texture": "#body"
+        },
+        "up": {
+          "texture": "#body",
+          "cullface": "up"
+        },
+        "down": {
+          "texture": "#dark"
+        }
+      }
+    },
+    {
+      "name": "apron",
+      "from": [
+        4.5,
+        1.0,
+        4.0
+      ],
+      "to": [
+        11.5,
+        4.5,
+        5.0
+      ],
+      "faces": {
+        "north": {
+          "texture": "#body"
+        },
+        "east": {
+          "texture": "#body"
+        },
+        "west": {
+          "texture": "#body"
+        },
+        "down": {
+          "texture": "#dark"
+        }
+      }
+    },
+    {
+      "name": "deck",
+      "from": [
+        4.5,
+        4.5,
+        4.0
+      ],
+      "to": [
+        11.5,
+        6.0,
+        7.0
+      ],
+      "rotation": {
+        "origin": [
+          8.0,
+          4.5,
+          7.0
+        ],
+        "axis": "x",
+        "angle": -22.5
+      },
+      "faces": {
+        "north": {
+          "texture": "#deck"
+        },
+        "south": {
+          "texture": "#deck"
+        },
+        "east": {
+          "texture": "#deck"
+        },
+        "west": {
+          "texture": "#deck"
+        },
+        "up": {
+          "texture": "#deck"
+        },
+        "down": {
+          "texture": "#deck"
+        }
+      }
+    },
+    {
+      "name": "pad_n",
+      "from": [
+        6.25,
+        6.0,
+        4.5
+      ],
+      "to": [
+        6.75,
+        6.5,
+        5.25
+      ],
+      "rotation": {
+        "origin": [
+          8.0,
+          4.5,
+          7.0
+        ],
+        "axis": "x",
+        "angle": -22.5
+      },
+      "faces": {
+        "north": {
+          "texture": "#pad"
+        },
+        "south": {
+          "texture": "#pad"
+        },
+        "east": {
+          "texture": "#pad"
+        },
+        "west": {
+          "texture": "#pad"
+        },
+        "up": {
+          "texture": "#pad"
+        },
+        "down": {
+          "texture": "#pad"
+        }
+      }
+    },
+    {
+      "name": "pad_s",
+      "from": [
+        6.25,
+        6.0,
+        5.75
+      ],
+      "to": [
+        6.75,
+        6.5,
+        6.5
+      ],
+      "rotation": {
+        "origin": [
+          8.0,
+          4.5,
+          7.0
+        ],
+        "axis": "x",
+        "angle": -22.5
+      },
+      "faces": {
+        "north": {
+          "texture": "#pad"
+        },
+        "south": {
+          "texture": "#pad"
+        },
+        "east": {
+          "texture": "#pad"
+        },
+        "west": {
+          "texture": "#pad"
+        },
+        "up": {
+          "texture": "#pad"
+        },
+        "down": {
+          "texture": "#pad"
+        }
+      }
+    },
+    {
+      "name": "pad_w",
+      "from": [
+        5.5,
+        6.0,
+        5.25
+      ],
+      "to": [
+        6.25,
+        6.5,
+        5.75
+      ],
+      "rotation": {
+        "origin": [
+          8.0,
+          4.5,
+          7.0
+        ],
+        "axis": "x",
+        "angle": -22.5
+      },
+      "faces": {
+        "north": {
+          "texture": "#pad"
+        },
+        "south": {
+          "texture": "#pad"
+        },
+        "east": {
+          "texture": "#pad"
+        },
+        "west": {
+          "texture": "#pad"
+        },
+        "up": {
+          "texture": "#pad"
+        },
+        "down": {
+          "texture": "#pad"
+        }
+      }
+    },
+    {
+      "name": "pad_e",
+      "from": [
+        6.75,
+        6.0,
+        5.25
+      ],
+      "to": [
+        7.5,
+        6.5,
+        5.75
+      ],
+      "rotation": {
+        "origin": [
+          8.0,
+          4.5,
+          7.0
+        ],
+        "axis": "x",
+        "angle": -22.5
+      },
+      "faces": {
+        "north": {
+          "texture": "#pad"
+        },
+        "south": {
+          "texture": "#pad"
+        },
+        "east": {
+          "texture": "#pad"
+        },
+        "west": {
+          "texture": "#pad"
+        },
+        "up": {
+          "texture": "#pad"
+        },
+        "down": {
+          "texture": "#pad"
+        }
+      }
+    },
+    {
+      "name": "pad_c",
+      "from": [
+        6.25,
+        6.0,
+        5.25
+      ],
+      "to": [
+        6.75,
+        6.5,
+        5.75
+      ],
+      "rotation": {
+        "origin": [
+          8.0,
+          4.5,
+          7.0
+        ],
+        "axis": "x",
+        "angle": -22.5
+      },
+      "faces": {
+        "north": {
+          "texture": "#pad"
+        },
+        "south": {
+          "texture": "#pad"
+        },
+        "east": {
+          "texture": "#pad"
+        },
+        "west": {
+          "texture": "#pad"
+        },
+        "up": {
+          "texture": "#pad"
+        },
+        "down": {
+          "texture": "#pad"
+        }
+      }
+    },
+    {
+      "name": "button_a",
+      "from": [
+        8.5,
+        6.0,
+        5.0
+      ],
+      "to": [
+        9.5,
+        7.0,
+        6.0
+      ],
+      "rotation": {
+        "origin": [
+          8.0,
+          4.5,
+          7.0
+        ],
+        "axis": "x",
+        "angle": -22.5
+      },
+      "shade": false,
+      "faces": {
+        "north": {
+          "texture": "#glow_a"
+        },
+        "south": {
+          "texture": "#glow_a"
+        },
+        "east": {
+          "texture": "#glow_a"
+        },
+        "west": {
+          "texture": "#glow_a"
+        },
+        "up": {
+          "texture": "#glow_a"
+        },
+        "down": {
+          "texture": "#glow_a"
+        }
+      }
+    },
+    {
+      "name": "button_b",
+      "from": [
+        10.0,
+        6.0,
+        5.0
+      ],
+      "to": [
+        11.0,
+        7.0,
+        6.0
+      ],
+      "rotation": {
+        "origin": [
+          8.0,
+          4.5,
+          7.0
+        ],
+        "axis": "x",
+        "angle": -22.5
+      },
+      "shade": false,
+      "faces": {
+        "north": {
+          "texture": "#glow_b"
+        },
+        "south": {
+          "texture": "#glow_b"
+        },
+        "east": {
+          "texture": "#glow_b"
+        },
+        "west": {
+          "texture": "#glow_b"
+        },
+        "up": {
+          "texture": "#glow_b"
+        },
+        "down": {
+          "texture": "#glow_b"
+        }
+      }
+    },
+    {
+      "name": "status",
+      "from": [
+        5.5,
+        7.0,
+        4.75
+      ],
+      "to": [
+        10.5,
+        7.5,
+        5.0
+      ],
+      "shade": false,
+      "faces": {
+        "north": {
+          "texture": "#status",
+          "uv": [
+            3,
+            1,
+            13,
+            2
+          ]
+        }
+      }
+    },
+    {
+      "name": "body",
+      "from": [
+        4.5,
+        8.0,
+        7.0
+      ],
+      "to": [
+        11.5,
+        14.0,
+        12.0
+      ],
+      "faces": {
+        "south": {
+          "texture": "#vent",
+          "cullface": "south"
+        },
+        "east": {
+          "texture": "#body"
+        },
+        "west": {
+          "texture": "#body"
+        },
+        "up": {
+          "texture": "#body"
+        },
+        "down": {
+          "texture": "#dark"
+        }
+      }
+    },
+    {
+      "name": "pillar_w",
+      "from": [
+        4.5,
+        8.0,
+        4.0
+      ],
+      "to": [
+        5.5,
+        14.0,
+        7.0
+      ],
+      "faces": {
+        "north": {
+          "texture": "#body"
+        },
+        "south": {
+          "texture": "#body"
+        },
+        "east": {
+          "texture": "#body"
+        },
+        "west": {
+          "texture": "#body"
+        },
+        "up": {
+          "texture": "#body"
+        },
+        "down": {
+          "texture": "#body"
+        }
+      }
+    },
+    {
+      "name": "pillar_e",
+      "from": [
+        10.5,
+        8.0,
+        4.0
+      ],
+      "to": [
+        11.5,
+        14.0,
+        7.0
+      ],
+      "faces": {
+        "north": {
+          "texture": "#body"
+        },
+        "south": {
+          "texture": "#body"
+        },
+        "east": {
+          "texture": "#body"
+        },
+        "west": {
+          "texture": "#body"
+        },
+        "up": {
+          "texture": "#body"
+        },
+        "down": {
+          "texture": "#body"
+        }
+      }
+    },
+    {
+      "name": "sill",
+      "from": [
+        5.5,
+        8.0,
+        4.0
+      ],
+      "to": [
+        10.5,
+        9.0,
+        7.0
+      ],
+      "faces": {
+        "north": {
+          "texture": "#body"
+        },
+        "south": {
+          "texture": "#body"
+        },
+        "east": {
+          "texture": "#body"
+        },
+        "west": {
+          "texture": "#body"
+        },
+        "up": {
+          "texture": "#body"
+        },
+        "down": {
+          "texture": "#body"
+        }
+      }
+    },
+    {
+      "name": "screen",
+      "from": [
+        5.5,
+        9.0,
+        4.5
+      ],
+      "to": [
+        10.5,
+        14.0,
+        5.0
+      ],
+      "rotation": {
+        "origin": [
+          8.0,
+          9.0,
+          4.5
+        ],
+        "axis": "x",
+        "angle": 22.5
+      },
+      "faces": {
+        "north": {
+          "texture": "#ink",
+          "uv": [
+            3,
+            2,
+            13,
+            12
+          ]
+        },
+        "up": {
+          "texture": "#dark"
+        },
+        "east": {
+          "texture": "#dark"
+        },
+        "west": {
+          "texture": "#dark"
+        }
+      }
+    },
+    {
+      "name": "marquee",
+      "from": [
+        4.5,
+        14.0,
+        4.0
+      ],
+      "to": [
+        11.5,
+        16.0,
+        12.0
+      ],
+      "faces": {
+        "north": {
+          "texture": "#marquee",
+          "uv": [
+            1,
+            12,
+            15,
+            16
+          ]
+        },
+        "south": {
+          "texture": "#body",
+          "cullface": "south"
+        },
+        "east": {
+          "texture": "#body"
+        },
+        "west": {
+          "texture": "#body"
+        },
+        "up": {
+          "texture": "#body",
+          "cullface": "up"
+        },
+        "down": {
+          "texture": "#dark"
+        }
+      }
+    },
+    {
+      "name": "marquee_glow",
+      "from": [
+        5.0,
+        14.5,
+        3.75
+      ],
+      "to": [
+        11.0,
+        15.5,
+        4.0
+      ],
+      "shade": false,
+      "faces": {
+        "north": {
+          "texture": "#mglow",
+          "uv": [
+            2,
+            13,
+            14,
+            15
+          ]
+        }
+      }
+    },
+    {
+      "name": "neon_w",
+      "from": [
+        4.0,
+        8.0,
+        4.0
+      ],
+      "to": [
+        4.5,
+        14.0,
+        4.5
+      ],
+      "shade": false,
+      "faces": {
+        "north": {
+          "texture": "#neon"
+        },
+        "south": {
+          "texture": "#neon"
+        },
+        "east": {
+          "texture": "#neon"
+        },
+        "west": {
+          "texture": "#neon"
+        },
+        "up": {
+          "texture": "#neon"
+        },
+        "down": {
+          "texture": "#neon"
+        }
+      }
+    },
+    {
+      "name": "neon_e",
+      "from": [
+        11.5,
+        8.0,
+        4.0
+      ],
+      "to": [
+        12.0,
+        14.0,
+        4.5
+      ],
+      "shade": false,
+      "faces": {
+        "north": {
+          "texture": "#neon"
+        },
+        "south": {
+          "texture": "#neon"
+        },
+        "east": {
+          "texture": "#neon"
+        },
+        "west": {
+          "texture": "#neon"
+        },
+        "up": {
+          "texture": "#neon"
+        },
+        "down": {
+          "texture": "#neon"
+        }
+      }
+    }
+  ]
+}

@@ -1,0 +1,42 @@
+{
+  "parent": "minecraft:block/block",
+  "textures": {
+    "stub": "neroarcade:block/cabinet_cartridge_stub",
+    "particle": "neroarcade:block/cabinet_cartridge_stub"
+  },
+  "elements": [
+    {
+      "name": "stub",
+      "from": [
+        5,
+        7,
+        -1
+      ],
+      "to": [
+        11,
+        9,
+        1
+      ],
+      "faces": {
+        "north": {
+          "texture": "#stub"
+        },
+        "south": {
+          "texture": "#stub"
+        },
+        "east": {
+          "texture": "#stub"
+        },
+        "west": {
+          "texture": "#stub"
+        },
+        "up": {
+          "texture": "#stub"
+        },
+        "down": {
+          "texture": "#stub"
+        }
+      }
+    }
+  ]
+}

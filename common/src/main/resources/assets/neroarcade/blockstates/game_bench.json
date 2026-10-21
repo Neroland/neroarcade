@@ -1,0 +1,78 @@
+{
+  "multipart": [
+    {
+      "when": {
+        "facing": "north"
+      },
+      "apply": {
+        "model": "neroarcade:block/game_bench"
+      }
+    },
+    {
+      "when": {
+        "facing": "east"
+      },
+      "apply": {
+        "model": "neroarcade:block/game_bench",
+        "y": 90
+      }
+    },
+    {
+      "when": {
+        "facing": "south"
+      },
+      "apply": {
+        "model": "neroarcade:block/game_bench",
+        "y": 180
+      }
+    },
+    {
+      "when": {
+        "facing": "west"
+      },
+      "apply": {
+        "model": "neroarcade:block/game_bench",
+        "y": 270
+      }
+    },
+    {
+      "when": {
+        "cartridge": "true",
+        "facing": "north"
+      },
+      "apply": {
+        "model": "neroarcade:block/game_bench_cartridge"
+      }
+    },
+    {
+      "when": {
+        "cartridge": "true",
+        "facing": "east"
+      },
+      "apply": {
+        "model": "neroarcade:block/game_bench_cartridge",
+        "y": 90
+      }
+    },
+    {
+      "when": {
+        "cartridge": "true",
+        "facing": "south"
+      },
+      "apply": {
+        "model": "neroarcade:block/game_bench_cartridge",
+        "y": 180
+      }
+    },
+    {
+      "when": {
+        "cartridge": "true",
+        "facing": "west"
+      },
+      "apply": {
+        "model": "neroarcade:block/game_bench_cartridge",
+        "y": 270
+      }
+    }
+  ]
+}

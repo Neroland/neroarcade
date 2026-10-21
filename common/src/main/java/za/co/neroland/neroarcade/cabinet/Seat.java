@@ -1,0 +1,46 @@
+package za.co.neroland.neroarcade.cabinet;
+
+import java.util.UUID;
+
+import za.co.neroland.neroarcade.runtime.SeatInput;
+
+/**
+ * The one player standing at a cabinet (or a bench running a test play). Runtime-only: nothing here is written
+ * to NBT, exported or logged, so a seat needs no erasure path (003 §1, §2.1).
+ *
+ * <p>Server thread only. {@link #seat} is the bus seat index (the solo cabinet is seat 0).
+ */
+public final class Seat {
+
+    public final int seat;
+    public final UUID playerUuid;
+    /** Server game time at bind; informational ordering only. */
+    public final long joinedAt;
+
+    boolean ready;
+    long lastInputTick;
+    SeatInput latched = SeatInput.NONE;
+    int inputsThisSecond;
+    long secondStartedAt = Long.MIN_VALUE;
+    int droppedInputs;
+
+    public Seat(int seat, UUID playerUuid, long joinedAt) {
+        this.seat = seat;
+        this.playerUuid = playerUuid;
+        this.joinedAt = joinedAt;
+    }
+
+    public boolean ready() {
+        return ready;
+    }
+
+    /** The last accepted input (what the pad/button blockstate mirrors). */
+    public SeatInput latched() {
+        return latched;
+    }
+
+    /** Packets dropped for this seat (wrong match id, over the rate); a debugging counter, never logged at info. */
+    public int droppedInputs() {
+        return droppedInputs;
+    }
+}

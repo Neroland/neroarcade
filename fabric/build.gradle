@@ -1,0 +1,199 @@
+// fabric: Fabric Loom. De-obfuscated 26.x: NO `mappings` line. Shares the common
+// module's source directly (single copy -> no drift).
+
+plugins {
+    id 'net.fabricmc.fabric-loom'
+    id 'eclipse'   // for eclipse.synchronizationTasks (VS Code / Buildship import hook)
+    id 'maven-publish'
+}
+
+// MC version comes from the Stonecutter node (e.g. :fabric:26.1.2), not a global property.
+def mc = stonecutter.current.version
+// Upper bound of this cell's Minecraft range: the next minor line (26.1.2 -> 26.2, 26.2 -> 26.3), same
+// expression as Neroland Core, so each cell's jar declares only its own MC line.
+def mcCeiling = mc.tokenize('.').with { "${it[0]}.${it[1].toInteger() + 1}" }
+def fabricApi = project.findProperty("fabric_api_version_${mc}")
+def jeiVersion = project.findProperty("jei_version_${mc}")
+def emiFile = project.findProperty("emi_file_fabric_${mc}")
+def nerolandcoreVersion = project.findProperty('nerolandcore_version')
+
+// This node's projectDir is <loader>/versions/<v>; the authoritative loader source +
+// resources live in the BRANCH root (fabric/). Resolve branch-root paths via the parent.
+def branchDir = project.parent.projectDir
+
+// Distinct, descriptive jar name per cell (the node project is named after the MC version, so the
+// default jar would be "<mc>-<version>.jar" and COLLIDE with the neoforge cell of the same version).
+base { archivesName = "neroarcade-fabric-${mc}" }
+
+// Publish this cell's jar as a Maven artifact so other Nero mods can declare NeroArcade a dependency:
+// `za.co.neroland.neroarcade:neroarcade-fabric-<mc>:<version>`. Mirrors Neroland Core's publishing setup.
+// `./gradlew publishToMavenLocal` installs all nine cells locally for dev. Dependency-free POM on purpose.
+publishing {
+    publications {
+        register('mod', MavenPublication) {
+            groupId = rootProject.mod_group_id
+            artifactId = "neroarcade-fabric-${mc}"
+            version = rootProject.mod_version
+            artifact tasks.named('jar')
+        }
+    }
+    // Remote target so a fresh CI runner / clone (empty ~/.m2) can resolve NeroArcade — GitHub Packages
+    // Maven for the NeroArcade repo. `publishToMavenLocal` still works for local dev; `publish` (or
+    // publishModPublicationToGitHubPackagesRepository) pushes here. Auth: gradle props gpr.user/gpr.key,
+    // else env GITHUB_ACTOR/GITHUB_TOKEN (both present in GitHub Actions). Lazy getOrNull() means a
+    // build that doesn't touch this repo (e.g. a contributor with no token) won't fail at configuration.
+    // Privacy (POPIA/GDPR): publishes only build artifacts + version strings, no personal data.
+    repositories {
+        maven {
+            name = 'GitHubPackages'
+            url = 'https://maven.pkg.github.com/Neroland/neroarcade'
+            credentials {
+                username = providers.gradleProperty('gpr.user').orElse(providers.environmentVariable('GITHUB_ACTOR')).getOrNull()
+                password = providers.gradleProperty('gpr.key').orElse(providers.environmentVariable('GITHUB_TOKEN')).getOrNull()
+            }
+        }
+    }
+}
+
+// Pull in the shared common source + resources.
+sourceSets.main.java.srcDir rootProject.ext.commonJava
+sourceSets.main.resources.srcDir rootProject.ext.commonResources
+
+dependencies {
+    minecraft "com.mojang:minecraft:${mc}"
+    // NOTE: no `mappings` — de-obfuscated 26.x needs none (Fabric Loom 1.17+).
+    implementation "net.fabricmc:fabric-loader:${rootProject.fabric_loader_version}"
+    if (fabricApi != null) {
+        implementation "net.fabricmc.fabric-api:fabric-api:${fabricApi}"
+    }
+
+    // Neroland Core — REQUIRED shared foundation (config schema). Plain `implementation` (NOT
+    // `include`) — this de-obf 26.x Loom setup omits `mappings`, so there is no intermediary→named
+    // remap and `modImplementation` isn't available. Core ships as its own mod and loads BEFORE
+    // NeroArcade (see fabric.mod.json depends).
+    implementation "za.co.neroland.nerolandcore:nerolandcore-fabric-${mc}:${nerolandcoreVersion}"
+
+    // Sentry SDK (telemetry/NeroArcadeTelemetry): compile against it + embed it as a jar-in-jar so the
+    // shipped Fabric jar carries it. Counterpart to the NeoForge JarJar bundling.
+    implementation 'io.sentry:sentry:8.60.0'
+    include 'io.sentry:sentry:8.60.0'
+
+    // JEI (optional recipe-viewer compat). The shared compat/jei plugin lives in `common` and uses ONLY
+    // the loader-agnostic JEI common API; on Fabric it compiles against the common + fabric APIs and loads
+    // against the Fabric JEI mod at dev runtime. JEI is a soft dependency (compile-time API only; the mod
+    // is runtime-only). Same per-MC version as NeoForge (jei_version_<mc>, BlameJared maven from the root).
+    if (jeiVersion) {
+        compileOnly "mezz.jei:jei-${mc}-common-api:${jeiVersion}"
+        compileOnly "mezz.jei:jei-${mc}-fabric-api:${jeiVersion}"
+        runtimeOnly "mezz.jei:jei-${mc}-fabric:${jeiVersion}"
+    }
+
+    // EMI (optional recipe-viewer compat). EMI ships one jar per loader with its API inside, so compile
+    // against the whole jar; it is never published as a dependency. The dev client loads it only with
+    // -PwithEmi, so default runs keep the plain JEI setup.
+    if (emiFile) {
+        compileOnly "curse.maven:emi-unofficial-port-unstable-1544558:${emiFile}"
+        if (project.hasProperty('withEmi')) {
+            runtimeOnly "curse.maven:emi-unofficial-port-unstable-1544558:${emiFile}"
+        }
+    }
+}
+
+// Expand fabric.mod.json from src/main/templates into a generated resources dir.
+// The template is NOT under src/main/resources, so the IDE never copies a RAW
+// (token-laden) fabric.mod.json into bin/main. eclipse.synchronizationTasks runs
+// this on VS Code/Buildship import, so bin/main gets the EXPANDED manifest and
+// Run & Debug works — while values stay dynamic (sourced from gradle.properties).
+def generateModMetadata = tasks.register('generateModMetadata', ProcessResources) {
+    def props = [
+        mod_id               : rootProject.mod_id,
+        mod_version          : rootProject.mod_version,
+        mod_name             : rootProject.mod_name,
+        mod_authors          : rootProject.mod_authors,
+        mod_license          : rootProject.mod_license,
+        fabric_loader_version: rootProject.fabric_loader_version,
+        minecraft_version    : mc,
+        minecraft_version_ceiling: mcCeiling,
+        nerolandcore_version : nerolandcoreVersion,
+    ]
+    inputs.properties(props)
+    expand(props)
+    from "${branchDir}/src/main/templates"
+    into layout.buildDirectory.dir('generated/sources/modMetadata')
+}
+sourceSets.main.resources.srcDir generateModMetadata
+eclipse.synchronizationTasks generateModMetadata
+
+loom {
+    accessWidenerPath = file("${branchDir}/src/main/resources/neroarcade.accesswidener")
+
+    runs {
+        client {
+            client()
+            // Do NOT let Loom write Eclipse *.launch files — they embed absolute machine
+            // paths. The committed .vscode/launch.json (relative ${workspaceFolder}) is the
+            // single source of truth for run/debug.
+            ideConfigGenerated false
+            runDir 'runs/client'
+        }
+        server {
+            server()
+            ideConfigGenerated false
+            runDir 'runs/server'
+        }
+    }
+}
+
+// Loom creates each run's `runDir` lazily on first launch, but VS Code opens the
+// debug terminal in that cwd BEFORE the program starts — so a never-yet-run config
+// fails with "Starting directory (cwd) ... does not exist". Pre-create the dirs so
+// the cwd always exists. Wired into (a) the Fabric preLaunchTask `configureLaunch`
+// (runs before each launch) and (b) eclipse.synchronizationTasks (fresh IDE import).
+def createFabricRunDirs = tasks.register('createFabricRunDirs') {
+    description = 'Pre-create Loom run directories so the IDE debug-terminal cwd exists before first launch.'
+    doLast {
+        file('runs/client').mkdirs()
+        file('runs/server').mkdirs()
+    }
+}
+eclipse.synchronizationTasks createFabricRunDirs
+tasks.matching { it.name == 'configureLaunch' }.configureEach { dependsOn createFabricRunDirs }
+
+// ecjCheck: run the Eclipse compiler over common + fabric main sources, with the same prefs as VS Code.
+configurations {
+    ecj
+}
+dependencies {
+    ecj 'org.eclipse.jdt:ecj:+'
+}
+tasks.register('ecjCheck', JavaExec) {
+    group = 'verification'
+    description = 'Run the Eclipse (IDE) analyzer over common + fabric main sources and report its diagnostics.'
+    notCompatibleWithConfigurationCache('assembles the analysis classpath at execution time')
+    dependsOn tasks.named('compileJava')
+    classpath = configurations.ecj
+    mainClass = 'org.eclipse.jdt.internal.compiler.batch.Main'
+    doFirst {
+        def analysisCp = (sourceSets.main.compileClasspath.files + sourceSets.main.output.files)
+                .findAll { it.exists() }
+                .join(File.pathSeparator)
+        // The source FILES, not the source dirs, so any source excludes apply here exactly as in
+        // compileJava. Passed through an @argfile (forward slashes) to keep the Windows command line short.
+        def ecjSources = project.layout.buildDirectory.file('tmp/ecjCheck/sources.txt').get().asFile
+        ecjSources.parentFile.mkdirs()
+        ecjSources.text = sourceSets.main.java.files.collect { it.absolutePath.replace('\\', '/') }.join('\n') + '\n'
+        def srcDirs = ['@' + ecjSources.absolutePath.replace('\\', '/')]
+        args = [
+                '--release', '25',
+                '-proc:none',
+                '-d', 'none',
+                '-properties', rootProject.file('tools/ecj.prefs').absolutePath,
+                // No '-warn:' override — tools/ecj.prefs is the single source of truth for severities.
+                // A CLI -warn:+token forces a category ON regardless of the prefs `ignore`, so the
+                // framework-interop nullness categories would re-appear. nullanalysis=enabled in the
+                // prefs already turns annotation-based analysis on for the genuine categories.
+                '-annotationpath', 'CLASSPATH',
+                '-classpath', analysisCp,
+        ] + srcDirs
+    }
+}

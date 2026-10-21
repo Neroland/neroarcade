@@ -1,0 +1,138 @@
+{
+  "multipart": [
+    {
+      "when": {
+        "active": "false"
+      },
+      "apply": {
+        "model": "neroarcade:block/link_cable_core"
+      }
+    },
+    {
+      "when": {
+        "active": "true"
+      },
+      "apply": {
+        "model": "neroarcade:block/link_cable_core_active"
+      }
+    },
+    {
+      "when": {
+        "north": "true",
+        "active": "false"
+      },
+      "apply": {
+        "model": "neroarcade:block/link_cable_arm"
+      }
+    },
+    {
+      "when": {
+        "north": "true",
+        "active": "true"
+      },
+      "apply": {
+        "model": "neroarcade:block/link_cable_arm_active"
+      }
+    },
+    {
+      "when": {
+        "east": "true",
+        "active": "false"
+      },
+      "apply": {
+        "model": "neroarcade:block/link_cable_arm",
+        "y": 90
+      }
+    },
+    {
+      "when": {
+        "east": "true",
+        "active": "true"
+      },
+      "apply": {
+        "model": "neroarcade:block/link_cable_arm_active",
+        "y": 90
+      }
+    },
+    {
+      "when": {
+        "south": "true",
+        "active": "false"
+      },
+      "apply": {
+        "model": "neroarcade:block/link_cable_arm",
+        "y": 180
+      }
+    },
+    {
+      "when": {
+        "south": "true",
+        "active": "true"
+      },
+      "apply": {
+        "model": "neroarcade:block/link_cable_arm_active",
+        "y": 180
+      }
+    },
+    {
+      "when": {
+        "west": "true",
+        "active": "false"
+      },
+      "apply": {
+        "model": "neroarcade:block/link_cable_arm",
+        "y": 270
+      }
+    },
+    {
+      "when": {
+        "west": "true",
+        "active": "true"
+      },
+      "apply": {
+        "model": "neroarcade:block/link_cable_arm_active",
+        "y": 270
+      }
+    },
+    {
+      "when": {
+        "up": "true",
+        "active": "false"
+      },
+      "apply": {
+        "model": "neroarcade:block/link_cable_arm",
+        "x": 270
+      }
+    },
+    {
+      "when": {
+        "up": "true",
+        "active": "true"
+      },
+      "apply": {
+        "model": "neroarcade:block/link_cable_arm_active",
+        "x": 270
+      }
+    },
+    {
+      "when": {
+        "down": "true",
+        "active": "false"
+      },
+      "apply": {
+        "model": "neroarcade:block/link_cable_arm",
+        "x": 90
+      }
+    },
+    {
+      "when": {
+        "down": "true",
+        "active": "true"
+      },
+      "apply": {
+        "model": "neroarcade:block/link_cable_arm_active",
+        "x": 90
+      }
+    }
+  ]
+}

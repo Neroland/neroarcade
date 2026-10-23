@@ -1,0 +1,24 @@
+{
+  "type": "minecraft:crafting_shapeless",
+  "category": "misc",
+  "ingredients": [
+    "neroarcade:blank_chip",
+    "minecraft:glass_pane",
+    "minecraft:glass_pane"
+  ],
+  "result": {
+    "id": "neroarcade:module_chip",
+    "count": 1,
+    "components": {
+      "neroarcade:module_id": "neroarcade:arena/grid_32",
+      "minecraft:custom_model_data": {
+        "strings": [
+          "arena"
+        ],
+        "colors": [
+          3138559
+        ]
+      }
+    }
+  }
+}

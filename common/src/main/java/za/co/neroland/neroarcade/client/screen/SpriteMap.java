@@ -11,13 +11,14 @@ import za.co.neroland.neroarcade.module.hook.ThemeSpec;
  * position its own sprite, the THEME chip the palette and sheets. Sheet order is the chip registration order of
  * 004 §6; a chip the sheets do not know draws with the first sprite of its sheet. Pure; built once per game.
  *
- * @param pawnSprite   index into {@code pawns.png} pairs (cursor 0, serpent 1, runner 2, paddle 3, ship 4)
+ * @param pawnSprite   index into the pawn pairs (cursor 0, serpent 1, runner 2, paddle 3, ship 4 in {@code pawns.png};
+ *                     stacker 5 = {@code pawns_ext.png} pair 0). A SEGMENT draws frame 1 of its owning pawn's pair
  * @param hazardSprite per hazard stack position, index into {@code hazards.png} pairs
  * @param pickupSprite per pickup stack position, index into {@code pickups.png}
  */
 public record SpriteMap(ThemePalettes.Theme theme, int pawnSprite, int[] hazardSprite, int[] pickupSprite) {
 
-    static final List<String> PAWNS = List.of("cursor", "serpent", "runner", "paddle", "ship");
+    static final List<String> PAWNS = List.of("cursor", "serpent", "runner", "paddle", "ship", "stacker");
     static final List<String> HAZARDS = List.of("falling_block", "bouncing_ball", "chaser", "laser_sweep",
             "shrinking_floor");
     static final List<String> PICKUPS = List.of("score_orb", "speed_boost", "shield", "key");

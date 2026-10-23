@@ -60,7 +60,7 @@ public class ArcadeCabinetBlock extends TwoHighBlock {
                 ArcadeBlockProperties.BTN_B, ArcadeBlockProperties.CARTRIDGE, ArcadeBlockProperties.LINKED);
     }
 
-    /** Block light: 7 while the strip is lit (awake), 0 asleep. */
+    /** Block light: 7 while the strip is lit (any status but OFF, so a loaded cabinet glows), 0 when off. */
     public static int lightOf(BlockState state) {
         return state.getValue(HALF) == Half.LOWER && state.getValue(ArcadeBlockProperties.STATUS) != CabinetStatus.OFF ? 7 : 0;
     }

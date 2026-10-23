@@ -52,7 +52,9 @@ public interface PawnModule extends ArcadeModule {
     /**
      * Raw buttons for a runtime-driven seat, asked every {@code ArcadeRuntime.OPPONENT_CADENCE} simulated ticks
      * and held between. Goes through CONTROL and MODIFIER like a human's. Pure: a function of the context only.
-     * Default: {@link RuntimeOpponent#greedy}.
+     * Default: {@link RuntimeOpponent#greedy} — and a chip that keeps this default gets the finer split instead:
+     * the runtime re-chooses {@link RuntimeOpponent#target} every cadence and re-{@link RuntimeOpponent#steer}s
+     * every simulated tick, so the opponent can stop on any cell. An override is asked at the cadence as above.
      */
     default SeatInput opponentInput(ModuleContext ctx, int seat) {
         return RuntimeOpponent.greedy(ctx, seat);

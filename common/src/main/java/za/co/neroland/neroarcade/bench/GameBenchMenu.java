@@ -114,7 +114,7 @@ public class GameBenchMenu extends AbstractContainerMenu {
     public void removed(Player player) {
         super.removed(player);
         if (bench != null) {
-            bench.onMenuClosed();
+            bench.onMenuClosed(player);
         }
     }
 

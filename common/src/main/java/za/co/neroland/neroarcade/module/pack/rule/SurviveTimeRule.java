@@ -8,6 +8,7 @@ import net.minecraft.resources.Identifier;
 import za.co.neroland.neroarcade.module.ModuleDefaults;
 import za.co.neroland.neroarcade.module.ModuleFlag;
 import za.co.neroland.neroarcade.module.PropertySpec;
+import za.co.neroland.neroarcade.module.PropertyValues;
 import za.co.neroland.neroarcade.module.hook.ModuleContext;
 import za.co.neroland.neroarcade.module.hook.RuleModule;
 import za.co.neroland.neroarcade.module.hook.RuleOutcome;
@@ -15,10 +16,18 @@ import za.co.neroland.neroarcade.runtime.Budgets;
 import za.co.neroland.neroarcade.runtime.MatchState;
 
 /**
- * {@code neroarcade:rule/survive_time} — the default rule: stay alive until the timer runs out. Every seat
- * starts with {@code lives}; when the timer reaches zero the seats still in the match win; when no seat is
- * left the match is lost. The timer counts simulated ticks (the runtime's housekeeping decrements it), so a
- * slower PACE also stretches the clock. Stateless; pure.
+ * {@code neroarcade:rule/survive_time} — the default rule: stay alive until the timer runs out. Flags
+ * {@code SURVIVAL}. Every seat starts with {@code lives}; when the timer reaches zero the seats still in the match
+ * win; when no seat is left the match is lost. The timer counts simulated ticks (the runtime's housekeeping
+ * decrements it), so a slower PACE also stretches the clock.
+ *
+ * <ul>
+ *   <li>{@code seconds} — the clock to survive (timer = seconds × 20 simulated ticks).</li>
+ *   <li>{@code lives} — lives per seat.</li>
+ * </ul>
+ *
+ * <p>Odd combinations: with no LETHAL hazard it runs and is won by waiting (bench {@code NO_THREAT}); with
+ * {@code turns}, everyone who survived their turns wins (A10). Stateless; pure.
  */
 public final class SurviveTimeRule implements RuleModule {
 
@@ -44,6 +53,16 @@ public final class SurviveTimeRule implements RuleModule {
     @Override
     public Set<ModuleFlag> flags() {
         return Set.of(ModuleFlag.SURVIVAL);
+    }
+
+    @Override
+    public Object[] effectArgs(PropertyValues props) {
+        return new Object[] {props.getInt("seconds"), props.getInt("lives")};
+    }
+
+    @Override
+    public int[] hudArgs(PropertyValues props) {
+        return new int[] {props.getInt("seconds"), props.getInt("lives")};
     }
 
     @Override

@@ -4,10 +4,14 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.Executor;
+import java.util.function.Consumer;
 
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.server.network.FilteredText;
 import net.minecraft.sounds.SoundSource;
 import net.minecraft.world.item.ItemStack;
 
@@ -31,8 +35,10 @@ import za.co.neroland.neroarcade.registry.ModSounds;
  *
  * <p><b>Title filter.</b> 26.x has {@code ServerPlayer.getTextFilter().processStreamMessage(String)} returning a
  * {@code CompletableFuture<FilteredText>}; a server with no filter configured gets {@code TextFilter.DUMMY}, which
- * passes everything. The title is set on the server thread once the future completes, and any masked character
- * refuses the whole title ("Title not allowed"); {@link TitleRules} (length, control characters) runs first.
+ * passes everything. An already-complete future (the DUMMY filter) is applied at once, so a SAVE sent in the same
+ * tick as the SET_TITLE sees the title (review 005a F8); a pending one is applied on the server thread when it
+ * completes. Any masked character refuses the whole title ("Title not allowed"); {@link TitleRules} (length,
+ * control characters) runs first.
  */
 public final class BenchActions {
 
@@ -126,7 +132,7 @@ public final class BenchActions {
         }
         String title = cleaned.get();
         MinecraftServer server = player.level().getServer();
-        player.getTextFilter().processStreamMessage(title).thenAcceptAsync(filtered -> {
+        whenFiltered(player.getTextFilter().processStreamMessage(title), server, filtered -> {
             if (bench.isRemoved()) {
                 return;
             }
@@ -136,12 +142,25 @@ public final class BenchActions {
                 bench.draft().setTitle(title);
                 bench.setStatus("");
             }
-        }, server);
+        });
     }
 
     /**
-     * SAVE: a Blank Cartridge in the tray becomes the cartridge; the same author's own cartridge in the tray is
-     * re-saved in place (same id, revision + 1). Anything else asks for a blank. The author UUID is the saver; the
+     * Runs {@code apply} now when the filter's future is already complete (normally), otherwise on {@code server}
+     * once it completes — never queued behind packets that arrived after it when there is nothing to wait for.
+     */
+    static void whenFiltered(CompletableFuture<FilteredText> future, Executor server, Consumer<FilteredText> apply) {
+        if (future.isDone() && !future.isCompletedExceptionally()) {
+            apply.accept(future.join());
+        } else {
+            future.thenAcceptAsync(apply, server);
+        }
+    }
+
+    /**
+     * SAVE (rules in {@link BenchDraft#planSave}): a Blank Cartridge in the tray becomes a new cartridge with a new
+     * id; the saver's own cartridge, when it is the draft's game, is re-saved in place (same id, revision + 1);
+     * any other written cartridge is refused with a sentence that says what to do. The author UUID is the saver; the
      * credit comes from {@link CreditResolver} (empty until the Stage 6 opt-in exists).
      */
     private static void save(GameBenchBlockEntity bench, ServerPlayer player) {
@@ -157,12 +176,28 @@ public final class BenchActions {
             bench.setStatus("neroarcade.bench.status.need_blank");
             return;
         }
+        StoredCartridge current = written ? CartridgeItem.storedOf(tray) : null;
+        if (written && current == null) {
+            bench.setStatus("neroarcade.bench.status.need_blank");
+            return;
+        }
+        Optional<String> trayId = current == null ? Optional.empty() : Optional.of(current.rawId());
         GameDef saved;
         try {
             Optional<String> credit = CreditResolver.current()
                     .creditFor(player.getUUID(), player.getGameProfile().name());
-            saved = bench.draft().planSave(player.getUUID(), () -> CartridgeIds.mint(level.getRandom()),
-                    System.currentTimeMillis() / 1000L, credit);
+            SavePlan plan = bench.draft().planSave(player.getUUID(), trayId,
+                    () -> CartridgeIds.mint(level.getRandom()), System.currentTimeMillis() / 1000L, credit);
+            if (plan.refused()) {
+                bench.setStatus(plan.kind().statusKey());
+                return;
+            }
+            if (plan.kind() == SavePlan.Kind.IN_PLACE && current != null && current.tryDecode()
+                    .flatMap(GameDef::authorUuid).filter(a -> !a.equals(player.getUUID())).isPresent()) {
+                bench.setStatus(SavePlan.Kind.REFUSED_NOT_YOURS.statusKey()); // the tray copy says otherwise
+                return;
+            }
+            saved = plan.def().orElseThrow();
             CartridgeValidator.validate(saved);
             StoredCartridge.of(saved); // size cap, refused rather than truncated
         } catch (ValidationError refused) {
@@ -174,11 +209,6 @@ public final class BenchActions {
             if (blank) {
                 bench.inventory().setItem(BenchSlots.TRAY, CartridgeItem.create(saved));
             } else {
-                StoredCartridge current = CartridgeItem.storedOf(tray);
-                if (current == null || !current.rawId().equals(saved.id())) {
-                    bench.setStatus("neroarcade.bench.status.need_blank");
-                    return;
-                }
                 ItemStack rewritten = tray.copy();
                 CartridgeItem.write(rewritten, saved);
                 bench.inventory().setItem(BenchSlots.TRAY, rewritten);

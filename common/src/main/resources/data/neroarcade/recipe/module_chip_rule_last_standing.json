@@ -1,0 +1,24 @@
+{
+  "type": "minecraft:crafting_shapeless",
+  "category": "misc",
+  "ingredients": [
+    "neroarcade:blank_chip",
+    "minecraft:paper",
+    "minecraft:bone"
+  ],
+  "result": {
+    "id": "neroarcade:module_chip",
+    "count": 1,
+    "components": {
+      "neroarcade:module_id": "neroarcade:rule/last_standing",
+      "minecraft:custom_model_data": {
+        "strings": [
+          "rule"
+        ],
+        "colors": [
+          16757575
+        ]
+      }
+    }
+  }
+}

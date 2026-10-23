@@ -26,11 +26,27 @@ import za.co.neroland.neroarcade.module.hook.ModuleContext;
  * </ol>
  * Entities are scanned in id order and seats 0→3; distance ties keep the lower id / seat. Distances wrap where
  * the board wraps.
+ *
+ * <p><b>Target vs direction</b> (orchestrator decision 2026-10-21): a decision is split into {@link #target} (which
+ * of the four goals above, and for collect/hunt the cell aimed at) and {@link #steer} (the buttons toward that
+ * target from where the pawn is <i>now</i>). For a pawn that keeps the default {@code opponentInput},
+ * {@code ArcadeRuntime} re-chooses the target every {@code OPPONENT_CADENCE} simulated ticks and steers every
+ * simulated tick, so the opponent can stop on any cell instead of moving in cadence-sized hops. The held target is
+ * an input latch like the held {@code SeatInput} (002 R5): both functions are pure, a replay re-derives it.
+ * {@link #greedy} is {@code steer(target(..))}, for chips that call it from their own override.
  */
 public final class RuntimeOpponent {
 
     /** Cells (Chebyshev) within which a threat makes the opponent flee. */
     public static final int THREAT_RADIUS = 3;
+
+    /** {@link #target} result when there is nothing to do (no pawn). */
+    public static final int NO_TARGET = 0;
+
+    private static final int MODE_FLEE = 1;
+    private static final int MODE_COLLECT = 2;
+    private static final int MODE_HUNT = 3;
+    private static final int MODE_WANDER = 4;
 
     private static final int NONE = -1;
     private static final int UP = 0;
@@ -41,11 +57,21 @@ public final class RuntimeOpponent {
     private RuntimeOpponent() {
     }
 
+    /** One full decision: {@code steer(ctx, seat, target(ctx, seat))}. Pure. */
     public static SeatInput greedy(ModuleContext ctx, int seat) {
+        return steer(ctx, seat, target(ctx, seat));
+    }
+
+    /**
+     * Chooses what the opponent is doing: flee (with the escape direction), collect or hunt (with the target cell),
+     * or wander. Packed as {@code mode << 24 | y << 8 | x} (flee: {@code x} = direction); {@link #NO_TARGET} without
+     * a pawn. Pure.
+     */
+    public static int target(ModuleContext ctx, int seat) {
         MatchState s = ctx.state();
         int pawn = s.pawnId(seat);
         if (pawn < 0 || !s.exists(pawn)) {
-            return SeatInput.NONE;
+            return NO_TARGET;
         }
         int px = s.get(pawn, Entities.X) >> MatchState.FP_SHIFT;
         int py = s.get(pawn, Entities.Y) >> MatchState.FP_SHIFT;
@@ -98,13 +124,10 @@ public final class RuntimeOpponent {
                     bestFree = free;
                 }
             }
-            return input(best, true);
+            return pack(MODE_FLEE, best, 0);
         }
-        if (pickupDist != Integer.MAX_VALUE) {
-            int dir = toward(s, px, py, pickupDx, pickupDy);
-            if (dir != NONE) {
-                return input(dir, false);
-            }
+        if (pickupDist != Integer.MAX_VALUE && toward(s, px, py, pickupDx, pickupDy) != NONE) {
+            return pack(MODE_COLLECT, cellX(s, px + pickupDx), cellY(s, py + pickupDy));
         }
 
         // 3. hunt
@@ -128,14 +151,52 @@ public final class RuntimeOpponent {
                 }
             }
             if (huntDist != Integer.MAX_VALUE) {
-                int dir = toward(s, px, py, huntDx, huntDy);
                 boolean aligned = huntDx == 0 || huntDy == 0;
-                if (dir != NONE || aligned) {
-                    return input(dir, aligned);
+                if (toward(s, px, py, huntDx, huntDy) != NONE || aligned) {
+                    return pack(MODE_HUNT, cellX(s, px + huntDx), cellY(s, py + huntDy));
                 }
             }
         }
 
+        // 4. wander
+        return pack(MODE_WANDER, 0, 0);
+    }
+
+    /**
+     * The buttons for this tick toward {@code target} (from {@link #target}) from the pawn's current cell. Collect
+     * and hunt stop on the target cell; a target that has become unreachable falls back to wandering. Pure.
+     */
+    public static SeatInput steer(ModuleContext ctx, int seat, int target) {
+        MatchState s = ctx.state();
+        int pawn = s.pawnId(seat);
+        int mode = target >>> 24;
+        if (pawn < 0 || !s.exists(pawn) || mode == 0) {
+            return SeatInput.NONE;
+        }
+        int px = s.get(pawn, Entities.X) >> MatchState.FP_SHIFT;
+        int py = s.get(pawn, Entities.Y) >> MatchState.FP_SHIFT;
+        int tx = target & 0xFF;
+        int ty = (target >> 8) & 0xFF;
+        switch (mode) {
+            case MODE_FLEE -> {
+                return input(tx == 0xFF ? NONE : tx, true);
+            }
+            case MODE_COLLECT, MODE_HUNT -> {
+                int tdx = deltaX(s, px, tx);
+                int tdy = deltaY(s, py, ty);
+                boolean hunt = mode == MODE_HUNT;
+                if (tdx == 0 && tdy == 0) {
+                    return input(NONE, hunt);
+                }
+                int dir = toward(s, px, py, tdx, tdy);
+                boolean aligned = hunt && (tdx == 0 || tdy == 0);
+                if (dir != NONE || aligned) {
+                    return input(dir, aligned);
+                }
+            }
+            default -> {
+            }
+        }
         // 4. wander
         int vx = s.get(pawn, Entities.VX);
         int vy = s.get(pawn, Entities.VY);
@@ -147,6 +208,19 @@ public final class RuntimeOpponent {
             dir = mostFree(s, px, py);
         }
         return input(dir, false);
+    }
+
+    private static int pack(int mode, int x, int y) {
+        return mode << 24 | (y & 0xFF) << 8 | (x & 0xFF);
+    }
+
+    /** A cell x on the board (wrapped where the board wraps; arenas are at most 32 wide). */
+    private static int cellX(MatchState s, int x) {
+        return s.wrapsX() ? Math.floorMod(x, s.width()) : x;
+    }
+
+    private static int cellY(MatchState s, int y) {
+        return s.wrapsY() ? Math.floorMod(y, s.height()) : y;
     }
 
     private static boolean lethalHazard(ModuleContext ctx, int id) {

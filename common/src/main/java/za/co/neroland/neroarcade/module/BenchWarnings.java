@@ -30,7 +30,11 @@ public final class BenchWarnings {
             Set<ModuleFlag> hazards = game.flags(ModuleType.HAZARD);
             Set<ModuleFlag> multiplayer = game.flags(ModuleType.MULTIPLAYER);
 
-            if (rule.contains(ModuleFlag.NEEDS_SCORE) && !pickups.contains(ModuleFlag.SCORES)) {
+            // a score source is any PICKUP, HAZARD (a ball scoring on goals) or PAWN (a stacker scoring rows)
+            // that declares SCORES
+            boolean scoreSource = pickups.contains(ModuleFlag.SCORES) || hazards.contains(ModuleFlag.SCORES)
+                    || pawn.contains(ModuleFlag.SCORES);
+            if (rule.contains(ModuleFlag.NEEDS_SCORE) && !scoreSource) {
                 out.add(BenchWarning.SCORE_RULE_WITHOUT_SCORE_SOURCE);
             }
             if (pickups.contains(ModuleFlag.IS_KEY) && !rule.contains(ModuleFlag.PLACES_EXIT)) {

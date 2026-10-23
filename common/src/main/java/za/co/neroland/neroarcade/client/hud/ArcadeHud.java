@@ -24,11 +24,13 @@ import za.co.neroland.neroarcade.runtime.MatchState;
  * The seated player's HUD (004 §5, §8.2) — drawn only for the player holding a seat, never for spectators:
  *
  * <ul>
- *   <li>top-left: the rule sentence (amber), the score at 2x, the timer {@code 0:42} (cyan), other seats' scores;</li>
+ *   <li>top-left: the rule line from the RULE chip (amber, e.g. "Survive 60 s · lives 1"), the score at 2x, the
+ *       timer {@code 0:42} (cyan), other seats' scores, and always a grey "ESC leave" so a seated player who missed
+ *       the legend can still find the way out;</li>
  *   <li>top-centre: the control legend as keycaps with the player's actual bindings, from the seat bind until
  *       the first 5 s of play are over (fading out over the last 10 ticks);</li>
- *   <li>centre: the 3-2-1 countdown, the lobby card, the results card (rank, score, NEW BEST, "press A to play
- *       again", "press ESC to leave") or NO POWER while paused.</li>
+ *   <li>centre: the 3-2-1 countdown, the lobby card, the results card (rank, score, NEW BEST, "Press SPACE to play
+ *       again" with the player's bound A key, "Press ESC to leave") or NO POWER while paused.</li>
  * </ul>
  *
  * The cabinet screen stays the only game view; the HUD never covers the middle of the screen while playing. Hidden
@@ -117,8 +119,10 @@ public final class ArcadeHud {
                 }
             }
         }
-        int w = Math.max(Math.max(font.width(rule), font.width(score) * 2), font.width(String.join("   ", others))) + 8;
-        int h = 4 + 10 + 18 + (timer.isEmpty() ? 0 : 10) + (others.isEmpty() ? 0 : 10);
+        Component leave = leaveHint();
+        int w = Math.max(Math.max(Math.max(font.width(rule), font.width(score) * 2),
+                font.width(String.join("   ", others))), font.width(leave)) + 8;
+        int h = 4 + 10 + 18 + (timer.isEmpty() ? 0 : 10) + (others.isEmpty() ? 0 : 10) + 10;
         int x = 6;
         int y = 6;
         g.fill(x - 2, y - 2, x + w, y + h, ArcadeColours.HUD_BACK);
@@ -135,7 +139,14 @@ public final class ArcadeHud {
         }
         if (!others.isEmpty()) {
             g.text(font, String.join("   ", others), x + 2, line, ArcadeColours.SUBTLE, false);
+            line += 10;
         }
+        g.text(font, leave, x + 2, line, ArcadeColours.SUBTLE, false);
+    }
+
+    /** "ESC leave" — the standing way out, always the last line of the stats block. */
+    static Component leaveHint() {
+        return Component.translatable("neroarcade.hud.leave_hint", Component.translatable("key.keyboard.escape"));
     }
 
     private static Object[] boxed(int[] args) {
@@ -146,7 +157,7 @@ public final class ArcadeHud {
         return out;
     }
 
-    /** "[W][A][S][D] move · [SPACE] action · [SHIFT] alt · [ESC] leave", then the CONTROL chip's own lines. */
+    /** "[W][A][S][D] move · [SPACE] action · [SHIFT] 2nd action · [ESC] leave", then the CONTROL chip's own lines. */
     private static void drawLegend(GuiGraphicsExtractor g, Font font, HudLegendPayload legend, int width, int alpha) {
         int fg = (alpha << 24) | (ArcadeColours.TITLE & 0xFFFFFF);
         int subtle = (alpha << 24) | (ArcadeColours.SUBTLE & 0xFFFFFF);
@@ -164,8 +175,11 @@ public final class ArcadeHud {
         }
         List<Component> lines = new ArrayList<>();
         if (legend != null) {
+            // convention: %1$s = the A key's bound name, %2$s = the B key's
+            Component a = ArcadeKeys.BUTTON_A.getTranslatedKeyMessage();
+            Component b = ArcadeKeys.BUTTON_B.getTranslatedKeyMessage();
             for (String key : legend.legendLangKeys()) {
-                lines.add(Component.translatable(key));
+                lines.add(Component.translatable(key, a, b));
             }
         }
         int boxW = total + 8;
@@ -247,7 +261,8 @@ public final class ArcadeHud {
                 g.text(font, word, x + PANEL_W - 5 - pw, ry, 0xFF05070D, false);
             }
         }
-        g.centeredText(font, Component.translatable("neroarcade.hud.press_start"), width / 2, y + PANEL_H - 12,
+        g.centeredText(font, Component.translatable("neroarcade.hud.press_start",
+                ArcadeKeys.BUTTON_A.getTranslatedKeyMessage()), width / 2, y + PANEL_H - 12,
                 ArcadeColours.SUBTLE);
     }
 
@@ -275,7 +290,8 @@ public final class ArcadeHud {
                         false);
             }
         }
-        g.centeredText(font, Component.translatable("neroarcade.hud.play_again"), width / 2, y + PANEL_H - 22,
+        g.centeredText(font, Component.translatable("neroarcade.hud.play_again",
+                ArcadeKeys.BUTTON_A.getTranslatedKeyMessage()), width / 2, y + PANEL_H - 22,
                 ArcadeColours.CYAN_TEXT);
         g.centeredText(font, Component.translatable("neroarcade.hud.esc_leave"), width / 2, y + PANEL_H - 12,
                 ArcadeColours.SUBTLE);

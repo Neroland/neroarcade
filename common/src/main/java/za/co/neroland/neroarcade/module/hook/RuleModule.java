@@ -25,6 +25,19 @@ public interface RuleModule extends ArcadeModule {
     default void onSeatDropped(ModuleContext ctx, int seat) {
     }
 
+    /**
+     * The HUD's amber rule line while playing, e.g. "Survive 60 s · lives 1". <b>Contract (every rule):</b> the key
+     * exists in the shipped lang and renders in at most 24 characters with default values.
+     */
+    default String hudLangKey() {
+        return langKey() + ".hud";
+    }
+
+    /** The integer arguments of {@link #hudLangKey()}, from the resolved values ({@code HudLegendPayload.ruleArgs}). */
+    default int[] hudArgs(PropertyValues props) {
+        return new int[0];
+    }
+
     /** Hard stop: the runtime ends the match as DRAW after this many seconds of play, whatever the rule says. */
     default int maxSeconds(PropertyValues props) {
         return Budgets.maxMatchSeconds();

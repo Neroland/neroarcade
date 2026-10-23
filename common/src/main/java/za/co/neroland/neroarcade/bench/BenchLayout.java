@@ -6,8 +6,9 @@ package za.co.neroland.neroarcade.bench;
  * inside it (bottom right), so the whole screen fits a 1080p window at GUI scale 4 (480 x 270):
  *
  * <pre>
- *  x 4..232   the RACK: ten rows of 18 px from y 30, chip slots from x 83 (stack positions 18 px apart)
- *  x 238..436 the PREVIEW (64 x 64 at 242, 33) with the title box and the cartridge TRAY to its right,
+ *  x 4..256   the RACK: ten rows of 18 px from y 30, chip slots from x 83 (stack positions 18 px apart); the
+ *             row's short effect gets ~148 px (single slots) or ~112 px (stack slots)
+ *  x 262..436 the PREVIEW (64 x 64 at 266, 33) with the title box and the cartridge TRAY to its right,
  *             the PARAMETERS box under it, and the player inventory at the bottom
  * </pre>
  */
@@ -24,10 +25,10 @@ public final class BenchLayout {
     public static final int RACK_ROW = 18;
     public static final int STACK_STEP = 18;
 
-    public static final int TRAY_X = 313;
+    public static final int TRAY_X = 337;
     public static final int TRAY_Y = 67;
 
-    public static final int INVENTORY_X = 256;
+    public static final int INVENTORY_X = 262;
     public static final int INVENTORY_Y = 182;
 
     private BenchLayout() {

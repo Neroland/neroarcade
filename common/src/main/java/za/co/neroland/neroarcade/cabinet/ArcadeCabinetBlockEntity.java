@@ -362,22 +362,11 @@ public class ArcadeCabinetBlockEntity extends BlockEntity implements SeatHolder 
     /** The status strip per 003 §3.6 (solo subset). */
     public CabinetStatus computeStatus() {
         if (cartridge.isEmpty()) {
-            return CabinetStatus.OFF;
+            return CabinetStatus.of(false, false, powerAvailable(), null);
         }
         Readability r = readability();
-        if (r == null || !r.readable()) {
-            return CabinetStatus.LOCKED;
-        }
-        if (!powerAvailable()) {
-            return CabinetStatus.NO_POWER;
-        }
-        if (host == null) {
-            return CabinetStatus.OFF;
-        }
-        return switch (host.phase()) {
-            case COUNTDOWN, PLAYING, RESULTS -> CabinetStatus.PLAYING;
-            default -> CabinetStatus.READY;
-        };
+        MatchHost current = host;
+        return CabinetStatus.of(true, r != null && r.readable(), powerAvailable(), current == null ? null : current.phase());
     }
 
     private void mirrorBlockState(ServerLevel serverLevel) {

@@ -16,7 +16,10 @@ import za.co.neroland.neroarcade.module.hook.SeatLayout;
 
 /**
  * {@code neroarcade:multiplayer/solo} — the default: one seat, the whole board, the rule's outcome as is.
- * Stateless; pure.
+ * No properties. Every alive seat is active; lives are per seat; no runtime opponent.
+ *
+ * <p>Odd combinations: under a {@code MULTI_SEAT_ONLY} rule (e.g. {@code last_standing}) there is no runtime
+ * opponent, so the rule's {@code onSeatDropped(ctx, 1)} solo fallback applies from tick 0. Stateless; pure.
  */
 public final class SoloMultiplayer implements MultiplayerModule {
 

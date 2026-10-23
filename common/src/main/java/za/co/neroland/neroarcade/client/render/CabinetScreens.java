@@ -37,8 +37,9 @@ import za.co.neroland.neroarcade.runtime.MatchState;
  * <ul>
  *   <li>no cartridge: "NO CARTRIDGE"; {@code locked}: "UNREADABLE HERE" + the reason; {@code no_power}: "NO POWER"
  *       (blinking); {@code linked}: "LINKED — WAITING";</li>
- *   <li>{@code off} with a cartridge = asleep: nothing (the model's ink face shows);</li>
- *   <li>{@code ready} = awake and idle: the attract loop; {@code playing}: the latest snapshot, interpolated, with
+ *   <li>{@code ready} = a readable cartridge and no match: the attract loop, drawn client-locally from the synced
+ *       {@code GameDef} whether or not the server host is awake (004 A3 — sleep governs simulation, not the title
+ *       card); {@code playing}: the latest snapshot, interpolated, with
  *       the seated player's own pawn predicted, plus the countdown digit, the result banner or "NO POWER" when
  *       paused.</li>
  * </ul>
@@ -80,10 +81,6 @@ public final class CabinetScreens {
         }
         CabinetStatus status = state.getValue(ArcadeBlockProperties.STATUS);
         boolean cartridge = state.getValue(ArcadeBlockProperties.CARTRIDGE);
-        if (cartridge && status == CabinetStatus.OFF) {
-            release(be.getBlockPos().asLong());
-            return null; // asleep: the static ink face
-        }
         long key = be.getBlockPos().asLong();
         int slot = LRU.acquire(key, now);
         if (slot < 0) {
@@ -246,13 +243,6 @@ public final class CabinetScreens {
             return runtime.state();
         } catch (RuntimeException e) {
             return null;
-        }
-    }
-
-    private static void release(long key) {
-        int slot = LRU.release(key);
-        if (slot >= 0 && TEXTURES[slot] != null) {
-            TEXTURES[slot].invalidate();
         }
     }
 

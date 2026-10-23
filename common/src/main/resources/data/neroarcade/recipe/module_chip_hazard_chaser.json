@@ -1,0 +1,24 @@
+{
+  "type": "minecraft:crafting_shapeless",
+  "category": "misc",
+  "ingredients": [
+    "neroarcade:blank_chip",
+    "minecraft:gunpowder",
+    "minecraft:rotten_flesh"
+  ],
+  "result": {
+    "id": "neroarcade:module_chip",
+    "count": 1,
+    "components": {
+      "neroarcade:module_id": "neroarcade:hazard/chaser",
+      "minecraft:custom_model_data": {
+        "strings": [
+          "hazard"
+        ],
+        "colors": [
+          16735324
+        ]
+      }
+    }
+  }
+}

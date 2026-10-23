@@ -53,6 +53,20 @@ class ShippedModulesConventionTest {
     }
 
     @Test
+    void reviewedChipsShowNoDeadSettingsAndNoKeyLetters() {
+        assertTrue(za.co.neroland.neroarcade.module.pack.theme.NeonVoidTheme.INSTANCE.properties().isEmpty(),
+                "Variant changed nothing visible; it returns with the Stage 5 art");
+        Map<String, String> lang = TestFiles.lang();
+        assertEquals("Slow-down", lang.get(za.co.neroland.neroarcade.module.pack.pace.SteadyPace.INSTANCE
+                .properties().get(0).langKey(za.co.neroland.neroarcade.module.pack.pace.SteadyPace.INSTANCE)));
+        List<String> legend = za.co.neroland.neroarcade.module.pack.control.FourWayControl.INSTANCE
+                .legend(PropertyValues.defaults(za.co.neroland.neroarcade.module.pack.control.FourWayControl.INSTANCE));
+        assertEquals(List.of("neroarcade.legend.move_4way"), legend, "the keycap line already names the buttons");
+        assertFalse(lang.containsKey("neroarcade.legend.button_a"));
+        assertFalse(lang.containsKey("neroarcade.legend.button_b"));
+    }
+
+    @Test
     void noCommercialGameNames() {
         List<String> blocked = TestFiles.read(TestFiles.testResources().resolve("blocked_names.txt")).lines()
                 .map(String::strip).filter(l -> !l.isEmpty() && !l.startsWith("#")).toList();

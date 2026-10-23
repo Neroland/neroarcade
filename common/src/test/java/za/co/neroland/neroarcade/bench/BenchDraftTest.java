@@ -117,10 +117,10 @@ class BenchDraftTest {
     @Test
     void saveNewThenResaveThenRemix() throws ValidationError {
         BenchDraft draft = new BenchDraft();
-        assertThrows(ValidationError.class, () -> draft.planSave(ALICE, () -> MINTED, 10L, Optional.empty()),
-                "no title yet");
+        assertThrows(ValidationError.class,
+                () -> draft.planSave(ALICE, Optional.empty(), () -> MINTED, 10L, Optional.empty()), "no title yet");
         draft.setTitle("Neon Dodge");
-        GameDef first = draft.planSave(ALICE, () -> MINTED, 10L, Optional.empty());
+        GameDef first = draft.planSave(ALICE, Optional.empty(), () -> MINTED, 10L, Optional.empty()).def().orElseThrow();
         assertEquals(MINTED, first.id());
         assertEquals(1, first.revision());
         assertEquals(Optional.of(ALICE), first.authorUuid());
@@ -129,18 +129,61 @@ class BenchDraftTest {
         CartridgeValidator.validate(first);
         draft.adopt(first);
 
-        GameDef second = draft.planSave(ALICE, () -> "should not mint", 20L, Optional.empty());
-        assertEquals(MINTED, second.id(), "the same author keeps the id");
+        GameDef second = draft.planSave(ALICE, Optional.of(MINTED), () -> "should not mint", 20L, Optional.empty())
+                .def().orElseThrow();
+        assertEquals(MINTED, second.id(), "the same author with the same cartridge in the tray keeps the id");
         assertEquals(2, second.revision());
 
         BenchDraft other = BenchDraft.fromGameDef(second);
-        GameDef remix = other.planSave(BOB, () -> "rrrrrrrrrrrrrrrr", 30L, Optional.empty());
+        GameDef remix = other.planSave(BOB, Optional.empty(), () -> "rrrrrrrrrrrrrrrr", 30L, Optional.empty())
+                .def().orElseThrow();
         assertNotEquals(MINTED, remix.id(), "someone else's save is a remix");
         assertEquals(List.of(MINTED), remix.lineage());
         assertEquals(MINTED, remix.lineageRoot());
         assertEquals(1, remix.revision());
         assertEquals(Optional.of(BOB), remix.authorUuid());
         assertTrue(CartridgeIds.isValid(remix.id()));
+    }
+
+    @Test
+    void takingAChipOutAndPuttingItBackKeepsItsSettings() {
+        BenchDraft draft = new BenchDraft();
+        int rule = BenchSlots.index(ModuleType.RULE, 0);
+        draft.syncChips(rack(rule, ModuleDefaults.RULE));
+        draft.setProp(rule, "seconds", 120, false);
+        assertTrue(draft.syncChips(rack()), "taken out");
+        assertTrue(draft.propsAt(rule).isEmpty(), "an empty slot has no values");
+        assertTrue(draft.preview().slots().isEmpty());
+        assertTrue(draft.syncChips(rack(rule, ModuleDefaults.RULE)), "put back");
+        assertEquals(new PropertyValue.IntValue(120), draft.propsAt(rule).get("seconds"), "Seconds 120 survives");
+
+        draft.syncChips(rack());
+        draft.syncChips(rack(rule, TestModules.id("rule/some_other_rule")));
+        assertTrue(draft.propsAt(rule).isEmpty(), "a different chip never inherits the parked values");
+        draft.syncChips(rack());
+        draft.syncChips(rack(rule, ModuleDefaults.RULE));
+        assertTrue(draft.propsAt(rule).isEmpty(), "the parked values went when another chip took the slot");
+    }
+
+    @Test
+    void aTitleThatPassesTheFilterAtOnceIsThereForTheSaveInTheSameTick() throws ValidationError {
+        BenchDraft draft = new BenchDraft();
+        java.util.List<Runnable> serverQueue = new java.util.ArrayList<>();
+        // SET_TITLE then SAVE arrive in the same tick; the vanilla DUMMY filter's future is already complete
+        BenchActions.whenFiltered(net.minecraft.server.network.TextFilter.DUMMY.processStreamMessage("Neon Dodge"),
+                serverQueue::add, filtered -> draft.setTitle(filtered.raw()));
+        SavePlan plan = draft.planSave(ALICE, Optional.empty(), () -> MINTED, 10L, Optional.empty());
+        assertEquals("Neon Dodge", plan.def().orElseThrow().title(), "applied before the SAVE, not queued behind it");
+        assertTrue(serverQueue.isEmpty(), "nothing was deferred to the server queue");
+
+        java.util.concurrent.CompletableFuture<net.minecraft.server.network.FilteredText> pending =
+                new java.util.concurrent.CompletableFuture<>();
+        BenchDraft later = new BenchDraft();
+        BenchActions.whenFiltered(pending, serverQueue::add, filtered -> later.setTitle(filtered.raw()));
+        pending.complete(net.minecraft.server.network.FilteredText.passThrough("Late"));
+        assertEquals("", later.title(), "a real filter's answer still goes through the server thread");
+        serverQueue.forEach(Runnable::run);
+        assertEquals("Late", later.title());
     }
 
     @Test

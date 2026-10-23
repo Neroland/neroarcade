@@ -618,6 +618,18 @@ PAWNS = [  # chip registration order: cursor, serpent, runner, paddle, ship; two
     ]),
 ]
 
+# Extension sheet pawns_ext.png (16x8), added 2026-10-23. The base sheets keep their committed bytes and
+# sizes (client/screen/SpriteSheets.Sheet hard-codes 80/48 px and drops a sheet of any other size), so new
+# roles live in a second file per sheet, in registration order continuing the base sheet: pawn pair 5.
+PAWNS_EXT = [
+    ("stacker", [  # f0 = pivot cell of the falling piece (flash `e` corner), f1 = plain piece cell (SEGMENTs).
+        # A full-cell pawn-coloured plate with a 1-px `7` inner seam: reads as a dropped hardware slab, not a
+        # wall (walls are 3/4) and not any classic falling-block piece.
+        S("e6666666", "67777776", "67666676", "67666676", "67666676", "67666676", "67777776", "66666666"),
+        S("66666666", "67777776", "67666676", "67666676", "67666676", "67666676", "67777776", "66666666"),
+    ]),
+]
+
 HAZARDS = [  # falling_blocks, bouncing_ball, chaser, laser_sweep, shrinking_floor
     ("falling_block", [
         S("f8888888", "88999988", "89888898", "89888898", "89888898", "89888898", "88999988", "88888888"),
@@ -655,6 +667,19 @@ TILES = [  # floor, floor_alt, wall, wall_top, exit, void
     ("wall_top", S("44444444", "44444444", "44444444", "44444444", "44444444", "44444444", "44444444", "44444444")),
     ("exit", S("55555555", "51111115", "51111115", "51111115", "51111115", "51111115", "51111115", "55555555")),
     ("void", S("........", "........", "........", "........", "........", "........", "........", "........")),
+]
+
+# Extension sheet tiles_ext.png (16x8), added 2026-10-23 (see PAWNS_EXT for why it is a separate file):
+# tile 6 = block, tile 7 = goal, continuing the base tile order.
+TILES_EXT = [
+    # block: a settled stack cell (Cell.BLOCK) - `3` fill ringed by a 1-px `6` frame on the outer edge so the
+    # 2 px/cell sampler (sprite pixels 0 and 4) still sees the pawn colour; the renderer tints `6` by seat
+    # colour. Distinct from wall (3 + `4` top edge) and from the stacker's `6` plate.
+    ("block", S("66666666", "63333336", "63333336", "63333336", "63333336", "63333336", "63333336", "66666666")),
+    # goal: a goal-line cell (Cell.GOAL_0..3) - `2` floor with a 1-px dashed `5` line on row 4 (dashes at
+    # x 0-1 and 4-5 so both the 2 px and 4 px samplers see a dash-gap rhythm); no doorway frame, so it never
+    # reads as an exit. The renderer remaps `5` to the seat colour per goal seat.
+    ("goal", S("22222222", "22222222", "22222222", "22222222", "55..55..", "22222222", "22222222", "22222222")),
 ]
 
 
@@ -748,6 +773,8 @@ for _t in THEMES:
     reg("screen/%s/hazards.png" % _t, (lambda t=_t: sprite_sheet(t, HAZARDS, 2)))
     reg("screen/%s/pickups.png" % _t, (lambda t=_t: sprite_sheet(t, PICKUPS, 1)))
     reg("screen/%s/tiles.png" % _t, (lambda t=_t: sprite_sheet(t, TILES, 1)))
+    reg("screen/%s/pawns_ext.png" % _t, (lambda t=_t: sprite_sheet(t, PAWNS_EXT, 2)))
+    reg("screen/%s/tiles_ext.png" % _t, (lambda t=_t: sprite_sheet(t, TILES_EXT, 1)))
 
 
 def render(path):

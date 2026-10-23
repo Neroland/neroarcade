@@ -12,6 +12,7 @@ import za.co.neroland.neroarcade.module.hook.HazardModule;
 import za.co.neroland.neroarcade.module.hook.HitOutcome;
 import za.co.neroland.neroarcade.module.hook.Intent;
 import za.co.neroland.neroarcade.module.hook.ModuleContext;
+import za.co.neroland.neroarcade.module.hook.PawnModule;
 import za.co.neroland.neroarcade.module.hook.PickupModule;
 import za.co.neroland.neroarcade.module.hook.RuleOutcome;
 
@@ -39,7 +40,10 @@ import za.co.neroland.neroarcade.module.hook.RuleOutcome;
  */
 public final class ArcadeRuntime {
 
-    /** Simulated ticks between a runtime opponent's decisions ({@code PawnModule.opponentInput}). */
+    /**
+     * Simulated ticks between a runtime opponent's decisions ({@code PawnModule.opponentInput}). For a pawn on the
+     * default greedy opponent this is the <i>target</i> cadence; its direction is re-steered every simulated tick.
+     */
     public static final int OPPONENT_CADENCE = 4;
 
     private final ResolvedGame game;
@@ -57,6 +61,10 @@ public final class ArcadeRuntime {
     private int maxTicks;
     private int opponentSeat = -1;
     private SeatInput opponentInput = SeatInput.NONE;
+    /** True when the PAWN chip keeps the default {@code opponentInput} (greedy): target latched, steered per tick. */
+    private boolean opponentSteers;
+    /** The greedy's latched target ({@link RuntimeOpponent#target}); an input latch like {@link #opponentInput}. */
+    private int opponentTarget = RuntimeOpponent.NO_TARGET;
     private int opponentTicks;
     private int steps;
     private MatchResult result;
@@ -116,6 +124,7 @@ public final class ArcadeRuntime {
         if (multiSeatOnly && state.seatCount == 1) {
             if (game.multiplayer().runtimeOpponent(game.multiplayerProps())) {
                 opponentSeat = 1;
+                opponentSteers = usesDefaultOpponent(game.pawn());
                 state.seatCount = 2;
                 state.aliveSeatMask |= 2;
                 state.seatLives[1] = 1;
@@ -202,10 +211,16 @@ public final class ArcadeRuntime {
         game.arena().tick(ctx(game.arenaProps(), 0));
         // runtime opponent: asked every OPPONENT_CADENCE simulated ticks, held between (an input, not state)
         if (opponentSeat >= 0) {
-            if (opponentTicks % OPPONENT_CADENCE == 0) {
-                SeatInput decided = hasPawn(opponentSeat)
-                        ? game.pawn().opponentInput(ctx(game.pawnProps(), 0), opponentSeat)
-                        : SeatInput.NONE;
+            ModuleContext pawnCtx = ctx(game.pawnProps(), 0);
+            boolean pawnUp = hasPawn(opponentSeat);
+            if (opponentSteers) {
+                // greedy: target every OPPONENT_CADENCE simulated ticks, direction every tick (PROGRESS 2026-10-21)
+                if (opponentTicks % OPPONENT_CADENCE == 0) {
+                    opponentTarget = pawnUp ? RuntimeOpponent.target(pawnCtx, opponentSeat) : RuntimeOpponent.NO_TARGET;
+                }
+                opponentInput = pawnUp ? RuntimeOpponent.steer(pawnCtx, opponentSeat, opponentTarget) : SeatInput.NONE;
+            } else if (opponentTicks % OPPONENT_CADENCE == 0) {
+                SeatInput decided = pawnUp ? game.pawn().opponentInput(pawnCtx, opponentSeat) : SeatInput.NONE;
                 opponentInput = decided == null ? SeatInput.NONE : decided;
             }
             opponentTicks++;
@@ -615,6 +630,16 @@ public final class ArcadeRuntime {
     /** The runtime-driven seat, or -1. */
     public int opponentSeat() {
         return opponentSeat;
+    }
+
+    /** Whether {@code pawn} inherits {@link PawnModule#opponentInput}'s default (one reflective lookup per match). */
+    static boolean usesDefaultOpponent(PawnModule pawn) {
+        try {
+            return pawn.getClass().getMethod("opponentInput", ModuleContext.class, int.class)
+                    .getDeclaringClass() == PawnModule.class;
+        } catch (NoSuchMethodException | SecurityException e) {
+            return false;
+        }
     }
 
     private int maxTicks() {

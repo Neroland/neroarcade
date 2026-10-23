@@ -35,9 +35,11 @@ import za.co.neroland.neroarcade.module.SlotEntry;
  *
  * <p><b>Invariants:</b> a property value belongs to the chip that was in the slot when it was set — replacing the
  * chip clears it. Values are stored only when they differ from the module's default (the canonical form the
- * validator writes). {@link #preview} never carries an author UUID. Saving keeps the id and bumps the revision
- * only for the same author's own cartridge; anyone else's LOAD then SAVE is a remix: a new id, the parent appended
- * to the lineage (002 §2.2).
+ * validator writes). Taking a chip out and putting the same chip back restores its values (they are parked while
+ * the slot is empty); any other chip clears them. {@link #preview} never carries an author UUID. A cartridge id is
+ * unique: SAVE keeps the id and bumps the revision <b>only</b> when the tray holds that very cartridge and the draft's
+ * recorded author is present and is the saver; every other SAVE goes onto a Blank and mints a new id, recording the
+ * origin in the lineage (002 §2.2, review 005a F7). See {@link #planSave}.
  */
 public final class BenchDraft {
 
@@ -95,19 +97,26 @@ public final class BenchDraft {
     private final Identifier[] owners = new Identifier[BenchSlots.CHIP_SLOTS];
     @SuppressWarnings("unchecked")
     private final Map<String, PropertyValue>[] props = new Map[BenchSlots.CHIP_SLOTS];
+    /** Per slot: the chip that left it (while the slot is empty) and its values, restored if it comes back. */
+    private final Identifier[] parkedOwners = new Identifier[BenchSlots.CHIP_SLOTS];
+    @SuppressWarnings("unchecked")
+    private final Map<String, PropertyValue>[] parked = new Map[BenchSlots.CHIP_SLOTS];
     private String title = "";
     private Meta meta = Meta.NONE;
 
     public BenchDraft() {
         for (int i = 0; i < props.length; i++) {
             props[i] = new LinkedHashMap<>();
+            parked[i] = new LinkedHashMap<>();
         }
     }
 
     // --- chips and properties ---------------------------------------------------------------------
 
     /**
-     * Brings the draft in line with the rack: a slot whose chip changed loses its property values.
+     * Brings the draft in line with the rack. A slot that goes {@code id -> empty} parks its values under that id;
+     * {@code empty -> id} with the parked id restores them (a take-out-and-put-back keeps the settings); any other
+     * change clears both the values and the parked copy.
      *
      * @param chips module id per rack slot (null = empty), length {@link BenchSlots#CHIP_SLOTS}
      * @return true if anything changed
@@ -117,8 +126,22 @@ public final class BenchDraft {
         for (int i = 0; i < BenchSlots.CHIP_SLOTS; i++) {
             Identifier chip = i < chips.length ? chips[i] : null;
             if (!Objects.equals(chip, owners[i])) {
+                if (chip == null) {
+                    parkedOwners[i] = owners[i];
+                    parked[i].clear();
+                    parked[i].putAll(props[i]);
+                    props[i].clear();
+                } else if (owners[i] == null && chip.equals(parkedOwners[i])) {
+                    props[i].clear();
+                    props[i].putAll(parked[i]);
+                    parkedOwners[i] = null;
+                    parked[i].clear();
+                } else {
+                    props[i].clear();
+                    parkedOwners[i] = null;
+                    parked[i].clear();
+                }
                 owners[i] = chip;
-                props[i].clear();
                 changed = true;
             }
         }
@@ -209,35 +232,49 @@ public final class BenchDraft {
     }
 
     /**
-     * The cartridge a SAVE by {@code player} writes. Same author's own cartridge: same id, revision + 1. Someone
-     * else's (a remix): a new id, the parent appended to the lineage, revision 1, no fixed seed. A new game: a new
-     * id, revision 1.
+     * What a SAVE by {@code player} does, given the tray (review 005a F7). Pure.
      *
+     * <ul>
+     *   <li><b>In place</b> (same id, revision + 1, lineage and seed kept) only when the tray holds a written
+     *       cartridge whose id equals the draft's id <b>and</b> the draft's author is present and equals
+     *       {@code player}. An authorless origin (gallery, fixtures, anything minted without a player) is never
+     *       "own".</li>
+     *   <li>A written cartridge in the tray otherwise is refused: {@link SavePlan.Kind#REFUSED_NOT_YOURS} when it is
+     *       the draft's cartridge but not the saver's, {@link SavePlan.Kind#REFUSED_OTHER_CARTRIDGE} when it is a
+     *       different game.</li>
+     *   <li>A Blank in the tray ({@code trayId} empty) always gets a <b>new id</b>, revision 1, author = saver, and
+     *       — when the draft came from a cartridge — that cartridge appended to the lineage
+     *       ({@link CartridgeIds#remixLineage}, capped at {@link CartridgeIds#MAX_LINEAGE}, root kept), so a copy of
+     *       one's own game shares its lineage root but never its id. The fixed seed survives only for the saver's
+     *       own game.</li>
+     * </ul>
+     *
+     * @param trayId the written cartridge's id in the tray, or empty for a Blank Cartridge
      * @throws ValidationError {@code BAD_TITLE} when there is no title yet
      */
-    public GameDef planSave(UUID player, Supplier<String> mintId, long nowEpochSeconds, Optional<String> credit)
-            throws ValidationError {
+    public SavePlan planSave(UUID player, Optional<String> trayId, Supplier<String> mintId, long nowEpochSeconds,
+            Optional<String> credit) throws ValidationError {
         if (title.isBlank()) {
             throw new ValidationError(ValidationError.Code.BAD_TITLE);
         }
-        boolean own = meta.id().isPresent() && (meta.author().isEmpty() || meta.author().get().equals(player));
-        String id;
-        List<String> lineage;
-        int revision;
-        Optional<Long> seed;
-        if (own) {
-            id = meta.id().get();
-            lineage = meta.lineage();
-            revision = meta.revision() + 1;
-            seed = meta.seed();
-        } else {
-            id = mintId.get();
-            lineage = meta.id().isPresent() ? CartridgeIds.remixLineage(meta.lineage(), meta.id().get()) : List.of();
-            revision = 1;
-            seed = Optional.empty();
+        boolean authoredBySaver = meta.author().isPresent() && meta.author().get().equals(player);
+        if (trayId.isPresent()) {
+            if (meta.id().isEmpty() || !trayId.get().equals(meta.id().get())) {
+                return SavePlan.refused(SavePlan.Kind.REFUSED_OTHER_CARTRIDGE);
+            }
+            if (!authoredBySaver) {
+                return SavePlan.refused(SavePlan.Kind.REFUSED_NOT_YOURS);
+            }
+            return new SavePlan(SavePlan.Kind.IN_PLACE, Optional.of(new GameDef(ArcadeSchema.CURRENT, meta.id().get(),
+                    title, Optional.of(player), credit, meta.lineage(), meta.seed(), slots(), nowEpochSeconds,
+                    meta.revision() + 1)));
         }
-        return new GameDef(ArcadeSchema.CURRENT, id, title, Optional.of(player), credit, lineage, seed, slots(),
-                nowEpochSeconds, revision);
+        String id = mintId.get();
+        List<String> lineage = meta.id().isPresent() ? CartridgeIds.remixLineage(meta.lineage(), meta.id().get())
+                : List.of();
+        Optional<Long> seed = authoredBySaver ? meta.seed() : Optional.empty();
+        return new SavePlan(SavePlan.Kind.NEW_CARTRIDGE, Optional.of(new GameDef(ArcadeSchema.CURRENT, id, title,
+                Optional.of(player), credit, lineage, seed, slots(), nowEpochSeconds, 1)));
     }
 
     /** After a successful save: the draft now edits that cartridge. */
@@ -284,6 +321,8 @@ public final class BenchDraft {
             owners[i] = other.owners[i];
             props[i].clear();
             props[i].putAll(other.props[i]);
+            parkedOwners[i] = null;
+            parked[i].clear();
         }
         title = other.title;
         meta = other.meta;

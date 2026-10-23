@@ -123,6 +123,7 @@ class MatchHostTest {
         List<HudLegendPayload> legends = env.sentTo(HostFixtures.ALICE, HudLegendPayload.class);
         assertEquals(1, legends.size());
         assertFalse(legends.get(0).legendLangKeys().isEmpty());
+        assertTrue(legends.get(0).ruleLangKey().endsWith(".hud"), "the HUD rule line is the RULE chip's .hud, not .desc");
         List<MatchPhasePayload> phases = env.sentTo(HostFixtures.ALICE, MatchPhasePayload.class);
         assertEquals(0, phases.get(phases.size() - 1).mySeat());
 

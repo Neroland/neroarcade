@@ -2,6 +2,7 @@ package za.co.neroland.neroarcade.client.screen;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import org.junit.jupiter.api.BeforeAll;
@@ -11,6 +12,7 @@ import za.co.neroland.neroarcade.game.ResolvedGame;
 import za.co.neroland.neroarcade.module.TestChips;
 import za.co.neroland.neroarcade.module.TestModules;
 import za.co.neroland.neroarcade.runtime.Budgets;
+import za.co.neroland.neroarcade.runtime.Cell;
 import za.co.neroland.neroarcade.runtime.HeadlessMatch;
 import za.co.neroland.neroarcade.runtime.MatchState;
 
@@ -23,6 +25,8 @@ class ScreenRendererTest {
 
     /** FNV-1a 64 of the indexed 64x64 frame below; changes only when the drawing rules or the sheets change. */
     private static final long PINNED_MATCH_FRAME = 0xe12261c18861c255L;
+    /** The same frame with a BLOCK stack and four goal lines (008 §8 item 1, 004 "Sprite roles added 2026-10-23"). */
+    private static final long PINNED_BLOCK_GOAL_FRAME = 0x20e133824f752f58L;
 
     private static SpriteSheets sheets;
     private static ArcadeFont font;
@@ -52,6 +56,63 @@ class ScreenRendererTest {
             }
         }
         assertTrue(font.lit('A', 0, 6) || font.lit('A', 2, 0), "the font's A has lit pixels");
+    }
+
+    @Test
+    void extensionSheetsContinueTheBaseSheets() {
+        assertEquals(SpriteSheets.Sheet.TILES.sprites(), SpriteSheets.TILE_BLOCK, "block is the first ext tile");
+        assertEquals(SpriteSheets.TILE_BLOCK + 1, SpriteSheets.TILE_GOAL);
+        assertEquals(5, SpriteMap.PAWNS.indexOf("stacker"), "stacker is pawn pair 5");
+        for (ThemePalettes.Theme theme : ThemePalettes.Theme.values()) {
+            SpriteSheets s = ScreenTestAssets.sheets(theme);
+            for (int x = 0; x < SpriteSheets.SPRITE; x++) {
+                for (int y = 0; y < SpriteSheets.SPRITE; y++) {
+                    assertEquals(s.index(SpriteSheets.Sheet.TILES_EXT, 0, x, y),
+                            s.index(SpriteSheets.Sheet.TILES, SpriteSheets.TILE_BLOCK, x, y));
+                    assertEquals(s.index(SpriteSheets.Sheet.TILES_EXT, 1, x, y),
+                            s.index(SpriteSheets.Sheet.TILES, SpriteSheets.TILE_GOAL, x, y));
+                    assertEquals(s.index(SpriteSheets.Sheet.PAWNS_EXT, 1, x, y),
+                            s.index(SpriteSheets.Sheet.PAWNS, 5 * 2 + 1, x, y));
+                }
+            }
+            assertTrue(s.has(SpriteSheets.Sheet.PAWNS, 5 * 2), theme + " stacker f0");
+            assertTrue(!s.has(SpriteSheets.Sheet.PAWNS, 6 * 2), "nothing past the ext sheet");
+        }
+    }
+
+    @Test
+    void aWronglySizedSheetFailsLoudly() {
+        int[][] argb = new int[SpriteSheets.Sheet.values().length][];
+        argb[SpriteSheets.Sheet.TILES.ordinal()] = new int[(SpriteSheets.Sheet.TILES.width + 16) * SpriteSheets.SPRITE];
+        assertThrows(IllegalArgumentException.class, () -> SpriteSheets.fromArgb(ThemePalettes.Theme.NEON_VOID, argb));
+        argb[SpriteSheets.Sheet.TILES.ordinal()] = null; // missing stays transparent (the loader logs it)
+        assertTrue(!SpriteSheets.fromArgb(ThemePalettes.Theme.NEON_VOID, argb).has(SpriteSheets.Sheet.TILES, 0));
+    }
+
+    @Test
+    void blockAndGoalCellsDrawWithTheirOwnTiles() {
+        ResolvedGame game = TestModules.resolvedOf(TestChips.Bouncer.INSTANCE, TestChips.Orb.INSTANCE);
+        MatchState state = knownState(game);
+        ScreenRenderer r = new ScreenRenderer(sheets, font);
+        r.drawMatch(state, SpriteMap.of(game), EntityPositions.AUTHORITATIVE, 0);
+        long plain = r.checksum();
+        for (int x = 2; x < 8; x++) {
+            state.setCell(x, 13, Cell.BLOCK);
+        }
+        for (int seat = 0; seat < 4; seat++) {
+            state.setCell(9 + seat, 1, Cell.goal(seat));
+        }
+        r.drawMatch(state, SpriteMap.of(game), EntityPositions.AUTHORITATIVE, 0);
+        assertNotEquals(plain, r.checksum());
+        assertEquals(PINNED_BLOCK_GOAL_FRAME, r.checksum(),
+                "pinned block/goal frame changed: 0x" + Long.toHexString(r.checksum()));
+        // a 16x16 arena draws 4 px per cell: cell (x, y) starts at (4x, 4y)
+        assertEquals(ThemePalettes.PAWN, r.pixel(2 * 4, 13 * 4), "block frame in the pawn colour");
+        assertEquals(ThemePalettes.WALL, r.pixel(2 * 4 + 2, 13 * 4 + 2), "block fill");
+        for (int seat = 0; seat < 4; seat++) {
+            assertEquals(ScreenRenderer.seatColour(seat), r.pixel((9 + seat) * 4, 4 + 2),
+                    "goal line of seat " + seat + " in its colour");
+        }
     }
 
     @Test

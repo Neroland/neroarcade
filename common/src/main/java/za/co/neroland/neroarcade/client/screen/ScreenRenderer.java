@@ -245,8 +245,8 @@ public final class ScreenRenderer {
             switch (kind) {
                 case PAWN -> sprite(SpriteSheets.Sheet.PAWNS, map.pawnSprite() * 2 + frame, x, y, w, h, PAWN,
                         seatColour);
-                case SEGMENT -> sprite(SpriteSheets.Sheet.PAWNS, SpriteMap.SERPENT * 2 + 1, x, y, w, h, PAWN,
-                        seatColour);
+                case SEGMENT -> sprite(SpriteSheets.Sheet.PAWNS, map.pawnSprite() * 2 + 1, x, y, w, h, PAWN,
+                        seatColour); // frame 1 of the owning pawn's pair (008 §8 item 3)
                 case HAZARD -> sprite(SpriteSheets.Sheet.HAZARDS, map.hazard(state.tag(id)) * 2 + frame, x, y, w, h,
                         -1, -1);
                 case PICKUP -> sprite(SpriteSheets.Sheet.PICKUPS, map.pickup(state.tag(id)), x, y, w, h, -1, -1);
@@ -281,21 +281,36 @@ public final class ScreenRenderer {
                 int x = layout.ox() + cx * layout.sx();
                 int y = layout.oy() + cy * layout.sy();
                 int tile;
+                int from = -1;
+                int to = -1;
+                int goalSeat = Cell.goalSeat(cell);
                 if (cell == Cell.WALL) {
                     boolean above = cy > 0 && state.cellAt((cy - 1) * w + cx) == Cell.WALL;
                     tile = above ? SpriteSheets.TILE_WALL_TOP : SpriteSheets.TILE_WALL;
                 } else if (cell == Cell.VOID) {
                     continue;
-                } else if (cell == Cell.EXIT || cell == Cell.EXIT_LOCKED || Cell.goalSeat(cell) >= 0) {
+                } else if (cell == Cell.BLOCK) {
+                    // cells carry no owner: the stack draws in the theme's pawn colour (seat 0's); falls back to wall
+                    tile = sheets.has(SpriteSheets.Sheet.TILES, SpriteSheets.TILE_BLOCK) ? SpriteSheets.TILE_BLOCK
+                            : SpriteSheets.TILE_WALL;
+                } else if (goalSeat >= 0) {
+                    tile = sheets.has(SpriteSheets.Sheet.TILES, SpriteSheets.TILE_GOAL) ? SpriteSheets.TILE_GOAL
+                            : SpriteSheets.TILE_EXIT;
+                    from = EXIT; // the dashed goal line (palette 5) in the goal seat's colour
+                    to = seatColour(goalSeat);
+                } else if (cell == Cell.EXIT || cell == Cell.EXIT_LOCKED) {
                     tile = SpriteSheets.TILE_EXIT;
+                    if (cell == Cell.EXIT_LOCKED) {
+                        from = EXIT;
+                        to = TEXT_DIM;
+                    }
                 } else if (cell == Cell.LANE) {
                     tile = SpriteSheets.TILE_FLOOR_ALT;
                 } else {
                     tile = ((cx + cy) & 1) == 0 ? SpriteSheets.TILE_FLOOR : SpriteSheets.TILE_FLOOR_ALT;
                 }
                 if (sheets.has(SpriteSheets.Sheet.TILES, tile)) {
-                    sprite(SpriteSheets.Sheet.TILES, tile, x, y, layout.sx(), layout.sy(),
-                            cell == Cell.EXIT_LOCKED ? EXIT : -1, TEXT_DIM);
+                    sprite(SpriteSheets.Sheet.TILES, tile, x, y, layout.sx(), layout.sy(), from, to);
                 } else {
                     fill(x, y, layout.sx(), layout.sy(), fallbackColour(tile));
                 }

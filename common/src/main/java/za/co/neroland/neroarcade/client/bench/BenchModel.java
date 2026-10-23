@@ -68,10 +68,16 @@ public final class BenchModel {
         return type.langKey();
     }
 
-    /** One line: what the chip in the slot does. */
+    /**
+     * The row's short effect with live values ({@link ArcadeModule#effectLangKey()}, ≤ 22 characters; arguments
+     * from {@link ArcadeModule#effectArgs}). The long description stays on the hover.
+     */
     public static String effectKey(ArcadeModule module) {
-        return module.descLangKey();
+        return module.effectLangKey();
     }
+
+    /** The preview caption while a test play counts down: the bound move keys and A, then "ESC closes". */
+    public static final String TESTING_KEYS = "neroarcade.bench.testing_keys";
 
     /**
      * The grey sentence of an empty slot: "Empty — uses Grid 16" for slots with a default ({@link #defaultName}

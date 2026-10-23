@@ -12,8 +12,10 @@ import net.minecraft.resources.Identifier;
 
 /**
  * Server → client: the HUD's control legend and rule sentence, sent once when the recipient takes a seat
- * (003 §11). Lang keys only: the CONTROL chip's {@code legend(props)} lines and the RULE chip's description
- * key; {@code ruleArgs} are its integer arguments (empty in Stage 2).
+ * (003 §11). Lang keys only: the CONTROL chip's {@code legend(props)} lines and the RULE chip's
+ * {@code hudLangKey()}; {@code ruleArgs} are its {@code hudArgs(props)}. Each legend line is translated on the client
+ * with two arguments: {@code %1$s} = the player's bound A key name, {@code %2$s} = the bound B key name (a line uses
+ * them only when a button means something specific, e.g. "%1$s: fire").
  */
 public record HudLegendPayload(BlockPos host, List<String> legendLangKeys, String ruleLangKey, int[] ruleArgs)
         implements CustomPacketPayload {

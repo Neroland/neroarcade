@@ -1,0 +1,24 @@
+{
+  "type": "minecraft:crafting_shapeless",
+  "category": "misc",
+  "ingredients": [
+    "neroarcade:blank_chip",
+    "minecraft:paper",
+    "minecraft:bone_meal"
+  ],
+  "result": {
+    "id": "neroarcade:module_chip",
+    "count": 1,
+    "components": {
+      "neroarcade:module_id": "neroarcade:rule/clear_board",
+      "minecraft:custom_model_data": {
+        "strings": [
+          "rule"
+        ],
+        "colors": [
+          16757575
+        ]
+      }
+    }
+  }
+}

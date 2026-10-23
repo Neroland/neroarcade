@@ -87,7 +87,14 @@ and JVM. Desync is a defect, and `ReplayTest` pins final state hashes per exampl
   (DAMAGE / DEFLECT / IGNORE); a hook never calls `damageSeat` for the hit itself. A HAZARD or another seat's
   PROJECTILE on a `Cell.GOAL_<seat>` cell costs that seat a life. The runtime opponent's input comes from
   `PawnModule.opponentInput` (default `RuntimeOpponent.greedy`) every `OPPONENT_CADENCE` simulated ticks; it
-  is an input, never logged, and re-derived by a replay.
+  is an input, never logged, and re-derived by a replay. A pawn that keeps the default gets the greedy split:
+  `RuntimeOpponent.target` is re-chosen every `OPPONENT_CADENCE` ticks and `RuntimeOpponent.steer` runs every
+  simulated tick (both pure; the target is a runtime latch like the held input), so it can stop on any cell.
+- **Cells are append-only bytes** (`runtime.Cell`): EMPTY 0, WALL 1, VOID 2, EXIT 3, EXIT_LOCKED 4, LANE 5,
+  GOAL_0..3 6-9, BLOCK 10. `Cell.BLOCK` is a settled stack cell (the stacker writes and clears it, arenas never
+  do): solid and non-lethal, `Cell.blocks` is true, so it stops pawns, hazards and the opponent exactly like WALL
+  but stays distinguishable for row clears, the renderer and the hash. A new cell value is appended, never
+  renumbered.
 - **Hash.** `MatchState.stateHash()` is FNV-1a 64 over the keyframe bytes. Changing the keyframe layout
   changes every pinned hash; do it on purpose or not at all.
 - **Cartridges are data and fail closed.** `CartridgeValidator` refuses (never clamps, truncates or
@@ -95,6 +102,15 @@ and JVM. Desync is a defect, and `ReplayTest` pins final state hashes per exampl
   registry is frozen afterwards.
 - **No player in the simulation.** `MatchState` holds seat indexes only; the seat-to-player map lives in the
   cabinet, so replays hold no personal data.
+- **Every chip speaks plainly** (module contract, `ArcadeModule` / `RuleModule` default methods). Each chip ships
+  `module.neroarcade.<slot>.<name>.effect` — the rack row's short effect, at most 22 characters rendered with
+  default values — and overrides `Object[] effectArgs(PropertyValues props)` (pure; `Integer`, `String` or a
+  translatable `Component` for a word that is itself a lang key) when the line has live values. Every RULE also
+  ships `.hud` (at most 24 characters, the seated HUD's amber line) and `int[] hudArgs(PropertyValues props)`.
+  The long `.desc` stays on hovers. No chip ships a property without a visible effect in the preview. CONTROL
+  `legend(props)` lines add only what the keycap line does not already say; on the client each is translated
+  with `%1$s` = the bound A key name and `%2$s` = the bound B key name. `ShippedModulesConventionTest` and
+  `BenchScreenModelTest` hold the keys and lengths.
 
 ## Cabinet and bench invariants
 
@@ -112,9 +128,25 @@ and JVM. Desync is a defect, and `ReplayTest` pins final state hashes per exampl
   through `CartridgeValidator`, so a newer or unknown cartridge is "UNREADABLE HERE", never dropped.
 - **Chips are templates.** The bench never consumes a chip; LOAD materialises "ghost" chips that cannot be
   taken out and are never dropped.
+- **A cartridge id is never shared.** SAVE rewrites in place (same id, revision + 1) only when the tray holds the
+  draft's own cartridge **and** the draft's recorded author is present and is the saver; every other save goes
+  onto a Blank with a new id from `CartridgeIds.mint`, the origin appended to the lineage (capped at 8, root
+  kept). An authorless origin is never "own"; someone else's or a different game's cartridge in the tray is
+  refused with a sentence. `BenchDraft.planSave` → `SavePlan` is pure; `SavePlanTest` pins it.
+- **Esc leaves without trusting the client.** Closing the bench menu stops that player's test play on the server
+  (`GameBenchMenu.removed` → `onMenuClosed`); a seated player always sees "ESC leave" on the HUD.
+- **A loaded cabinet looks alive.** The strip is `OFF` only with no cartridge; a readable cartridge with the host
+  asleep is `READY`, and the client draws the attract loop locally from the synced `GameDef` — sleep governs
+  `MatchHost` simulation, not the title card.
 - **Client-bound payloads land in `ArcadeClientSink`.** The client module installs a sink; common code never
   touches client classes.
 - **Client invariants.** Screen textures load standalone from `textures/screen/**`, never through the block atlas;
+  each theme has the base sheets (`pawns` 80, `hazards` 80, `pickups` 32, `tiles` 48 px wide) plus extension
+  sheets (`pawns_ext` 16: stacker = pawn pair 5; `tiles_ext` 16: `TILE_BLOCK` 6 drawn for `Cell.BLOCK`,
+  `TILE_GOAL` 7 drawn for `Cell.GOAL_0..3` with palette 5 remapped to the goal seat's colour), addressed as if
+  the base sheet continued. A base sheet's width never changes; new roles go in an ext sheet. A wrongly sized
+  sheet is refused loudly (`SpriteSheets.fromArgb` throws; the loader logs and leaves it transparent). A SEGMENT
+  draws frame 1 of its owning pawn's pair;
   at most `TextureLru.DEFAULT_CAP` (24) cabinet screens hold a dynamic texture; the cabinet BER culls by
   `screenRenderRange` and facing, never blanket `true`. The client never decides a score or a phase: it draws the
   snapshot, predicts only the seated player's own pawn (≤ 3 ticks, snap beyond one cell) and sends input on change

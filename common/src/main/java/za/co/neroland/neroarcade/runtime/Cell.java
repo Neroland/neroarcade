@@ -14,13 +14,19 @@ public final class Cell {
     public static final byte GOAL_1 = 7;
     public static final byte GOAL_2 = 8;
     public static final byte GOAL_3 = 9;
+    /**
+     * A settled stack cell (the {@code stacker} pawn writes and clears it; arenas never write it). Solid and
+     * non-lethal: it blocks pawns, hazards and the runtime opponent exactly like {@link #WALL}, but row clears and
+     * the renderer can tell it apart from the arena's own walls.
+     */
+    public static final byte BLOCK = 10;
 
     private Cell() {
     }
 
-    /** True for cells a pawn cannot enter. Goal cells do not block. */
+    /** True for cells a pawn cannot enter: WALL, EXIT_LOCKED and BLOCK. Goal cells do not block. */
     public static boolean blocks(byte value) {
-        return value == WALL || value == EXIT_LOCKED;
+        return value == WALL || value == EXIT_LOCKED || value == BLOCK;
     }
 
     /** The goal cell of {@code seat} (0..3). */

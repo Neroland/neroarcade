@@ -1,0 +1,24 @@
+{
+  "type": "minecraft:crafting_shapeless",
+  "category": "misc",
+  "ingredients": [
+    "neroarcade:blank_chip",
+    "minecraft:lever",
+    "minecraft:stone_button"
+  ],
+  "result": {
+    "id": "neroarcade:module_chip",
+    "count": 1,
+    "components": {
+      "neroarcade:module_id": "neroarcade:control/one_button",
+      "minecraft:custom_model_data": {
+        "strings": [
+          "control"
+        ],
+        "colors": [
+          15265012
+        ]
+      }
+    }
+  }
+}

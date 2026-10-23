@@ -9,7 +9,7 @@ package za.co.neroland.neroarcade.module;
  * without them three bench warnings could only be raised by comparing ids, which the contract forbids.
  */
 public enum ModuleFlag {
-    /** PICKUP: collecting it adds score. */
+    /** PICKUP: collecting it adds score. HAZARD / PAWN: the chip itself adds score (goals, cleared rows). */
     SCORES,
     /** RULE: cannot be won without a score source. */
     NEEDS_SCORE,

@@ -3,6 +3,7 @@ package za.co.neroland.neroarcade.module.pack.control;
 import java.util.List;
 import java.util.Set;
 
+import net.minecraft.network.chat.Component;
 import net.minecraft.resources.Identifier;
 
 import za.co.neroland.neroarcade.module.ModuleDefaults;
@@ -18,6 +19,10 @@ import za.co.neroland.neroarcade.runtime.SeatInput;
  * {@code neroarcade:control/four_way} — the default control: up/down/left/right plus A and B. Opposite
  * directions cancel. Without {@code diagonals}, when both axes are held the axis pressed most recently wins
  * (horizontal on a tie), so a turn never needs a release. Stateless; pure.
+ *
+ * <p>Property {@code diagonals} (default false): true passes both axes through. Aim is always 0. Odd combinations:
+ * a {@code ONE_AXIS} pawn reads whichever of {@code moveX}/{@code moveY} is non-zero (008 one-axis input rule), so a
+ * four-way pad drives every pawn; no bench warning applies to this chip.
  */
 public final class FourWayControl implements ControlModule {
 
@@ -63,7 +68,13 @@ public final class FourWayControl implements ControlModule {
 
     @Override
     public List<String> legend(PropertyValues props) {
-        return List.of(props.getBool("diagonals") ? "neroarcade.legend.move_8way" : "neroarcade.legend.move_4way",
-                "neroarcade.legend.button_a", "neroarcade.legend.button_b");
+        // the keycap line already names SPACE action · SHIFT 2nd action; only the movement needs saying
+        return List.of(props.getBool("diagonals") ? "neroarcade.legend.move_8way" : "neroarcade.legend.move_4way");
+    }
+
+    /** "4 directions · A · B" (or 8 with diagonals). */
+    @Override
+    public Object[] effectArgs(PropertyValues props) {
+        return new Object[] {Component.translatable(langKey() + (props.getBool("diagonals") ? ".dirs8" : ".dirs4"))};
     }
 }

@@ -32,8 +32,8 @@ import za.co.neroland.neroarcade.client.match.ClientMatches;
  * <p><b>Culling — never blanket true</b> (the BufferBuilder-overflow precedent): only within the screen render
  * range ({@code screenRenderRange}, or this computer's shorter {@code client.screenRenderRange}) of the screen's
  * centre, and only when the camera is in front of the screen; NeoForge also frustum-tests
- * {@link #getRenderBoundingBox} (both halves). An asleep cabinet, or one without a texture slot, submits nothing
- * and the static model's ink face shows. CLIENT-ONLY.
+ * {@link #getRenderBoundingBox} (both halves). A cabinet without a texture slot submits nothing and the static
+ * model's ink face shows; an asleep cabinet holding a readable cartridge still draws its client-local attract loop. CLIENT-ONLY.
  */
 public class ArcadeCabinetRenderer implements BlockEntityRenderer<ArcadeCabinetBlockEntity, ArcadeCabinetRenderState> {
 

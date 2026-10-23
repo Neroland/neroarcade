@@ -271,7 +271,14 @@ public class GameBenchBlockEntity extends BlockEntity implements MenuProvider, S
         }
     }
 
-    void onMenuClosed() {
+    /**
+     * The bench menu closed for {@code player}: if that player holds this bench's test seat, the test stops on the
+     * server (Esc leaves the seat without depending on the client's STOP_TEST; review 005a F11).
+     */
+    void onMenuClosed(Player player) {
+        if (level != null && !level.isClientSide() && Seat.heldBy(testSeat, player.getUUID())) {
+            stopTest(DropReason.ESC);
+        }
         markDirty();
     }
 

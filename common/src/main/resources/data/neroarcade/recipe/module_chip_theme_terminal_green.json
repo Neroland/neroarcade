@@ -1,0 +1,24 @@
+{
+  "type": "minecraft:crafting_shapeless",
+  "category": "misc",
+  "ingredients": [
+    "neroarcade:blank_chip",
+    "minecraft:pink_dye",
+    "minecraft:lime_dye"
+  ],
+  "result": {
+    "id": "neroarcade:module_chip",
+    "count": 1,
+    "components": {
+      "neroarcade:module_id": "neroarcade:theme/terminal_green",
+      "minecraft:custom_model_data": {
+        "strings": [
+          "theme"
+        ],
+        "colors": [
+          16747727
+        ]
+      }
+    }
+  }
+}

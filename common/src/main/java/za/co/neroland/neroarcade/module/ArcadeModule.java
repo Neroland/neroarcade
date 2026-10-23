@@ -36,8 +36,28 @@ public interface ArcadeModule {
         return "module.neroarcade." + id().getPath().replace('/', '.');
     }
 
-    /** One sentence of what the module does. */
+    /** One sentence of what the module does (the chip tooltip and the rack row's hover). */
     default String descLangKey() {
         return langKey() + ".desc";
+    }
+
+    /**
+     * The rack row's short effect with live values, e.g. {@code "Survive %s s · lives %s"} → "Survive 60 s · lives 1".
+     * <b>Contract (every chip):</b> the key exists in the shipped lang and renders in at most 22 characters with the
+     * module's default values ({@code ShippedModulesConventionTest}); the long sentence stays in
+     * {@link #descLangKey()}.
+     */
+    default String effectLangKey() {
+        return langKey() + ".effect";
+    }
+
+    /**
+     * The arguments of {@link #effectLangKey()}, from the resolved values. Pure (no state, no clock, no level).
+     * Each argument is an {@link Integer}, a plain {@link String}, or a translatable
+     * {@link net.minecraft.network.chat.Component} for a word that is itself a lang key (an ENUM constant's label,
+     * say). Default: none.
+     */
+    default Object[] effectArgs(PropertyValues props) {
+        return new Object[0];
     }
 }

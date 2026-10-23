@@ -1,0 +1,24 @@
+{
+  "type": "minecraft:crafting_shapeless",
+  "category": "misc",
+  "ingredients": [
+    "neroarcade:blank_chip",
+    "minecraft:gold_nugget",
+    "minecraft:tripwire_hook"
+  ],
+  "result": {
+    "id": "neroarcade:module_chip",
+    "count": 1,
+    "components": {
+      "neroarcade:module_id": "neroarcade:pickup/key",
+      "minecraft:custom_model_data": {
+        "strings": [
+          "pickup"
+        ],
+        "colors": [
+          5824634
+        ]
+      }
+    }
+  }
+}

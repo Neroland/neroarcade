@@ -97,10 +97,7 @@ public class CartridgeItem extends Item {
                         .withStyle(ChatFormatting.GRAY, ChatFormatting.ITALIC)));
         tooltip.accept(Component.translatable("item.neroarcade.cartridge.revision", def.revision())
                 .withStyle(ChatFormatting.DARK_GRAY));
-        if (!def.lineage().isEmpty()) {
-            tooltip.accept(Component.translatable("item.neroarcade.cartridge.remix", def.lineageRoot())
-                    .withStyle(ChatFormatting.DARK_GRAY));
-        }
+        CartridgeTooltips.remixLine(def).ifPresent(tooltip);
         for (ModuleType type : ModuleType.values()) {
             tooltip.accept(slotLine(def, type));
         }

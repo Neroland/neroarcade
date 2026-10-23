@@ -494,8 +494,8 @@ public final class MatchHost {
     }
 
     private HudLegendPayload legend() {
-        return new HudLegendPayload(hostPos, game.control().legend(game.controlProps()), game.rule().descLangKey(),
-                new int[0]);
+        return new HudLegendPayload(hostPos, game.control().legend(game.controlProps()), game.rule().hudLangKey(),
+                game.rule().hudArgs(game.ruleProps()));
     }
 
     private int seatIndexOf(UUID player) {

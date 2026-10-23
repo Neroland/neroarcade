@@ -101,10 +101,10 @@ public class GameBenchScreen extends AbstractContainerScreen<GameBenchMenu> {
     public static final int H = BenchLayout.HEIGHT;
     private static final int PAD = 8;
     private static final int RACK_L = 4;
-    private static final int RACK_R = 232;
-    private static final int COL_L = 238;
+    private static final int RACK_R = 256;
+    private static final int COL_L = 262;
     private static final int COL_R = 436;
-    private static final int PREVIEW_X = 242;
+    private static final int PREVIEW_X = 266;
     private static final int PREVIEW_Y = 33;
     private static final int PARAMS_TOP = 114;
     private static final int PARAMS_BOTTOM = 170;
@@ -214,7 +214,7 @@ public class GameBenchScreen extends AbstractContainerScreen<GameBenchMenu> {
         super.init();
         int x = leftPos;
         int y = topPos;
-        EditBox box = new EditBox(font, x + 340, y + 38, COL_R - 344, 14, Component.translatable(
+        EditBox box = new EditBox(font, x + 364, y + 38, COL_R - 368, 14, Component.translatable(
                 "neroarcade.bench.title_label"));
         box.setMaxLength(TitleRules.MAX_LENGTH);
         box.setHint(Component.translatable("neroarcade.bench.title_hint"));
@@ -395,7 +395,9 @@ public class GameBenchScreen extends AbstractContainerScreen<GameBenchMenu> {
         String why = noBench ? "neroarcade.bench.why.waiting" : BenchModel.whyDisabled(kind, c);
         if (why == null) {
             button.enable();
-            button.setHelp(Component.translatable(BenchModel.helpKey(kind)));
+            button.setHelp(kind == BenchModel.Button.TEST_PLAY
+                    ? Component.translatable(BenchModel.helpKey(kind), (Object[]) testKeyNames())
+                    : Component.translatable(BenchModel.helpKey(kind)));
         } else {
             button.disable(Component.translatable(why));
         }
@@ -444,7 +446,7 @@ public class GameBenchScreen extends AbstractContainerScreen<GameBenchMenu> {
                 break;
             }
             int value = valueOf(spec, values);
-            PropControl control = new PropControl(leftPos + COL_L + 70, topPos + PARAMS_TOP + 12 + row * 11, 124, 10,
+            PropControl control = new PropControl(leftPos + COL_L + 62, topPos + PARAMS_TOP + 12 + row * 11, 104, 10,
                     chip, spec, value, colour, (s, v) -> send(BenchEditPayload.Op.SET_PROP, type, stack, s.name(), v,
                             v != 0, ""));
             control.active = !testing;
@@ -610,7 +612,7 @@ public class GameBenchScreen extends AbstractContainerScreen<GameBenchMenu> {
         int hintX = x + BenchLayout.TRAY_X + 20;
         drawWrapped(g, Component.translatable("neroarcade.bench.tray_hint"), hintX, y + BenchLayout.TRAY_Y - 1,
                 x + COL_R - 4 - hintX, 3, ArcadeColours.SUBTLE);
-        g.text(font, Component.translatable("neroarcade.bench.title_label"), x + 314, y + 41, ArcadeColours.SUBTLE,
+        g.text(font, Component.translatable("neroarcade.bench.title_label"), x + 338, y + 41, ArcadeColours.SUBTLE,
                 false);
         g.text(font, Component.translatable("neroarcade.bench.credit_off"), x + PAD, y + 236, ArcadeColours.SUBTLE,
                 false);
@@ -624,6 +626,13 @@ public class GameBenchScreen extends AbstractContainerScreen<GameBenchMenu> {
         g.fill(x + PAD, ty + 5, x + PAD + 4, ty + 9, colour);
         fitted(g, status, x + PAD + 8, ty + 3, RACK_R - PAD - 12, colour);
         explain(g, x + PAD, ty + 1, RACK_R - PAD, 13, status, mouseX, mouseY);
+    }
+
+    /** The bound names of the arcade keys a test play uses: up, left, down, right, A (the player's own bindings). */
+    private static Component[] testKeyNames() {
+        return new Component[] {ArcadeKeys.UP.getTranslatedKeyMessage(), ArcadeKeys.LEFT.getTranslatedKeyMessage(),
+                ArcadeKeys.DOWN.getTranslatedKeyMessage(), ArcadeKeys.RIGHT.getTranslatedKeyMessage(),
+                ArcadeKeys.BUTTON_A.getTranslatedKeyMessage()};
     }
 
     private Component trayLine() {
@@ -695,6 +704,8 @@ public class GameBenchScreen extends AbstractContainerScreen<GameBenchMenu> {
                 tip.add(Component.translatable(type.langKey()).withColor(type.colour));
                 tip.add(Component.translatable(type.descLangKey()));
                 tip.add(effectLine(type));
+                Optional<ArcadeModule> only = singleChip(type);
+                only.ifPresent(m -> tip.add(Component.translatable(m.descLangKey())));
                 if (warning != null) {
                     tip.add(Component.translatable(warning.langKey()));
                 }
@@ -705,6 +716,21 @@ public class GameBenchScreen extends AbstractContainerScreen<GameBenchMenu> {
                 tooltip(g, tip, mouseX, mouseY);
             }
         }
+    }
+
+    /** The chip of a row that holds exactly one. */
+    private Optional<ArcadeModule> singleChip(ModuleType type) {
+        Optional<ArcadeModule> found = Optional.empty();
+        for (int s = 0; s < type.maxStack; s++) {
+            Optional<ArcadeModule> here = moduleAt(BenchSlots.index(type, s));
+            if (here.isPresent()) {
+                if (found.isPresent()) {
+                    return Optional.empty();
+                }
+                found = here;
+            }
+        }
+        return found;
     }
 
     private boolean filled(ModuleType type) {
@@ -723,7 +749,17 @@ public class GameBenchScreen extends AbstractContainerScreen<GameBenchMenu> {
             moduleAt(BenchSlots.index(type, s)).ifPresent(chips::add);
         }
         if (chips.size() == 1) {
-            return Component.translatable(BenchModel.effectKey(chips.get(0)));
+            ArcadeModule chip = chips.get(0);
+            int stack = 0;
+            for (int s = 0; s < type.maxStack; s++) {
+                if (moduleAt(BenchSlots.index(type, s)).isPresent()) {
+                    stack = s;
+                    break;
+                }
+            }
+            PropertyValues values = propsAt(type, stack);
+            return Component.translatable(BenchModel.effectKey(chip),
+                    chip.effectArgs(values != null ? values : PropertyValues.defaults(chip)));
         }
         if (chips.size() > 1) {
             MutableComponent names = Component.empty();
@@ -760,13 +796,34 @@ public class GameBenchScreen extends AbstractContainerScreen<GameBenchMenu> {
             String clock = state == null || state.timerTicks() <= 0 ? "" : "  " + ArcadeHud.clock(state.timerTicks());
             caption = Component.translatable("neroarcade.bench.testing_caption", score, clock);
             colour = ArcadeColours.CYAN_TEXT;
-            if (live.busPhase() == BusPhase.RESULTS) {
-                caption = Component.translatable("neroarcade.bench.testing_over");
+            Component keys = countdownKeys();
+            if (keys != null && font.width(keys) <= captionWidth()) {
+                caption = keys; // otherwise the wider trough carries it (statusLine)
+            } else if (live.busPhase() == BusPhase.RESULTS) {
+                caption = Component.translatable("neroarcade.bench.testing_over",
+                        ArcadeKeys.BUTTON_A.getTranslatedKeyMessage());
             }
         } else {
             caption = Component.translatable("neroarcade.bench.preview_caption");
         }
-        fitted(g, caption, leftPos + PREVIEW_X, topPos + 100, COL_R - PREVIEW_X - 4, colour);
+        fitted(g, caption, leftPos + PREVIEW_X, topPos + 100, captionWidth(), colour);
+    }
+
+    private static int captionWidth() {
+        return COL_R - PREVIEW_X - 4;
+    }
+
+    /**
+     * While a test play waits or counts down: "W A S D move · Space action · ESC closes" with the player's own
+     * bindings (the HUD legend is hidden while a screen is open), else null.
+     */
+    private @Nullable Component countdownKeys() {
+        BlockPos pos = benchPos();
+        ClientMatch live = pos == null ? null : ClientMatches.get(pos);
+        if (!testing() || live == null || (live.busPhase() != BusPhase.LOBBY && live.busPhase() != BusPhase.COUNTDOWN)) {
+            return null;
+        }
+        return Component.translatable(BenchModel.TESTING_KEYS, (Object[]) testKeyNames());
     }
 
     private void drawParams(GuiGraphicsExtractor g) {
@@ -789,7 +846,7 @@ public class GameBenchScreen extends AbstractContainerScreen<GameBenchMenu> {
             return;
         }
         for (PropControl control : propControls) {
-            fitted(g, control.getMessage(), x, control.getY() + 1, 62, ArcadeColours.TITLE);
+            fitted(g, control.getMessage(), x, control.getY() + 1, 56, ArcadeColours.TITLE);
         }
         if (module.get().properties().size() > propControls.size()) {
             g.text(font, Component.translatable("neroarcade.bench.params_more",
@@ -824,6 +881,11 @@ public class GameBenchScreen extends AbstractContainerScreen<GameBenchMenu> {
         BenchStatePayload s = state();
         if (s == null) {
             return Component.translatable("neroarcade.bench.status.waiting");
+        }
+        Component keys = countdownKeys();
+        if (keys != null && font.width(keys) > captionWidth()
+                && (s.statusKey().isEmpty() || s.statusKey().equals("neroarcade.bench.status.test_started"))) {
+            return keys; // too wide for the preview caption at this GUI scale: the trough says it instead
         }
         if (!s.statusKey().isEmpty()) {
             return Component.translatable(s.statusKey(), s.statusArgs().toArray());

@@ -37,11 +37,18 @@ class RuntimeOpponentTest {
     }
 
     /**
-     * One orb at a fixed cell that never respawns. (5, 8) lies on the opponent's hop lattice: a held input moves
-     * a speed-3 cursor exactly three cells per {@code OPPONENT_CADENCE}, so from (14, 14) it can only stop on
-     * columns and rows congruent to 14 mod 3 until a wall clamps it onto another phase.
+     * One orb at a fixed cell that never respawns. (5, 8) lies on the old hop lattice of a speed-3 cursor from
+     * (14, 14); (4, 10) does not, and oscillated before the greedy re-steered every tick (PROGRESS 2026-10-21).
      */
     private static final class OneOrb implements PickupModule {
+        private final int cx;
+        private final int cy;
+
+        OneOrb(int cx, int cy) {
+            this.cx = cx;
+            this.cy = cy;
+        }
+
         @Override
         public Identifier id() {
             return TestModules.id("pickup/one_orb");
@@ -59,7 +66,7 @@ class RuntimeOpponentTest {
 
         @Override
         public void onMatchStart(ModuleContext ctx) {
-            ctx.state().spawn(EntityKind.PICKUP, RuntimeStubs.at(5), RuntimeStubs.at(8), -1, ctx.stackIndex());
+            ctx.state().spawn(EntityKind.PICKUP, RuntimeStubs.at(cx), RuntimeStubs.at(cy), -1, ctx.stackIndex());
         }
 
         @Override
@@ -74,7 +81,31 @@ class RuntimeOpponentTest {
 
     @Test
     void collectsALoneOrbWithin160Ticks() {
-        HeadlessMatch match = RuntimeStubs.playing(versus(new OneOrb()));
+        assertCollected(5, 8);
+    }
+
+    /** The orb that used to sit between two hops: the target is fixed for 4 ticks, the direction is not. */
+    @Test
+    void collectsAnOrbOffTheOldHopLattice() {
+        assertCollected(4, 10);
+    }
+
+    @Test
+    void targetAndSteerArePureAndComposeToGreedy() {
+        HeadlessMatch match = RuntimeStubs.playing(versus(new OneOrb(4, 10)));
+        match.run(7, HeadlessMatch.InputScript.idle());
+        MatchState s = match.state();
+        long before = s.stateHash();
+        ModuleContext ctx = new ModuleContext(s, null, Rng.view(s), match.runtime().game(), s.tick(), 0);
+        int target = RuntimeOpponent.target(ctx, 1);
+        assertEquals(target, RuntimeOpponent.target(ctx, 1));
+        assertEquals(RuntimeOpponent.steer(ctx, 1, target), RuntimeOpponent.greedy(ctx, 1));
+        assertEquals(before, s.stateHash(), "deciding never mutates the state");
+        assertEquals(SeatInput.NONE, RuntimeOpponent.steer(ctx, 1, RuntimeOpponent.NO_TARGET));
+    }
+
+    private static void assertCollected(int cx, int cy) {
+        HeadlessMatch match = RuntimeStubs.playing(versus(new OneOrb(cx, cy)));
         MatchState s = match.state();
         int ticks = 0;
         while (s.count(EntityKind.PICKUP) > 0 && ticks < 160) {

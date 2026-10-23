@@ -1,0 +1,18 @@
+{
+  "module.neroarcade.multiplayer.coop": "Co-op",
+  "module.neroarcade.multiplayer.coop.desc": "Two to four players share one board and, by default, one life pool.",
+  "module.neroarcade.multiplayer.coop.effect": "%s co-op · %s",
+  "module.neroarcade.multiplayer.coop.prop.seats": "Seats",
+  "module.neroarcade.multiplayer.coop.prop.shared_lives": "Shared lives",
+  "module.neroarcade.multiplayer.coop.separate": "own lives",
+  "module.neroarcade.multiplayer.coop.shared": "shared lives",
+  "module.neroarcade.multiplayer.turns": "Turns",
+  "module.neroarcade.multiplayer.turns.desc": "Players take turns at one cabinet; pass the controls when told.",
+  "module.neroarcade.multiplayer.turns.effect": "%s players · %s s turns",
+  "module.neroarcade.multiplayer.turns.prop.seats": "Seats",
+  "module.neroarcade.multiplayer.turns.prop.turn_seconds": "Turn seconds",
+  "module.neroarcade.multiplayer.versus": "Versus",
+  "module.neroarcade.multiplayer.versus.desc": "Players compete on one board; last one standing or best score wins.",
+  "module.neroarcade.multiplayer.versus.effect": "%s-player versus",
+  "module.neroarcade.multiplayer.versus.prop.seats": "Seats"
+}

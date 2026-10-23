@@ -40,6 +40,9 @@ class BenchWarningsTest {
     void eachTableRowRaisesExactlyItsWarning() {
         assertWarnings(withThreat(TestModules.rule(ModuleFlag.NEEDS_SCORE)), BenchWarning.SCORE_RULE_WITHOUT_SCORE_SOURCE);
         assertWarnings(withThreat(TestModules.rule(ModuleFlag.NEEDS_SCORE), TestModules.pickup(ModuleFlag.SCORES)));
+        // 008 §8 item 2: a HAZARD (bouncing_ball on goals) or PAWN (stacker rows) declaring SCORES is a source too
+        assertWarnings(withThreat(TestModules.rule(ModuleFlag.NEEDS_SCORE), TestModules.hazard(ModuleFlag.SCORES)));
+        assertWarnings(withThreat(TestModules.rule(ModuleFlag.NEEDS_SCORE), TestModules.pawn(ModuleFlag.SCORES)));
         assertWarnings(withThreat(TestModules.pickup(ModuleFlag.IS_KEY)), BenchWarning.KEY_WITHOUT_EXIT);
         assertWarnings(withThreat(TestModules.rule(ModuleFlag.PLACES_EXIT), TestModules.pawn(ModuleFlag.ONE_AXIS)),
                 BenchWarning.EXIT_ON_ONE_AXIS);

@@ -3,6 +3,7 @@ package za.co.neroland.neroarcade.module.pack.arena;
 import java.util.List;
 import java.util.Set;
 
+import net.minecraft.network.chat.Component;
 import net.minecraft.resources.Identifier;
 
 import za.co.neroland.neroarcade.module.ModuleDefaults;
@@ -99,5 +100,11 @@ public final class Grid16Arena implements ArenaModule {
                 // open grid
             }
         }
+    }
+
+    /** "16 by 16 board · Pillars": the obstacle layout's label. */
+    @Override
+    public Object[] effectArgs(PropertyValues props) {
+        return new Object[] {Component.translatable(PROPERTIES.get(0).constantLangKey(this, props.getEnum("obstacles")))};
     }
 }

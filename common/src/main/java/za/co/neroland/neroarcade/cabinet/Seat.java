@@ -2,6 +2,8 @@ package za.co.neroland.neroarcade.cabinet;
 
 import java.util.UUID;
 
+import org.jetbrains.annotations.Nullable;
+
 import za.co.neroland.neroarcade.runtime.SeatInput;
 
 /**
@@ -42,5 +44,13 @@ public final class Seat {
     /** Packets dropped for this seat (wrong match id, over the rate); a debugging counter, never logged at info. */
     public int droppedInputs() {
         return droppedInputs;
+    }
+
+    /**
+     * Whether {@code seat} is held by {@code player} (e.g. the bench menu closing for the test player ends the test
+     * on the server, review 005a F11). Pure.
+     */
+    public static boolean heldBy(@Nullable Seat seat, UUID player) {
+        return seat != null && seat.playerUuid.equals(player);
     }
 }

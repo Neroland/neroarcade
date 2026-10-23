@@ -7,6 +7,35 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added — Stage 3 groundwork (2026-10-23)
+
+- A new solid "block" cell for stacked pieces, drawn with its own tile; goal lines now draw as a dashed line in
+  their seat's colour instead of looking like an exit. Every theme gained the stacker pawn sprite.
+- A score rule no longer warns "nothing scores" when a hazard or pawn chip is what scores.
+- The computer opponent now stops exactly on the orb it is after instead of hopping back and forth past it.
+
+### Fixed — Stage 2 review (2026-10-23)
+
+- SAVE never gives two cartridges the same id: a game saved onto a Blank always gets a new id (your own game's copy
+  keeps its lineage, so it shares the leaderboard); only your own cartridge, back in the tray, is re-saved in place.
+  Loading a cartridge with no recorded builder and saving it no longer adopts its id. Saving with someone else's
+  cartridge or a different game in the tray is refused with a sentence that says what to do.
+- Typing a title and pressing SAVE straight away no longer fails with "Give your game a title first."
+- Taking a chip out of the rack and putting the same chip back keeps its settings.
+- Closing the Game Bench stops your test play on the server too, even if the client never says so.
+- A cabinet holding a cartridge shows READY and its attract loop (and glows) even while nobody has used it yet.
+- The cartridge tooltip says "Remixed from another game" instead of showing a raw id.
+- Nothing tells you to "press A" any more: the results card, the lobby and the bench name the key you bound.
+
+### Changed — Stage 2 review (2026-10-23)
+
+- Rack rows show a short effect with live values ("Survive 60 s · lives 1", "Moves 4 ways · speed 3"); the full
+  description is on hover. The rack is 24 px wider.
+- The HUD's amber line is the rule itself ("Survive 60 s · lives 1"), and "ESC leave" stays under the stats for
+  the whole match. The legend says "2nd action" instead of "alt"; the Four-way chip no longer repeats the buttons.
+- A bench test play names your actual keys while it counts down; TEST PLAY's hover lists them.
+- Steady's "Divisor" is now "Slow-down". Neon Void's Variant setting is gone until the theme variants exist.
+
 ### Added — Stage 2: the core loop, client side (2026-10-21)
 
 - **"Build your game"** — the Game Bench screen: ten rack rows, each with the slot's glyph and word in its colour,

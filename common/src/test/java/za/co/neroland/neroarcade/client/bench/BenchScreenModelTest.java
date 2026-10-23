@@ -71,6 +71,80 @@ class BenchScreenModelTest {
         }
     }
 
+    /** A lang value with its arguments filled the way the client would (translatable arguments looked up). */
+    static String render(String key, Object... args) {
+        Object[] plain = new Object[args.length];
+        for (int i = 0; i < args.length; i++) {
+            if (args[i] instanceof net.minecraft.network.chat.Component c
+                    && c.getContents() instanceof net.minecraft.network.chat.contents.TranslatableContents t) {
+                assertTrue(lang.containsKey(t.getKey()), "missing lang key " + t.getKey());
+                plain[i] = lang.get(t.getKey());
+            } else {
+                plain[i] = String.valueOf(args[i]);
+            }
+        }
+        return String.format(java.util.Locale.ROOT, lang.get(key), plain);
+    }
+
+    @Test
+    void everyRowEffectIsShortWithLiveValues() throws za.co.neroland.neroarcade.game.ValidationError {
+        for (ArcadeModule module : ModuleRegistry.all()) {
+            za.co.neroland.neroarcade.module.PropertyValues defaults =
+                    za.co.neroland.neroarcade.module.PropertyValues.defaults(module);
+            String line = render(BenchModel.effectKey(module), module.effectArgs(defaults));
+            assertTrue(line.length() <= 22, module.id() + " effect is over 22 characters: " + line);
+            assertTrue(!line.contains("%"), module.id() + " effect left a placeholder: " + line);
+            for (PropertySpec spec : module.properties()) {
+                if (spec.kind() == za.co.neroland.neroarcade.module.PropertyKind.INT) {
+                    for (int v : new int[] {spec.min(), spec.max()}) {
+                        String at = render(BenchModel.effectKey(module), module.effectArgs(defaults.with(spec.name(),
+                                new za.co.neroland.neroarcade.module.PropertyValue.IntValue(v))));
+                        // 22 with defaults is the contract; extremes may reach the single row's ~24 characters
+                        assertTrue(at.length() <= 24, module.id() + " at " + spec.name() + "=" + v + ": " + at);
+                    }
+                }
+            }
+        }
+        za.co.neroland.neroarcade.module.PropertyValues rule = za.co.neroland.neroarcade.module.PropertyValues
+                .defaults(ModuleRegistry.get(za.co.neroland.neroarcade.module.ModuleDefaults.RULE).orElseThrow());
+        assertEquals("Survive 60 s · lives 1", render(BenchModel.effectKey(ModuleRegistry
+                .get(za.co.neroland.neroarcade.module.ModuleDefaults.RULE).orElseThrow()),
+                ModuleRegistry.get(za.co.neroland.neroarcade.module.ModuleDefaults.RULE).orElseThrow().effectArgs(rule)));
+        assertEquals("Empty — no threats", lang.get(BenchModel.emptyKey(ModuleType.HAZARD)));
+        assertEquals("Empty — no pickups", lang.get(BenchModel.emptyKey(ModuleType.PICKUP)));
+    }
+
+    @Test
+    void noLineSaysPressAAndEveryKeyNameIsFilledIn() {
+        assertEquals("Press %s to play again", lang.get("neroarcade.hud.play_again"));
+        assertEquals("Press %s when you are ready", lang.get("neroarcade.hud.press_start"));
+        assertTrue(lang.get("neroarcade.bench.testing_over").contains("%s"));
+        assertEquals("2nd action", lang.get("neroarcade.hud.legend.b"));
+        assertEquals("%s leave", lang.get("neroarcade.hud.leave_hint"));
+        assertEquals(5, lang.get(BenchModel.TESTING_KEYS).split("%s", -1).length - 1, "up, left, down, right, A");
+        assertEquals(5, lang.get(BenchModel.helpKey(BenchModel.Button.TEST_PLAY)).split("%s", -1).length - 1);
+        lang.forEach((key, value) -> {
+            if (key.startsWith("neroarcade.hud.") || key.startsWith("neroarcade.bench.") || key.startsWith("neroarcade.legend.")) {
+                assertTrue(!value.matches(".*\\b(press|Press) A\\b.*") && !value.matches(".*\\bA plays\\b.*")
+                        && !value.startsWith("A: ") && !value.startsWith("B: "), key + " names a key letter: " + value);
+            }
+        });
+    }
+
+    @Test
+    void theRuleChipWritesTheHudLine() throws za.co.neroland.neroarcade.game.ValidationError {
+        for (ArcadeModule module : ModuleRegistry.all()) {
+            if (module instanceof za.co.neroland.neroarcade.module.hook.RuleModule rule) {
+                int[] args = rule.hudArgs(za.co.neroland.neroarcade.module.PropertyValues.defaults(rule));
+                Object[] boxed = java.util.Arrays.stream(args).boxed().toArray();
+                defined(rule.hudLangKey());
+                String line = render(rule.hudLangKey(), boxed);
+                assertTrue(line.length() <= 24, rule.id() + " HUD line is over 24 characters: " + line);
+                assertTrue(!line.contains("%"), line);
+            }
+        }
+    }
+
     @Test
     void everyWarningIsWrittenAndPlaced() {
         int general = 0;

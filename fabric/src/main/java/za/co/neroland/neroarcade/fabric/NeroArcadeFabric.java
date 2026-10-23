@@ -3,6 +3,7 @@ package za.co.neroland.neroarcade.fabric;
 import net.fabricmc.api.ModInitializer;
 import net.fabricmc.fabric.api.command.v2.CommandRegistrationCallback;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
+import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayConnectionEvents;
 
 import za.co.neroland.neroarcade.NeroArcadeCommon;
@@ -21,6 +22,7 @@ public final class NeroArcadeFabric implements ModInitializer {
         CommandRegistrationCallback.EVENT.register((dispatcher, registryAccess, environment) ->
                 ArcadeCommands.register(dispatcher));
         ServerLifecycleEvents.SERVER_STOPPING.register(ServerHooks::fireStopping);
+        ServerTickEvents.END_SERVER_TICK.register(ServerHooks::fireTick);
         ServerPlayConnectionEvents.DISCONNECT.register((handler, server) -> ServerHooks.firePlayerLeave(handler.player));
     }
 }

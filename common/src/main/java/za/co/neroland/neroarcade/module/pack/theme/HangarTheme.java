@@ -64,4 +64,10 @@ public final class HangarTheme implements ThemeModule {
     private static Identifier id(String path) {
         return Identifier.fromNamespaceAndPath("neroarcade", path);
     }
+
+    /** The Arcade Exchange genre word ({@code neroarcade.tag.hangar}). */
+    @Override
+    public String genreTag() {
+        return "hangar";
+    }
 }

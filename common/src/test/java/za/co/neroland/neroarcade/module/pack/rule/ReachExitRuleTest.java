@@ -171,6 +171,29 @@ class ReachExitRuleTest {
         assertEquals(1, result.winnersMask());
     }
 
+    /**
+     * Orchestrator decision (Stage 3): the paddle paints its goal line only over {@code Cell.EMPTY}, so an exit on
+     * that line survives the match-start spawn and every respawn.
+     */
+    @Test
+    void reachExitSurvivesPaddleGoalPainting() {
+        HeadlessMatch match = HeadlessMatch.of(TestModules.resolvedOf(ReachExitRule.INSTANCE,
+                za.co.neroland.neroarcade.module.pack.pawn.PaddlePawn.INSTANCE), 1, 36L);
+        MatchState state = match.state();
+        assertEquals(1, cells(state, Cell.EXIT).size(), "the rule's exit survives the first spawn");
+        List<int[]> goals = cells(state, Cell.goal(0));
+        assertTrue(!goals.isEmpty(), "the paddle painted a goal line");
+        int[] onGoal = goals.get(goals.size() / 2);
+        state.setCell(onGoal[0], onGoal[1], Cell.EXIT);
+        match.run(Budgets.COUNTDOWN_TICKS, HeadlessMatch.InputScript.idle());
+        state.damageSeat(0, 1);
+        assertTrue(state.respawnTicks(0) > 0);
+        match.run(Budgets.RESPAWN_TICKS + 2, HeadlessMatch.InputScript.idle());
+        assertTrue(state.pawnId(0) >= 0 && state.exists(state.pawnId(0)), "the paddle respawned");
+        assertEquals(Cell.EXIT, state.cell(onGoal[0], onGoal[1]), "respawn painting skipped the exit");
+        assertEquals(2, cells(state, Cell.EXIT).size());
+    }
+
     @Test
     void replayStable() throws ValidationError {
         ResolvedGame game = withRuleProps(TestModules.resolvedOf(ReachExitRule.INSTANCE, TestChips.Bouncer.INSTANCE,

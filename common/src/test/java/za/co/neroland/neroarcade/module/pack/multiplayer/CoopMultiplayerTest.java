@@ -46,7 +46,7 @@ class CoopMultiplayerTest {
 
         s.damageSeat(1, 1);
         assertEquals(1, s.sharedLives());
-        idle(match, Budgets.RESPAWN_TICKS + 1);
+        idle(match, Budgets.RESPAWN_TICKS + 1 + Budgets.RESPAWN_GRACE_TICKS);
         assertTrue(s.pawnId(0) >= 0 && s.pawnId(1) >= 0, "both seats respawned while the pool lasts");
         assertTrue(match.result().isEmpty());
 
@@ -68,7 +68,7 @@ class CoopMultiplayerTest {
         assertEquals(2, s.lives(0));
         assertEquals(3, s.lives(1), "seat 1 keeps its own lives");
         s.damageSeat(0, 5);
-        idle(match, Budgets.RESPAWN_TICKS + 1);
+        idle(match, Budgets.RESPAWN_TICKS + 1 + Budgets.RESPAWN_GRACE_TICKS);
         s.damageSeat(0, 5);
         assertEquals(0b10, s.aliveSeatMask(), "seat 0 is out alone");
         idle(match, 1);

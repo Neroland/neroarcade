@@ -1,0 +1,54 @@
+{
+  "schema": 1,
+  "id": "q3vjtwksznei4r46",
+  "title": "Stack Duel",
+  "author": "00000000-0000-4000-8000-00000000dead",
+  "lineage": [],
+  "seed": 1016,
+  "slots": {
+    "arena": [
+      {
+        "id": "neroarcade:arena/grid_16"
+      }
+    ],
+    "pawn": [
+      {
+        "id": "neroarcade:pawn/stacker",
+        "props": {
+          "fall": 2,
+          "shapes": "bars"
+        }
+      }
+    ],
+    "rule": [
+      {
+        "id": "neroarcade:rule/last_standing"
+      }
+    ],
+    "control": [
+      {
+        "id": "neroarcade:control/four_way"
+      }
+    ],
+    "pace": [
+      {
+        "id": "neroarcade:pace/steady"
+      }
+    ],
+    "multiplayer": [
+      {
+        "id": "neroarcade:multiplayer/versus",
+        "props": {
+          "seats": 2
+        }
+      }
+    ],
+    "theme": [
+      {
+        "id": "neroarcade:theme/terminal_green"
+      }
+    ]
+  },
+  "created_at": 1761177615,
+  "revision": 1
+}

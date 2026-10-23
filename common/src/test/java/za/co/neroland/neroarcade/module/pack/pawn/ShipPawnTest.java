@@ -136,6 +136,21 @@ class ShipPawnTest {
         assertTrue(s.seatAlive(0));
     }
 
+    /** 001 A15.d: a dead ship's shots vanish with it; another seat's shots stay. */
+    @Test
+    void deathClearsOwnShots() throws ValidationError {
+        HeadlessMatch match = playing(game("light"));
+        MatchState s = match.state();
+        put(s, 1, 8);
+        match.step(SeatInput.of(SeatInput.A, 0, 0));
+        assertTrue(s.count(EntityKind.PROJECTILE) > 0, "fired");
+        int other = s.spawn(EntityKind.PROJECTILE, centre(12), centre(12), 1, 0);
+        s.setLives(0, 3);
+        s.damageSeat(0, 1);
+        assertEquals(1, s.count(EntityKind.PROJECTILE), "only the other seat's shot is left");
+        assertTrue(s.exists(other));
+    }
+
     @Test
     void firesAlongItsNewFacing() throws ValidationError {
         HeadlessMatch match = playing(game("light"));

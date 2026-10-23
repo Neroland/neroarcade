@@ -1,0 +1,69 @@
+{
+  "schema": 1,
+  "id": "ui67qw2kxo52ryzy",
+  "title": "Gunner Ring",
+  "author": "00000000-0000-4000-8000-00000000dead",
+  "lineage": [],
+  "seed": 1009,
+  "slots": {
+    "arena": [
+      {
+        "id": "neroarcade:arena/ring_24",
+        "props": {
+          "obstacles": "pillars"
+        }
+      }
+    ],
+    "pawn": [
+      {
+        "id": "neroarcade:pawn/ship"
+      }
+    ],
+    "rule": [
+      {
+        "id": "neroarcade:rule/score_target",
+        "props": {
+          "target": 60
+        }
+      }
+    ],
+    "hazard": [
+      {
+        "id": "neroarcade:hazard/chaser",
+        "props": {
+          "count": 3
+        }
+      }
+    ],
+    "pickup": [
+      {
+        "id": "neroarcade:pickup/score_orb",
+        "props": {
+          "count": 4
+        }
+      }
+    ],
+    "control": [
+      {
+        "id": "neroarcade:control/twin_stick"
+      }
+    ],
+    "pace": [
+      {
+        "id": "neroarcade:pace/steady"
+      }
+    ],
+    "multiplayer": [
+      {
+        "id": "neroarcade:multiplayer/solo"
+      }
+    ],
+    "theme": [
+      {
+        "id": "neroarcade:theme/neon_void"
+      }
+    ]
+  },
+  "created_at": 1761177608,
+  "revision": 1
+}

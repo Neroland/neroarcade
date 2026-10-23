@@ -149,7 +149,8 @@ public final class BenchActions {
      * Runs {@code apply} now when the filter's future is already complete (normally), otherwise on {@code server}
      * once it completes — never queued behind packets that arrived after it when there is nothing to wait for.
      */
-    static void whenFiltered(CompletableFuture<FilteredText> future, Executor server, Consumer<FilteredText> apply) {
+    public static void whenFiltered(CompletableFuture<FilteredText> future, Executor server,
+            Consumer<FilteredText> apply) {
         if (future.isDone() && !future.isCompletedExceptionally()) {
             apply.accept(future.join());
         } else {
@@ -161,7 +162,7 @@ public final class BenchActions {
      * SAVE (rules in {@link BenchDraft#planSave}): a Blank Cartridge in the tray becomes a new cartridge with a new
      * id; the saver's own cartridge, when it is the draft's game, is re-saved in place (same id, revision + 1);
      * any other written cartridge is refused with a sentence that says what to do. The author UUID is the saver; the
-     * credit comes from {@link CreditResolver} (empty until the Stage 6 opt-in exists).
+     * credit comes from {@link CreditResolver} (the profile name only for a player who turned credit on).
      */
     private static void save(GameBenchBlockEntity bench, ServerPlayer player) {
         if (bench.matchHost() != null) {
@@ -185,7 +186,7 @@ public final class BenchActions {
         GameDef saved;
         try {
             Optional<String> credit = CreditResolver.current()
-                    .creditFor(player.getUUID(), player.getGameProfile().name());
+                    .creditFor(level.getServer(), player.getUUID(), player.getGameProfile().name());
             SavePlan plan = bench.draft().planSave(player.getUUID(), trayId,
                     () -> CartridgeIds.mint(level.getRandom()), System.currentTimeMillis() / 1000L, credit);
             if (plan.refused()) {
@@ -218,6 +219,7 @@ public final class BenchActions {
             return;
         }
         bench.draft().adopt(saved);
+        za.co.neroland.neroarcade.progression.ArcadeMilestones.firstCartridge(level.getServer(), player.getUUID());
         level.playSound(null, bench.getBlockPos(), ModSounds.BENCH_SAVE.get(), SoundSource.BLOCKS, 0.8F, 1.0F);
         bench.setStatus("neroarcade.bench.status.saved", Integer.toString(saved.revision()));
     }

@@ -41,8 +41,9 @@ import za.co.neroland.neroarcade.module.hook.RuleOutcome;
 public final class ArcadeRuntime {
 
     /**
-     * Simulated ticks between a runtime opponent's decisions ({@code PawnModule.opponentInput}). For a pawn on the
-     * default greedy opponent this is the <i>target</i> cadence; its direction is re-steered every simulated tick.
+     * Simulated ticks between the default greedy opponent's <i>target</i> decisions (001 A13); its direction is
+     * re-steered every simulated tick. A pawn that overrides {@code PawnModule.opponentInput} is asked every
+     * simulated tick (001 A15.a); its answer is still an input latch, re-derived on replay.
      */
     public static final int OPPONENT_CADENCE = 4;
 
@@ -209,7 +210,8 @@ public final class ArcadeRuntime {
         }
         // 1b. ARENA tick
         game.arena().tick(ctx(game.arenaProps(), 0));
-        // runtime opponent: asked every OPPONENT_CADENCE simulated ticks, held between (an input, not state)
+        // runtime opponent (an input, not state): greedy target every OPPONENT_CADENCE simulated ticks (A13),
+        // an overriding pawn's opponentInput every simulated tick (A15.a)
         if (opponentSeat >= 0) {
             ModuleContext pawnCtx = ctx(game.pawnProps(), 0);
             boolean pawnUp = hasPawn(opponentSeat);
@@ -219,7 +221,7 @@ public final class ArcadeRuntime {
                     opponentTarget = pawnUp ? RuntimeOpponent.target(pawnCtx, opponentSeat) : RuntimeOpponent.NO_TARGET;
                 }
                 opponentInput = pawnUp ? RuntimeOpponent.steer(pawnCtx, opponentSeat, opponentTarget) : SeatInput.NONE;
-            } else if (opponentTicks % OPPONENT_CADENCE == 0) {
+            } else {
                 SeatInput decided = pawnUp ? game.pawn().opponentInput(pawnCtx, opponentSeat) : SeatInput.NONE;
                 opponentInput = decided == null ? SeatInput.NONE : decided;
             }
@@ -282,7 +284,7 @@ public final class ArcadeRuntime {
         }
         game.multiplayer().afterTick(mpCtx);
         // 11. housekeeping
-        housekeeping(pawnCtx);
+        housekeeping(pawnCtx, mpCtx);
         // 12. RULE (+ hard stop), 13. MULTIPLAYER resolve
         RuleOutcome outcome = game.rule().evaluate(ctx(game.ruleProps(), 0));
         if (outcome == null) {
@@ -325,6 +327,7 @@ public final class ArcadeRuntime {
     /**
      * Step 8: pickups, hazards and enemy projectiles against each seat's body (the pawn decides a hit's
      * {@link HitOutcome}), then directional pawn-vs-pawn; 8b: goal cells; 8c: projectiles against hazards.
+     * Entities carrying {@link Entities#F_HIDDEN} are off the board and skipped by 8, 8b and 8c (001 A15.c).
      */
     private void collisions(ModuleContext pawnCtx) {
         for (int seat = 0; seat < state.seatCount; seat++) {
@@ -343,6 +346,7 @@ public final class ArcadeRuntime {
                 int kind = state.entities[base + Entities.KIND];
                 int owner = state.entities[base + Entities.OWNER];
                 if (id == state.pawnId(seat) || (kind == EntityKind.SEGMENT.ordinal() && owner == seat)
+                        || (state.entities[base + Entities.FLAGS] & Entities.F_HIDDEN) != 0
                         || !overlaps(state.entities[base + Entities.X] >> MatchState.FP_SHIFT,
                                 state.entities[base + Entities.Y] >> MatchState.FP_SHIFT, footX, footY, feet)) {
                     continue;
@@ -468,7 +472,8 @@ public final class ArcadeRuntime {
             id = state.entities[base + Entities.ID];
             int kind = state.entities[base + Entities.KIND];
             boolean hazard = kind == EntityKind.HAZARD.ordinal();
-            if (!hazard && kind != EntityKind.PROJECTILE.ordinal()) {
+            if ((!hazard && kind != EntityKind.PROJECTILE.ordinal())
+                    || (state.entities[base + Entities.FLAGS] & Entities.F_HIDDEN) != 0) {
                 continue;
             }
             int goal = Cell.goalSeat(state.cell(state.entities[base + Entities.X] >> MatchState.FP_SHIFT,
@@ -507,7 +512,8 @@ public final class ArcadeRuntime {
             }
             int base = index * MatchState.ENTITY_STRIDE;
             pid = state.entities[base + Entities.ID];
-            if (state.entities[base + Entities.KIND] != EntityKind.PROJECTILE.ordinal()) {
+            if (state.entities[base + Entities.KIND] != EntityKind.PROJECTILE.ordinal()
+                    || (state.entities[base + Entities.FLAGS] & Entities.F_HIDDEN) != 0) {
                 continue;
             }
             int cx = state.entities[base + Entities.X] >> MatchState.FP_SHIFT;
@@ -522,6 +528,7 @@ public final class ArcadeRuntime {
                 int hBase = hIndex * MatchState.ENTITY_STRIDE;
                 hid = state.entities[hBase + Entities.ID];
                 if (state.entities[hBase + Entities.KIND] != EntityKind.HAZARD.ordinal()
+                        || (state.entities[hBase + Entities.FLAGS] & Entities.F_HIDDEN) != 0
                         || (state.entities[hBase + Entities.X] >> MatchState.FP_SHIFT) != cx
                         || (state.entities[hBase + Entities.Y] >> MatchState.FP_SHIFT) != cy) {
                     continue;
@@ -564,8 +571,14 @@ public final class ArcadeRuntime {
         return false;
     }
 
-    /** Step 11: entity TTL, status countdowns, timer, respawns. */
-    private void housekeeping(ModuleContext pawnCtx) {
+    /**
+     * Step 11: entity TTL, status countdowns, timer, respawns (each followed by the A15.b SHIELD grace of
+     * {@link Budgets#RESPAWN_GRACE_TICKS}; not at the initial spawn, nor for a MULTIPLAYER chip's own respawn).
+     * A seat outside the MULTIPLAYER active mask (a waiting hot-seat seat) is never respawned here (001 A14): its
+     * body would sit on the board for a tick before {@code turns.afterTick} removed it; the chip respawns it when
+     * its turn comes. The mask is only asked when a respawn is due, so the per-tick hook order is unchanged.
+     */
+    private void housekeeping(ModuleContext pawnCtx, ModuleContext mpCtx) {
         int index = 0;
         while (index < state.entityCount) {
             int base = index * MatchState.ENTITY_STRIDE;
@@ -591,11 +604,21 @@ public final class ArcadeRuntime {
         if (state.timerTicks > 0) {
             state.timerTicks--;
         }
+        int active = -1;
         for (int s = 0; s < state.seatCount; s++) {
             if (state.seatRespawnTicks[s] > 0) {
                 state.seatRespawnTicks[s]--;
                 if (state.seatRespawnTicks[s] == 0 && state.seatAlive(s)) {
+                    if (active == -1) {
+                        active = game.multiplayer().activeSeatMask(mpCtx);
+                    }
+                    if ((active & (1 << s)) == 0) {
+                        continue;
+                    }
                     game.pawn().onRespawn(pawnCtx, s);
+                    // A15.b respawn grace: never shortens a longer SHIELD already running
+                    state.setStatus(s, SeatState.SHIELD,
+                            Math.max(state.statusTicks(s, SeatState.SHIELD), Budgets.RESPAWN_GRACE_TICKS));
                 }
             }
         }

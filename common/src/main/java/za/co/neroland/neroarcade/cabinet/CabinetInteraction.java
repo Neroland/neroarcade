@@ -22,8 +22,10 @@ import za.co.neroland.neroarcade.registry.ModSounds;
  *   <li><b>Cartridge in hand</b> → insert it (one item) if the slot is empty.</li>
  *   <li><b>Sneak, empty hand</b> → eject: refused while a match counts down or plays; refused to anyone but the
  *       seated player (or an op) while someone is seated.</li>
- *   <li><b>Empty hand</b> → take the seat. Checks, in order: a cartridge, readable here, power, one seat per
- *       player server-wide, the seat free, no match running, an awake slot. Solo starts on use.</li>
+ *   <li><b>Empty hand</b> → take the seat. Checks, in order: the bus role (no host / bus full / a second
+ *       cartridge), a cartridge readable here (not on a bus node: it plays the host's), power, one seat per player
+ *       server-wide, the seat free, no match running, an awake slot (the bus host's), a seat this game has. Solo
+ *       starts on use; on a bus each seat presses READY.</li>
  * </ul>
  */
 public final class CabinetInteraction {
@@ -84,13 +86,28 @@ public final class CabinetInteraction {
         if (held != null && held.playerUuid.equals(player.getUUID())) {
             return InteractionResult.SUCCESS; // already seated here: the HUD has them
         }
-        if (!cabinet.hasCartridge()) {
-            return deny(cabinet, player, "neroarcade.cabinet.msg.no_cartridge");
+        switch (cabinet.role()) {
+            case NODE_NO_HOST -> {
+                return deny(cabinet, player, "neroarcade.cabinet.msg.no_host");
+            }
+            case FULL -> {
+                return deny(cabinet, player, "neroarcade.cabinet.msg.bus_full");
+            }
+            case CONFLICT -> {
+                return deny(cabinet, player, "neroarcade.cabinet.msg.conflict");
+            }
+            default -> {
+            }
         }
-        Optional<ValidationError> error = cabinet.cartridgeError();
-        if (error.isPresent()) {
-            return deny(cabinet, player, "neroarcade.cabinet.msg.unreadable",
-                    Component.translatable(error.get().langKey, error.get().args.toArray()));
+        if (cabinet.role() != BusRole.NODE) {
+            if (!cabinet.hasCartridge()) {
+                return deny(cabinet, player, "neroarcade.cabinet.msg.no_cartridge");
+            }
+            Optional<ValidationError> error = cabinet.cartridgeError();
+            if (error.isPresent()) {
+                return deny(cabinet, player, "neroarcade.cabinet.msg.unreadable",
+                        Component.translatable(error.get().langKey, error.get().args.toArray()));
+            }
         }
         if (!ArcadeCabinetBlockEntity.powerAvailable()) {
             return deny(cabinet, player, "neroarcade.cabinet.msg.no_power");
@@ -106,6 +123,10 @@ public final class CabinetInteraction {
             case TAKEN -> deny(cabinet, player, "neroarcade.cabinet.msg.taken");
             case IN_PROGRESS -> deny(cabinet, player, "neroarcade.cabinet.msg.in_progress");
             case NOT_READY -> deny(cabinet, player, "neroarcade.cabinet.msg.no_cartridge");
+            case NO_HOST -> deny(cabinet, player, "neroarcade.cabinet.msg.no_host");
+            case CONFLICT -> deny(cabinet, player, "neroarcade.cabinet.msg.conflict");
+            case NO_SEAT_HERE -> deny(cabinet, player, "neroarcade.cabinet.msg.no_seat_here");
+            case HOT_SEAT_HOST -> deny(cabinet, player, "neroarcade.cabinet.msg.hot_seat_host");
         };
     }
 

@@ -21,6 +21,7 @@ import za.co.neroland.neroarcade.module.hook.Intent;
 import za.co.neroland.neroarcade.module.hook.ModuleContext;
 import za.co.neroland.neroarcade.module.hook.PawnModule;
 import za.co.neroland.neroarcade.module.hook.PickupModule;
+import za.co.neroland.neroarcade.module.pack.hazard.ShrinkingFloorHazard;
 
 /**
  * 001 A5: the runtime opponent's input comes from the PAWN chip ({@code opponentInput}), default
@@ -130,6 +131,72 @@ class RuntimeOpponentTest {
         int dy = Math.abs((s.get(pawn, Entities.Y) >> MatchState.FP_SHIFT) - 14);
         assertTrue(Math.max(dx, dy) >= 3, "Chebyshev distance " + Math.max(dx, dy));
         assertEquals(3, s.lives(1));
+    }
+
+    /**
+     * 008b Q7: with nothing to flee, collect or hunt, the opponent heads for the centre and never steps into VOID.
+     * The outer floor ring is void (seat 1 starts one ring in, at (13, 13)); then a real shrinking floor.
+     */
+    @Test
+    void wandererSeeksTheCentreAndAvoidsVoid() {
+        HeadlessMatch match = versus(TestModules.pawn());
+        MatchState s = match.state();
+        for (int i = 1; i <= 14; i++) {
+            for (int[] c : new int[][] {{i, 1}, {i, 14}, {1, i}, {14, i}}) {
+                if (!(c[0] == 1 && c[1] == 1)) {
+                    s.setCell(c[0], c[1], Cell.VOID);
+                }
+            }
+        }
+        int pawn = s.pawnId(1);
+        s.set(pawn, Entities.X, RuntimeStubs.at(13));
+        s.set(pawn, Entities.Y, RuntimeStubs.at(13));
+        RuntimeStubs.playing(match);
+        boolean near = false;
+        for (int t = 0; t < 60 && !near; t++) {
+            match.step();
+            int p = s.pawnId(1);
+            assertTrue(p >= 0, "the wanderer walked into the void at tick " + t);
+            int dx = Math.abs((s.get(p, Entities.X) >> MatchState.FP_SHIFT) - 8);
+            int dy = Math.abs((s.get(p, Entities.Y) >> MatchState.FP_SHIFT) - 8);
+            near = Math.max(dx, dy) <= 2;
+        }
+        assertTrue(near, "within 2 cells of the centre within 60 ticks");
+        assertEquals(3, s.lives(1));
+
+        HeadlessMatch island = versus(ShrinkingFloorHazard.INSTANCE);
+        RuntimeStubs.playing(island).run(1200, HeadlessMatch.InputScript.idle());
+        assertEquals(3, island.state().lives(1), "interval 100 / min_size 4: the opponent rides the island");
+    }
+
+    /** 008b Q7: an AUTO_MOVE pawn heading away from the centre turns (ccw, else cw) instead of reversing. */
+    @Test
+    void autoMoverTurnsInsteadOfReversing() {
+        for (boolean autoMove : new boolean[] {true, false}) {
+            PawnModule stub = autoMove ? TestModules.pawn(ModuleFlag.AUTO_MOVE) : TestModules.pawn();
+            HeadlessMatch match = RuntimeStubs.playing(HeadlessMatch.of(TestModules.resolvedOf(stub), 1, 4L));
+            MatchState s = match.state();
+            int pawn = s.pawnId(0);
+            s.set(pawn, Entities.X, RuntimeStubs.at(12));
+            s.set(pawn, Entities.Y, RuntimeStubs.at(8));
+            s.set(pawn, Entities.VX, 64);
+            s.set(pawn, Entities.VY, 0);
+            ModuleContext ctx = new ModuleContext(s, null, Rng.view(s), match.runtime().game(), s.tick(), 0);
+            if (!autoMove) {
+                assertEquals(SeatInput.of(SeatInput.LEFT, 0, 0), RuntimeOpponent.greedy(ctx, 0),
+                        "a free mover simply heads back to the centre");
+                s.set(pawn, Entities.X, RuntimeStubs.at(8));
+                assertEquals(SeatInput.NONE, RuntimeOpponent.greedy(ctx, 0), "and stands at the centre");
+                continue;
+            }
+            assertEquals(SeatInput.of(SeatInput.UP, 0, 0), RuntimeOpponent.greedy(ctx, 0),
+                    "heading right, the centre is behind: turn ccw (up)");
+            s.setCell(12, 7, Cell.WALL);
+            assertEquals(SeatInput.of(SeatInput.DOWN, 0, 0), RuntimeOpponent.greedy(ctx, 0), "ccw blocked: cw");
+            s.set(pawn, Entities.X, RuntimeStubs.at(8));
+            assertEquals(SeatInput.of(SeatInput.RIGHT, 0, 0), RuntimeOpponent.greedy(ctx, 0),
+                    "at the centre an AUTO_MOVE pawn holds its travel direction");
+        }
     }
 
     @Test

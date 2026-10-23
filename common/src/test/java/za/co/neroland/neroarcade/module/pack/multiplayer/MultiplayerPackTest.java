@@ -44,7 +44,7 @@ class MultiplayerPackTest {
 
     @Test
     void registersTheThreeNonDefaultChipsInIdOrder() {
-        ModuleRegistry.resetForTests();
+        TestModules.reset();
         ArcadeModules.registerDefaults();
         MultiplayerPack.registerAll();
         ModuleRegistry.freeze();

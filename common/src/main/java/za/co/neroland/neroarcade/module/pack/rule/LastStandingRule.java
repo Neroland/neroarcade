@@ -124,4 +124,10 @@ public final class LastStandingRule implements RuleModule {
     private static int soloTicks(ModuleContext ctx) {
         return ctx.props().getInt("solo_seconds") * Budgets.TICKS_PER_SECOND;
     }
+
+    /** The Arcade Exchange genre word ({@code neroarcade.tag.survive}). */
+    @Override
+    public String genreTag() {
+        return "survive";
+    }
 }

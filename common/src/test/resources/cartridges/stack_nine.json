@@ -1,0 +1,54 @@
+{
+  "schema": 1,
+  "id": "yq4jtbfkfszj67c2",
+  "title": "Stack Nine",
+  "author": "00000000-0000-4000-8000-00000000dead",
+  "lineage": [],
+  "seed": 1003,
+  "slots": {
+    "arena": [
+      {
+        "id": "neroarcade:arena/strip_9",
+        "props": {
+          "length": 20
+        }
+      }
+    ],
+    "pawn": [
+      {
+        "id": "neroarcade:pawn/stacker"
+      }
+    ],
+    "rule": [
+      {
+        "id": "neroarcade:rule/score_target",
+        "props": {
+          "target": 200,
+          "lives": 1
+        }
+      }
+    ],
+    "control": [
+      {
+        "id": "neroarcade:control/four_way"
+      }
+    ],
+    "pace": [
+      {
+        "id": "neroarcade:pace/ramp"
+      }
+    ],
+    "multiplayer": [
+      {
+        "id": "neroarcade:multiplayer/solo"
+      }
+    ],
+    "theme": [
+      {
+        "id": "neroarcade:theme/hangar"
+      }
+    ]
+  },
+  "created_at": 1761177602,
+  "revision": 1
+}

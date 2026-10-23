@@ -281,4 +281,10 @@ public final class SerpentPawn implements PawnModule {
     public Object[] effectArgs(PropertyValues props) {
         return new Object[] {props.getInt("speed"), props.getInt("start_length")};
     }
+
+    /** The Arcade Exchange genre word ({@code neroarcade.tag.grow}). */
+    @Override
+    public String genreTag() {
+        return "grow";
+    }
 }

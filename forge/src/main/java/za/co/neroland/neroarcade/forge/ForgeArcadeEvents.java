@@ -2,6 +2,7 @@ package za.co.neroland.neroarcade.forge;
 
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraftforge.event.RegisterCommandsEvent;
+import net.minecraftforge.event.TickEvent;
 import net.minecraftforge.event.entity.player.PlayerEvent;
 import net.minecraftforge.event.server.ServerStoppingEvent;
 
@@ -18,6 +19,7 @@ public final class ForgeArcadeEvents {
     public static void register() {
         RegisterCommandsEvent.BUS.addListener(event -> ArcadeCommands.register(event.getDispatcher()));
         ServerStoppingEvent.BUS.addListener(event -> ServerHooks.fireStopping(event.getServer()));
+        TickEvent.ServerTickEvent.Post.BUS.addListener(event -> ServerHooks.fireTick(event.server()));
         PlayerEvent.PlayerLoggedOutEvent.BUS.addListener(event -> {
             if (event.getEntity() instanceof ServerPlayer player) {
                 ServerHooks.firePlayerLeave(player);

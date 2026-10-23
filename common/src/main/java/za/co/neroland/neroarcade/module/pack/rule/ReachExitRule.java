@@ -203,4 +203,10 @@ public final class ReachExitRule implements RuleModule {
         }
         return false;
     }
+
+    /** The Arcade Exchange genre word ({@code neroarcade.tag.escape}). */
+    @Override
+    public String genreTag() {
+        return "escape";
+    }
 }

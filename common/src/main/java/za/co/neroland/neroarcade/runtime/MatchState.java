@@ -421,7 +421,10 @@ public final class MatchState {
         seatRespawnTicks[seat] = Budgets.RESPAWN_TICKS;
     }
 
-    /** Removes the seat's pawn and every SEGMENT it owns; clears its pawn id. */
+    /**
+     * Removes the seat's pawn, every SEGMENT it owns and every PROJECTILE it owns (001 A15.d: a body's shots go
+     * with it; a returned shot belongs to the returner); clears its pawn id.
+     */
     public void removeSeatBody(int seat) {
         if (!validSeat(seat)) {
             return;
@@ -433,7 +436,9 @@ public final class MatchState {
         int index = 0;
         while (index < entityCount) {
             int base = index * ENTITY_STRIDE;
-            if (entities[base + Entities.KIND] == EntityKind.SEGMENT.ordinal() && entities[base + Entities.OWNER] == seat) {
+            int kind = entities[base + Entities.KIND];
+            if ((kind == EntityKind.SEGMENT.ordinal() || kind == EntityKind.PROJECTILE.ordinal())
+                    && entities[base + Entities.OWNER] == seat) {
                 remove(entities[base + Entities.ID]);
             } else {
                 index++;

@@ -1,0 +1,64 @@
+{
+  "schema": 1,
+  "id": "id3etuw57vdflrmz",
+  "title": "Serpent Garden",
+  "author": "00000000-0000-4000-8000-00000000dead",
+  "lineage": [],
+  "seed": 1002,
+  "slots": {
+    "arena": [
+      {
+        "id": "neroarcade:arena/grid_16"
+      }
+    ],
+    "pawn": [
+      {
+        "id": "neroarcade:pawn/serpent",
+        "props": {
+          "speed": 2
+        }
+      }
+    ],
+    "rule": [
+      {
+        "id": "neroarcade:rule/score_target",
+        "props": {
+          "target": 100,
+          "lives": 1
+        }
+      }
+    ],
+    "pickup": [
+      {
+        "id": "neroarcade:pickup/score_orb"
+      }
+    ],
+    "control": [
+      {
+        "id": "neroarcade:control/four_way"
+      }
+    ],
+    "pace": [
+      {
+        "id": "neroarcade:pace/steady"
+      }
+    ],
+    "modifier": [
+      {
+        "id": "neroarcade:modifier/wrap_around"
+      }
+    ],
+    "multiplayer": [
+      {
+        "id": "neroarcade:multiplayer/solo"
+      }
+    ],
+    "theme": [
+      {
+        "id": "neroarcade:theme/terminal_green"
+      }
+    ]
+  },
+  "created_at": 1761177601,
+  "revision": 1
+}

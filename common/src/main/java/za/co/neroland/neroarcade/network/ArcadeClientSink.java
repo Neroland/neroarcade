@@ -27,6 +27,12 @@ public interface ArcadeClientSink {
     default void onBenchState(BenchStatePayload payload) {
     }
 
+    default void onBoardPage(BoardPagePayload payload) {
+    }
+
+    default void onExchangePage(ExchangePagePayload payload) {
+    }
+
     /** Session end: drop every client-side mirror. */
     default void clear() {
     }

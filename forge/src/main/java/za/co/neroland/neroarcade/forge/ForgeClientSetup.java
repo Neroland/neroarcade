@@ -15,6 +15,7 @@ import za.co.neroland.neroarcade.client.ArcadeClient;
 import za.co.neroland.neroarcade.client.hud.ArcadeHud;
 import za.co.neroland.neroarcade.client.input.ArcadeKeys;
 import za.co.neroland.neroarcade.client.render.ArcadeCabinetRenderer;
+import za.co.neroland.neroarcade.client.render.MarqueeScreenRenderer;
 import za.co.neroland.neroarcade.client.screen.GameBenchScreen;
 import za.co.neroland.neroarcade.network.ArcadeNetwork;
 import za.co.neroland.neroarcade.registry.ModBlockEntities;
@@ -37,6 +38,7 @@ public final class ForgeClientSetup {
                 MenuScreens.register(ModMenus.GAME_BENCH.get(), GameBenchScreen::new)));
         EntityRenderersEvent.RegisterRenderers.BUS.addListener(event -> {
             event.registerBlockEntityRenderer(ModBlockEntities.ARCADE_CABINET.get(), ctx -> new ArcadeCabinetRenderer());
+            event.registerBlockEntityRenderer(ModBlockEntities.MARQUEE_SCREEN.get(), ctx -> new MarqueeScreenRenderer());
         });
         AddGuiOverlayLayersEvent.BUS.addListener(event -> {
             event.getLayeredDraw().add(Identifier.fromNamespaceAndPath(NeroArcadeCommon.MOD_ID, "arcade_hud"),

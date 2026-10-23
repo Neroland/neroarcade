@@ -144,4 +144,10 @@ public final class TurnsMultiplayer implements MultiplayerModule {
     public RuleOutcome resolve(ModuleContext ctx, RuleOutcome fromRule) {
         return fromRule;
     }
+
+    /** The Arcade Exchange genre word ({@code neroarcade.tag.hotseat}). */
+    @Override
+    public String genreTag() {
+        return "hotseat";
+    }
 }

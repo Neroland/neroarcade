@@ -9,17 +9,27 @@ import net.minecraft.world.InteractionResult;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Block;
+import net.minecraft.world.level.block.EntityBlock;
+import net.minecraft.world.level.block.entity.BlockEntity;
+import net.minecraft.world.level.block.entity.BlockEntityTicker;
+import net.minecraft.world.level.block.entity.BlockEntityType;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.StateDefinition;
 import net.minecraft.world.phys.BlockHitResult;
 
+import org.jetbrains.annotations.Nullable;
+
 import za.co.neroland.nerolandcore.registry.BlockCodecs;
 
+import za.co.neroland.neroarcade.bus.MarqueeScreenBlockEntity;
+import za.co.neroland.neroarcade.registry.ModBlockEntities;
+
 /**
- * The Marquee Screen ({@code neroarcade:marquee_screen}). Shift-use cycles its {@code scale} 1..4 (004 §8.5);
- * mirroring a linked game and rolling the top scores arrives in Stage 4.
+ * The Marquee Screen ({@code neroarcade:marquee_screen}). Shift-use cycles its {@code scale} 1..4 (004 §8.5); a
+ * plain use does nothing — the marquee is never an input. On a Link Bus it mirrors the host's game and, while the
+ * host is idle, rolls that cartridge's top ten (003 §5). The drawn surface is visual only; the block stays 1x1.
  */
-public class MarqueeScreenBlock extends FacingBlock {
+public class MarqueeScreenBlock extends FacingBlock implements EntityBlock {
 
     public static final MapCodec<MarqueeScreenBlock> CODEC = BlockCodecs.simple(MarqueeScreenBlock::new);
 
@@ -51,5 +61,20 @@ public class MarqueeScreenBlock extends FacingBlock {
             player.sendOverlayMessage(Component.translatable("block.neroarcade.marquee_screen.scale", next));
         }
         return InteractionResult.SUCCESS;
+    }
+
+    @Override
+    public @Nullable BlockEntity newBlockEntity(BlockPos pos, BlockState state) {
+        return new MarqueeScreenBlockEntity(pos, state);
+    }
+
+    @Override
+    @SuppressWarnings("unchecked")
+    public <T extends BlockEntity> @Nullable BlockEntityTicker<T> getTicker(Level level, BlockState state,
+            BlockEntityType<T> type) {
+        if (level.isClientSide() || type != ModBlockEntities.MARQUEE_SCREEN.get()) {
+            return null;
+        }
+        return (BlockEntityTicker<T>) (BlockEntityTicker<MarqueeScreenBlockEntity>) (lvl, pos, st, m) -> m.serverTick();
     }
 }

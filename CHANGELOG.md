@@ -7,6 +7,68 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed — Stage 3 review (2026-10-23)
+
+- **Respawn grace.** Every respawn comes with 20 ticks of shield, so a drone or a beam can no longer camp the
+  spot where you come back. Your very first spawn has none.
+- **Hidden things are off the board.** A hidden beam cell, pickup, hazard or shot never touches anything.
+- **A pawn's shots go with it.** When a pawn goes down (or its hot-seat turn ends) its shots vanish.
+- **Paddle computer player.** It now reads the ball's bounce off the side walls and decides every tick, so it
+  settles under the ball instead of overshooting.
+- **Bouncing Ball.** A moving bat can no longer flatten the ball into a straight up-and-down shot; it always
+  keeps some sideways speed.
+- **Laser Sweep.** The beam starts on the line farthest from every player and carries a gap (a quarter of the
+  board, at least two cells) that moves to a new place on every pass. Slip through the gap.
+- **Computer player.** With nothing to chase it heads for the middle of the board, never steps into the void,
+  and a pawn that always moves (a serpent, a runner) turns instead of trying to reverse.
+- **Runner.** Landing locks your next hop and lane change for four ticks, so holding the hop button is no
+  longer a way to stay in the air forever.
+- **Examples.** Paddle Duel plays to 3 lives; Shrink Island is now a duel of two short serpents.
+
+### Added — linked multiplayer and leaderboards (Stage 4A, 2026-10-23)
+
+- **Link Bus.** Join up to four cabinets with up to 16 Link Cables and a Link Bus to play one game together. The
+  cabinet holding a cartridge runs the game; every other cabinet on the bus shows the same screen and seats one
+  more player. Take a seat, press your action key when you are ready, and the countdown starts once everyone who
+  sat down is ready. A second cartridge on the bus shows "LINKED — REMOVE CARTRIDGE"; a fifth cabinet shows
+  "BUS FULL". Cables glow while a linked game is on.
+- A Versus game with one player and a free cabinet waits ten seconds for a second player, then brings in the
+  computer opponent. A Turns game is played at the cabinet holding the cartridge: pass the controls when the HUD
+  says it is the next player's turn.
+- Breaking the cabinet that runs the game, its Link Bus, or a cable mid-match ends the match as "ABANDONED" for
+  everyone (nothing is recorded); breaking any other cabinet only frees its seat.
+- **Marquee Screen.** On a bus it shows the game being played, with every player's score and the timer beside it,
+  and rolls the cartridge's top ten between games. Without a bus it shows the NeroArcade card. Sneak-use still
+  changes its size.
+- **Leaderboards.** Every cartridge (and every copy of it) has a top-ten board and a personal best per player. The
+  results card marks a new personal best. `/neroarcade top` shows the board of the cartridge in your hand or the
+  cabinet you are looking at. A player who walks out of a match keeps a personal best but never takes a top-ten
+  spot; abandoned and hot-seat matches record nothing.
+- **Credit opt-in.** `/neroarcade privacy credit on|off` (off by default) decides whether your name appears on
+  leaderboards and on games you save. Turning it off removes your name from every board on the server.
+- New server settings: `multiplayer.enabled`, `leaderboards.enabled`, `privacy.leaderboardRetentionDays` (90,
+  at most 365), `privacy.leaderboardMaxEntries` (10), plus the exchange and economy switches the next stage uses.
+
+### Added — module packs (2026-10-23)
+
+- 36 new module chips, 43 in all, each crafted from a Blank Chip, its slot's reagent and one more item:
+  - Arenas: **Grid 32** (A 32 by 32 board with a wall border and optional obstacles); **Ring 24** (A 24-wide tube that wraps left to right, with optional pillars); **Strip 9** (A 9-wide lane that can scroll new wall gates toward the pawn).
+  - Pawns: **Paddle** (A slide-along bar that bounces hazards and shots back); **Runner** (Runs on its own; tap to hop over hazards, steer to change lane); **Serpent** (Always moving; grows with each pickup and dies touching itself); **Ship** (Drifts with inertia and fires shots where it points); **Stacker** (Guide falling pieces; full rows clear and score).
+  - Rules: **Clear Board** (Collect every pickup before the clock runs out); **Last Standing** (Last pawn alive wins; alone, survive the solo clock); **Reach Exit** (Find the exit; with a key it stays locked until every key is held); **Score Target** (First to reach the target score wins).
+  - Hazards: **Bouncing Ball** (A ball that bounces off walls and bats and scores past a goal line); **Chaser** (A drone that walks toward the nearest pawn through the maze); **Falling Blocks** (Crates drop from the top at random; dodge or catch them); **Laser Sweep** (A beam that sweeps the board back and forth; cross it when it passes); **Shrinking Floor** (The outer ring of the floor falls away at a steady interval).
+  - Pickups: **Key** (Keys that unlock the exit; without one they are worth 5 points); **Score Orb** (Orbs worth points; they return unless the rule is to clear them); **Shield** (Grab it to shrug off the next hits for a while); **Speed Boost** (Grab it to move faster for a while).
+  - Controls: **One button** (One action button and one alternate; the pawn moves on its own); **Twin stick** (Move with the pad, aim with the stick, fire with A); **Two-way** (Left and right (or up and down) plus two buttons).
+  - Pace: **Pulse** (Alternates bursts of full speed with slow stretches); **Ramp** (Starts slow and speeds up to full speed in steps).
+  - Modifiers: **Fog** (Only a circle around your pawn is visible); **Low Gravity** (Falling things fall slower; hops last longer); **Mirror** (Your controls are flipped on one or both axes); **Wrap-around** (The edges join up: leave one side, arrive on the other).
+  - Multiplayer: **Co-op** (Two to four players share one board and, by default, one life pool); **Turns** (Players take turns at one cabinet; pass the controls when told); **Versus** (Players compete on one board; last one standing or best score wins).
+  - Themes: **Cindara Dusk** (Ember reds and dusk amber under a warm sand glow); **Hangar** (Graphite deck, hazard yellow and field blue); **Terminal Green** (One-colour phosphor ladder with a single white hot spot).
+- Sixteen example games, kept with the tests and the seed of the coming gallery (Paddle Duel, Serpent Garden, Stack Nine, Drone Maze, Lane Hopper,
+  Hot-Seat Orbs, Tandem Sweep, Vault Run, Gunner Ring, Shrink Island, Mirror Pulse, Float Lane, Four-Way Rally,
+  Crate Catch, Blind Tube, Stack Duel) that between them use every chip.
+- In a hot-seat game a player waiting for their turn never reappears on the board between lives.
+- A paddle's goal line never paints over an exit, a wall or a stacked block.
+- Neon Void's description now says what it looks like.
+
 ### Added — Stage 3 groundwork (2026-10-23)
 
 - A new solid "block" cell for stacked pieces, drawn with its own tile; goal lines now draw as a dashed line in

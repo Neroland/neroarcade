@@ -94,7 +94,8 @@ class PawnPackTest {
         assertEquals(Set.of(ModuleFlag.AUTO_MOVE, ModuleFlag.ONE_AXIS), RunnerPawn.INSTANCE.flags());
         assertEquals(Set.of(ModuleFlag.ONE_AXIS), PaddlePawn.INSTANCE.flags());
         assertEquals(Set.of(ModuleFlag.FIRES), ShipPawn.INSTANCE.flags());
-        assertEquals(Set.of(ModuleFlag.AUTO_MOVE), StackerPawn.INSTANCE.flags());
+        // 008 §8.2 approved: the stacker scores on landings and row clears, so it declares SCORES
+        assertEquals(Set.of(ModuleFlag.AUTO_MOVE, ModuleFlag.SCORES), StackerPawn.INSTANCE.flags());
     }
 
     @Test

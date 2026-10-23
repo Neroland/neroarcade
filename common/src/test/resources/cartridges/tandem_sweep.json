@@ -1,0 +1,76 @@
+{
+  "schema": 1,
+  "id": "egaxfvkebwivrjn3",
+  "title": "Tandem Sweep",
+  "author": "00000000-0000-4000-8000-00000000dead",
+  "lineage": [],
+  "seed": 1007,
+  "slots": {
+    "arena": [
+      {
+        "id": "neroarcade:arena/grid_32"
+      }
+    ],
+    "pawn": [
+      {
+        "id": "neroarcade:pawn/cursor",
+        "props": {
+          "speed": 4
+        }
+      }
+    ],
+    "rule": [
+      {
+        "id": "neroarcade:rule/survive_time",
+        "props": {
+          "seconds": 90,
+          "lives": 3
+        }
+      }
+    ],
+    "hazard": [
+      {
+        "id": "neroarcade:hazard/laser_sweep",
+        "props": {
+          "axis": "both"
+        }
+      }
+    ],
+    "pickup": [
+      {
+        "id": "neroarcade:pickup/speed_boost",
+        "props": {
+          "count": 2
+        }
+      }
+    ],
+    "control": [
+      {
+        "id": "neroarcade:control/four_way",
+        "props": {
+          "diagonals": true
+        }
+      }
+    ],
+    "pace": [
+      {
+        "id": "neroarcade:pace/steady"
+      }
+    ],
+    "multiplayer": [
+      {
+        "id": "neroarcade:multiplayer/coop",
+        "props": {
+          "seats": 2
+        }
+      }
+    ],
+    "theme": [
+      {
+        "id": "neroarcade:theme/hangar"
+      }
+    ]
+  },
+  "created_at": 1761177606,
+  "revision": 1
+}

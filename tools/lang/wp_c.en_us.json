@@ -15,7 +15,7 @@
   "module.neroarcade.hazard.falling_blocks.prop.rate": "Rate (per 32 ticks)",
   "module.neroarcade.hazard.falling_blocks.prop.speed": "Speed",
   "module.neroarcade.hazard.laser_sweep": "Laser Sweep",
-  "module.neroarcade.hazard.laser_sweep.desc": "A beam that sweeps the board back and forth; cross it when it passes.",
+  "module.neroarcade.hazard.laser_sweep.desc": "A beam with one gap sweeps back and forth; slip through the gap.",
   "module.neroarcade.hazard.laser_sweep.effect": "%s · %s-tick sweep",
   "module.neroarcade.hazard.laser_sweep.prop.period": "Period (ticks per sweep)",
   "module.neroarcade.hazard.laser_sweep.prop.axis": "Axis",

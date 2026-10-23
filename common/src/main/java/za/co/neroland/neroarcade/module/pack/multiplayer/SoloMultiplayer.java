@@ -62,4 +62,10 @@ public final class SoloMultiplayer implements MultiplayerModule {
     public RuleOutcome resolve(ModuleContext ctx, RuleOutcome fromRule) {
         return fromRule;
     }
+
+    /** The Arcade Exchange genre word ({@code neroarcade.tag.solo}). */
+    @Override
+    public String genreTag() {
+        return "solo";
+    }
 }

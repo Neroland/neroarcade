@@ -1,0 +1,85 @@
+{
+  "schema": 1,
+  "id": "wvvenyyvb7sg3npi",
+  "title": "Drone Maze",
+  "author": "00000000-0000-4000-8000-00000000dead",
+  "lineage": [],
+  "seed": 1004,
+  "slots": {
+    "arena": [
+      {
+        "id": "neroarcade:arena/grid_16",
+        "props": {
+          "obstacles": "maze_lite"
+        }
+      }
+    ],
+    "pawn": [
+      {
+        "id": "neroarcade:pawn/cursor"
+      }
+    ],
+    "rule": [
+      {
+        "id": "neroarcade:rule/clear_board"
+      }
+    ],
+    "hazard": [
+      {
+        "id": "neroarcade:hazard/chaser",
+        "props": {
+          "count": 1,
+          "speed": 2
+        }
+      },
+      {
+        "id": "neroarcade:hazard/chaser",
+        "props": {
+          "count": 1,
+          "speed": 1
+        }
+      }
+    ],
+    "pickup": [
+      {
+        "id": "neroarcade:pickup/score_orb",
+        "props": {
+          "count": 12
+        }
+      },
+      {
+        "id": "neroarcade:pickup/shield"
+      }
+    ],
+    "control": [
+      {
+        "id": "neroarcade:control/four_way"
+      }
+    ],
+    "pace": [
+      {
+        "id": "neroarcade:pace/steady"
+      }
+    ],
+    "modifier": [
+      {
+        "id": "neroarcade:modifier/fog",
+        "props": {
+          "radius": 5
+        }
+      }
+    ],
+    "multiplayer": [
+      {
+        "id": "neroarcade:multiplayer/solo"
+      }
+    ],
+    "theme": [
+      {
+        "id": "neroarcade:theme/neon_void"
+      }
+    ]
+  },
+  "created_at": 1761177603,
+  "revision": 1
+}

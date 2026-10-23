@@ -64,4 +64,10 @@ public final class TerminalGreenTheme implements ThemeModule {
     private static Identifier id(String path) {
         return Identifier.fromNamespaceAndPath("neroarcade", path);
     }
+
+    /** The Arcade Exchange genre word ({@code neroarcade.tag.terminal}). */
+    @Override
+    public String genreTag() {
+        return "terminal";
+    }
 }

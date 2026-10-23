@@ -9,6 +9,8 @@ import za.co.neroland.nerolandcore.registry.RegistrationProvider.RegistryEntry;
 
 import za.co.neroland.neroarcade.NeroArcadeCommon;
 import za.co.neroland.neroarcade.bench.GameBenchMenu;
+import za.co.neroland.neroarcade.duplicator.DuplicatorMenu;
+import za.co.neroland.neroarcade.exchange.ExchangeMenu;
 
 /**
  * Menu types. A plain vanilla {@code MenuType} (no extra open data): the client copy needs no bench position, which
@@ -21,6 +23,14 @@ public final class ModMenus {
 
     public static final RegistryEntry<MenuType<GameBenchMenu>> GAME_BENCH = MENUS.register(ArcadeIds.GAME_BENCH,
             key -> new MenuType<>(GameBenchMenu::new, FeatureFlags.VANILLA_SET));
+
+    /** "Copy a game" — the Cartridge Duplicator. */
+    public static final RegistryEntry<MenuType<DuplicatorMenu>> CARTRIDGE_DUPLICATOR = MENUS.register(
+            ArcadeIds.CARTRIDGE_DUPLICATOR, key -> new MenuType<>(DuplicatorMenu::new, FeatureFlags.VANILLA_SET));
+
+    /** "Find a game to download" — the Arcade Exchange; pages arrive as {@code ExchangePagePayload}. */
+    public static final RegistryEntry<MenuType<ExchangeMenu>> ARCADE_EXCHANGE = MENUS.register(
+            ArcadeIds.ARCADE_EXCHANGE, key -> new MenuType<>(ExchangeMenu::new, FeatureFlags.VANILLA_SET));
 
     private ModMenus() {
     }

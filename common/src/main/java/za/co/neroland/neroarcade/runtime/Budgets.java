@@ -21,6 +21,11 @@ public final class Budgets {
     public static final int MAX_IMPORT_JSON_BYTES = 12288;
     public static final int MAX_REPLAY_ENTRIES = 20000;
     public static final int RESPAWN_TICKS = 20;
+    /**
+     * SHIELD ticks granted on every housekeeping respawn (001 A15.b). Bound: a seat conceding a goal at tick
+     * {@code t} is shielded until {@code t + 40}; a re-served ball (serve delay 40) first moves at {@code t + 42}.
+     */
+    public static final int RESPAWN_GRACE_TICKS = 20;
     public static final int COUNTDOWN_TICKS = 60;
     /** Base ticks per second. */
     public static final int TICKS_PER_SECOND = 20;

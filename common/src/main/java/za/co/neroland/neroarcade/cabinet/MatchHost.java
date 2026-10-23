@@ -13,6 +13,7 @@ import net.minecraft.core.BlockPos;
 
 import org.jetbrains.annotations.Nullable;
 
+import za.co.neroland.neroarcade.board.RecordOutcome;
 import za.co.neroland.neroarcade.game.ResolvedGame;
 import za.co.neroland.neroarcade.network.HudLegendPayload;
 import za.co.neroland.neroarcade.network.MatchPhasePayload;
@@ -25,67 +26,101 @@ import za.co.neroland.neroarcade.runtime.net.SnapshotCodec;
 import za.co.neroland.neroarcade.runtime.net.SnapshotPayload;
 
 /**
- * One running game on one bus (003 §1, §4). A solo cabinet is a bus of one ({@code busId 0}, seat 0); Stage 4
- * adds joining, so nothing here has a "solo path".
+ * One running game on one bus (003 §1, §4). A solo cabinet is a bus of one ({@code busId 0}, seat 0); a Link Bus
+ * host is the same class with up to four bus seats, so there is no "solo path" and no "bus path".
  *
- * <p>Owns the {@link ArcadeRuntime}, the seat table and the phase machine
- * {@code IDLE → LOBBY → COUNTDOWN → PLAYING → RESULTS → (LOBBY | IDLE)}. With {@code autoStart} (a solo bus) the
- * use that binds the seat <i>is</i> the start. Sends {@code MatchPhasePayload} on every phase change and to new
- * viewers, {@code HudLegendPayload} at bind, and {@code SnapshotPayload}s at {@code runtime.snapshotHz} with a
- * keyframe every {@code runtime.keyframeTicks} and whenever a new viewer arrives.
+ * <p>Owns the {@link ArcadeRuntime}, the seat table (index = bus seat = the cabinet's index on the bus) and the
+ * phase machine {@code IDLE → LOBBY → COUNTDOWN → PLAYING → RESULTS → (LOBBY | IDLE)}. On a one-seat bus the use
+ * that binds the seat <i>is</i> the start; with more seats every bound seat presses READY (START) and the match
+ * counts down once the MULTIPLAYER chip's minimum is bound and ready. A {@code versus}-style chip that can field a
+ * runtime opponent starts with one ready human after {@link #OPPONENT_WAIT_TICKS} in the lobby.
+ *
+ * <p><b>Runtime seats.</b> At COUNTDOWN the bound bus seats are packed in ascending order into runtime seats
+ * 0..n-1 (two players at cabinets 0 and 2 play as P1 and P2). Phase packets carry the recipient's runtime seat from
+ * COUNTDOWN to RESULTS and its bus seat before that. A <b>hot-seat</b> game ({@link HotSeat}) binds one controller
+ * on the host cabinet only; its input drives whichever runtime seat is on turn, the controller may change hands
+ * mid-match, and the result is never credited (003 §4.5).
  *
  * <p><b>Invariants:</b> {@link #finish} is the only caller of {@link BoardWriter#record}, runs at most once per
- * match and never for an abandoned match. The runtime never sees a player: seats are indexes; this class maps
- * them to UUIDs only for the {@link BusMatchResult}. Server thread only.
+ * match and never for an abandoned or hot-seat match. The runtime never sees a player: seats are indexes; this
+ * class maps them to UUIDs only for the {@link BusMatchResult}. Server thread only.
  */
 public final class MatchHost {
 
     /** How long the results strip stays up (003 §4). */
     public static final int RESULTS_TICKS = 200;
+    /** A lobby with one ready human and a free cabinet waits this long for a second human (003 §4). */
+    public static final int OPPONENT_WAIT_TICKS = 200;
 
     private final HostEnv env;
     private final BlockPos hostPos;
     private final ResolvedGame game;
     private final BoardWriter writer;
-    private final int seatCount;
-    private final boolean autoStart;
-    private final Seat[] seats;
-    /** Who was seated when the match started (index = seat), for the result; null when nobody. */
-    private final UUID[] matchSeats;
-    private final int[] lastButtons;
+    private final boolean hotSeat;
+    private final boolean runtimeOpponent;
+    private final Seat[] seats = new Seat[Budgets.MAX_SEATS];
+    private final int[] lastButtons = new int[Budgets.MAX_SEATS];
+    /** Who played each runtime seat this match (null: nobody, the opponent, or a hot-seat match). */
+    private final UUID[] matchSeats = new UUID[Budgets.MAX_SEATS];
+    /** Bus seat → runtime seat for the current match; -1 when not playing. */
+    private final int[] busToRuntime = new int[Budgets.MAX_SEATS];
+    private int[] runtimeToBus = new int[0];
 
+    private int seatCount;
+    private int pendingSeatCount = -1;
     private BusPhase phase = BusPhase.IDLE;
     private int matchId;
     private @Nullable ArcadeRuntime runtime;
     private long seed;
     private int phaseTicks;
+    private int lobbyWait;
     private boolean finished;
     private boolean paused;
+    private int newBestMask;
     private @Nullable MatchResult lastResult;
     private @Nullable SnapshotCodec.Stream stream;
     private Set<UUID> knownViewers = new HashSet<>();
     private int ticks;
+    private MatchListener listener = MatchListener.NONE;
+    /** The Exchange counts one play per cartridge insertion (003 §8.1); a host lives for one insertion. */
+    private boolean playCounted;
 
     /**
-     * @param busSeats  seats on this bus: 1 for a solo cabinet or a bench test play
-     * @param autoStart true on a one-seat bus: binding the seat starts the countdown
+     * @param busSeats seats this bus can bind: 1 for a solo cabinet or a bench test play, else
+     *                 {@link #busSeatsFor(ResolvedGame, int)}
      */
-    public MatchHost(HostEnv env, BlockPos hostPos, ResolvedGame game, BoardWriter writer, int busSeats,
-            boolean autoStart) {
+    public MatchHost(HostEnv env, BlockPos hostPos, ResolvedGame game, BoardWriter writer, int busSeats) {
         this.env = env;
         this.hostPos = hostPos.immutable();
         this.game = game;
         this.writer = writer == null ? BoardWriter.NONE : writer;
-        this.seatCount = Math.max(1, Math.min(Budgets.MAX_SEATS, busSeats));
-        this.autoStart = autoStart;
-        this.seats = new Seat[seatCount];
-        this.matchSeats = new UUID[Budgets.MAX_SEATS];
-        this.lastButtons = new int[seatCount];
+        this.hotSeat = HotSeat.is(game);
+        this.runtimeOpponent = game.multiplayer().runtimeOpponent(game.multiplayerProps());
+        this.seatCount = clampSeats(busSeats);
+        Arrays.fill(busToRuntime, -1);
+    }
+
+    /** Who hears about finished matches (events, gates, plays, seams); {@link MatchListener#NONE} by default. */
+    public MatchHost listener(MatchListener value) {
+        this.listener = value == null ? MatchListener.NONE : value;
+        return this;
     }
 
     /** A solo (loopback) host: one seat, starts on use. */
     public static MatchHost solo(HostEnv env, BlockPos hostPos, ResolvedGame game, BoardWriter writer) {
-        return new MatchHost(env, hostPos, game, writer, 1, true);
+        return new MatchHost(env, hostPos, game, writer, 1);
+    }
+
+    /** Bus seats for {@code game} on a bus of {@code cabinets}: hot-seat = 1, else min(chip seats, cabinets). */
+    public static int busSeatsFor(ResolvedGame game, int cabinets) {
+        if (HotSeat.is(game)) {
+            return 1;
+        }
+        return Math.max(1, Math.min(Math.min(game.seats(), cabinets), Budgets.MAX_SEATS));
+    }
+
+    private int clampSeats(int n) {
+        return hotSeat ? 1 : Math.max(1, Math.min(Budgets.MAX_SEATS, n));
     }
 
     // --- read -----------------------------------------------------------------------------------
@@ -99,6 +134,7 @@ public final class MatchHost {
         return matchId;
     }
 
+    /** Bus seats that can be bound now (1 on a solo cabinet). */
     public int seatCount() {
         return seatCount;
     }
@@ -111,9 +147,14 @@ public final class MatchHost {
         return game;
     }
 
+    /** True for a hot-seat (turns) game: one controller at the host cabinet, never credited. */
+    public boolean hotSeat() {
+        return hotSeat;
+    }
+
     /** A copy of the seat table (index = bus seat; null = empty). */
     public Seat[] seats() {
-        return seats.clone();
+        return Arrays.copyOf(seats, seatCount);
     }
 
     public @Nullable Seat seat(int index) {
@@ -121,12 +162,7 @@ public final class MatchHost {
     }
 
     public boolean hasSeat() {
-        for (Seat s : seats) {
-            if (s != null) {
-                return true;
-            }
-        }
-        return false;
+        return boundCount() > 0;
     }
 
     public Optional<MatchResult> lastResult() {
@@ -141,21 +177,69 @@ public final class MatchHost {
         return paused;
     }
 
-    /** Seats needed to leave LOBBY: the MULTIPLAYER chip's seat count, capped by the bus. */
+    /** The runtime seat bus seat {@code busSeat} plays this match, or -1. */
+    public int runtimeSeatOf(int busSeat) {
+        return busSeat >= 0 && busSeat < busToRuntime.length ? busToRuntime[busSeat] : -1;
+    }
+
+    /** Runtime seats that set a personal best in the last finished match (bit = runtime seat). */
+    public int newBestMask() {
+        return newBestMask;
+    }
+
+    /** Seats needed to leave LOBBY: the MULTIPLAYER chip's seat count, capped by the bus (hot-seat: 1). */
     public int minimumSeats() {
-        return Math.max(1, Math.min(game.seats(), seatCount));
+        return hotSeat ? 1 : Math.max(1, Math.min(game.seats(), seatCount));
+    }
+
+    // --- bus size -------------------------------------------------------------------------------
+
+    /**
+     * The bus gained or lost cabinets. Applied at once when no match runs (seats beyond the new count are
+     * unbound), otherwise when the match ends.
+     */
+    public void setBusSeats(int busSeats) {
+        int n = clampSeats(busSeats);
+        if (phase.running()) {
+            pendingSeatCount = n;
+            return;
+        }
+        applySeatCount(n);
+    }
+
+    private void applySeatCount(int n) {
+        pendingSeatCount = -1;
+        if (n == seatCount) {
+            return;
+        }
+        for (int s = n; s < seatCount; s++) {
+            if (seats[s] != null) {
+                Seat leaving = seats[s];
+                seats[s] = null;
+                env.send(leaving.playerUuid, phasePayload().forSeat(-1, hostPos));
+            }
+        }
+        seatCount = n;
+        if (phase == BusPhase.LOBBY && !hasSeat()) {
+            phase = BusPhase.IDLE;
+        }
+        broadcastPhase();
     }
 
     // --- seats ----------------------------------------------------------------------------------
 
     /**
      * Binds a seat. Allowed in IDLE and LOBBY, and in RESULTS only when nobody is seated (a fresh player at a
-     * solo cabinet whose last player left). Never while a match runs (a late joiner never enters a running match).
+     * cabinet whose last player left). Never while a match runs — except the hot-seat controller, which may change
+     * hands mid-match.
      *
      * @return false if the seat index is out of range or taken, or the phase refuses
      */
     public boolean bind(int index, Seat s) {
-        if (index < 0 || index >= seatCount || seats[index] != null || s == null || phase.running()) {
+        if (index < 0 || index >= seatCount || seats[index] != null || s == null) {
+            return false;
+        }
+        if (phase.running() && !hotSeat) {
             return false;
         }
         if (phase == BusPhase.RESULTS) {
@@ -171,7 +255,7 @@ public final class MatchHost {
         if (phase == BusPhase.IDLE) {
             phase = BusPhase.LOBBY;
         }
-        if (autoStart && boundCount() >= minimumSeats()) {
+        if (phase == BusPhase.LOBBY && autoStart() && boundCount() >= minimumSeats()) {
             startCountdown();
         }
         broadcastPhase();
@@ -185,7 +269,7 @@ public final class MatchHost {
         }
         Seat leaving = seats[index];
         seats[index] = null;
-        env.send(leaving.playerUuid, phasePayload().forSeat(-1));
+        env.send(leaving.playerUuid, phasePayload().forSeat(-1, hostPos));
         switch (phase) {
             case LOBBY -> {
                 if (!hasSeat()) {
@@ -195,28 +279,38 @@ public final class MatchHost {
                 }
             }
             case COUNTDOWN -> {
-                if (runtime != null) {
-                    runtime.dropSeat(index);
-                }
-                if (boundCount() < minimumSeats()) {
-                    runtime = null;
-                    stream = null;
-                    phase = hasSeat() ? BusPhase.LOBBY : BusPhase.IDLE;
+                if (!hotSeat) {
+                    dropRuntimeSeat(index);
+                    if (boundCount() < minimumSeats()) {
+                        abortToLobby();
+                    }
                 }
             }
             case PLAYING -> {
-                if (runtime != null) {
-                    runtime.dropSeat(index);
+                if (!hotSeat) {
+                    // the walk-out: the rule decides the game consequence; no human left = ABANDONED
+                    dropRuntimeSeat(index);
+                    if (!hasSeat()) {
+                        end(MatchResult.Outcome.ABANDONED);
+                        return;
+                    }
                 }
-                if (!hasSeat()) {
-                    end(MatchResult.Outcome.ABANDONED);
-                    return;
-                }
+                // hot-seat: the controller left; the match keeps running for the next player (003 §4.5)
             }
             default -> {
             }
         }
         broadcastPhase();
+    }
+
+    private void dropRuntimeSeat(int busSeat) {
+        int r = runtimeSeatOf(busSeat);
+        if (runtime != null && r >= 0) {
+            runtime.dropSeat(r);
+        }
+        if (busSeat >= 0 && busSeat < busToRuntime.length) {
+            busToRuntime[busSeat] = -1;
+        }
     }
 
     /** Latches a seat's input for the next tick boundary (the caller has passed {@link InputGate}). */
@@ -236,7 +330,7 @@ public final class MatchHost {
                 Budgets.maxInputPacketsPerSecond());
     }
 
-    /** START: ready toggle in LOBBY; rematch in RESULTS (host seat only — the lowest bound seat). */
+    /** START: ready toggle in LOBBY; rematch in RESULTS (host seat only — seat 0, else the lowest bound seat). */
     public void pressStart(int index) {
         Seat s = seat(index);
         if (s == null) {
@@ -249,11 +343,14 @@ public final class MatchHost {
         } else if (phase == BusPhase.RESULTS && index == lowestBoundSeat()) {
             for (Seat other : seats) {
                 if (other != null) {
-                    other.ready = false;
+                    other.ready = false; // a fresh consent per match
                 }
             }
+            runtime = null;
+            stream = null;
             phase = BusPhase.LOBBY;
-            if (autoStart && boundCount() >= minimumSeats()) {
+            applyPending();
+            if (autoStart() && boundCount() >= minimumSeats()) {
                 startCountdown();
             }
             broadcastPhase();
@@ -267,6 +364,7 @@ public final class MatchHost {
         ticks++;
         startEdges();
         switch (phase) {
+            case LOBBY -> opponentWait();
             case COUNTDOWN, PLAYING -> stepRuntime();
             case RESULTS -> {
                 if (--phaseTicks <= 0) {
@@ -284,8 +382,8 @@ public final class MatchHost {
     }
 
     /**
-     * Forces the match to end (host broken, cartridge removed, unload, power timeout, sleep). A running match
-     * ends {@code forced} — normally {@code ABANDONED} — with no leaderboard write.
+     * Forces the match to end (host broken, cartridge removed, unload, power timeout, sleep, hub broken). A
+     * running match ends {@code forced} — normally {@code ABANDONED} — with no leaderboard write.
      */
     public void end(MatchResult.Outcome forced) {
         if (!phase.running() || runtime == null) {
@@ -294,13 +392,43 @@ public final class MatchHost {
         int[] scores = scoresOf(runtime);
         lastResult = new MatchResult(forced, 0, scores, runtime.state().tick(), runtime.state().stateHash());
         finished = true;
+        newBestMask = 0;
         phase = BusPhase.RESULTS;
         phaseTicks = RESULTS_TICKS;
         paused = false;
         broadcastPhase();
     }
 
+    /** True when bus seats other than seat 0 play in the running match (hub broken → the match cannot go on). */
+    public boolean busSeatsInMatch() {
+        if (!phase.running()) {
+            return false;
+        }
+        for (int s = 1; s < busToRuntime.length; s++) {
+            if (busToRuntime[s] >= 0) {
+                return true;
+            }
+        }
+        return false;
+    }
+
     // --- internals ------------------------------------------------------------------------------
+
+    private boolean autoStart() {
+        return seatCount == 1;
+    }
+
+    private void opponentWait() {
+        boolean waiting = runtimeOpponent && !hotSeat && seatCount > 1 && boundCount() == 1 && allBoundReady();
+        if (!waiting) {
+            lobbyWait = 0;
+            return;
+        }
+        if (++lobbyWait >= OPPONENT_WAIT_TICKS) {
+            startCountdown();
+            broadcastPhase();
+        }
+    }
 
     private void stepRuntime() {
         ArcadeRuntime rt = runtime;
@@ -316,9 +444,16 @@ public final class MatchHost {
         if (!powered) {
             return;
         }
-        SeatInput[] row = new SeatInput[seatCount];
-        for (int s = 0; s < seatCount; s++) {
-            row[s] = seats[s] == null ? SeatInput.NONE : seats[s].latched;
+        int n = rt.state().seatCount();
+        SeatInput[] row = new SeatInput[Math.min(n, Budgets.MAX_SEATS)];
+        for (int r = 0; r < row.length; r++) {
+            Seat s;
+            if (hotSeat) {
+                s = seats[0]; // the controller drives whoever is on turn; the chip masks the rest
+            } else {
+                s = r < runtimeToBus.length && busToRuntime[runtimeToBus[r]] == r ? seats[runtimeToBus[r]] : null;
+            }
+            row[r] = s == null ? SeatInput.NONE : s.latched;
         }
         rt.step(row);
         if (phase == BusPhase.COUNTDOWN && rt.state().phase() == MatchPhase.PLAYING) {
@@ -336,19 +471,40 @@ public final class MatchHost {
         finished = false;
         lastResult = null;
         paused = false;
+        newBestMask = 0;
+        lobbyWait = 0;
         Arrays.fill(matchSeats, null);
-        for (int s = 0; s < seatCount; s++) {
-            matchSeats[s] = seats[s] == null ? null : seats[s].playerUuid;
+        Arrays.fill(busToRuntime, -1);
+        int runtimeSeats;
+        if (hotSeat) {
+            runtimeToBus = new int[] {0};
+            busToRuntime[0] = 0;
+            runtimeSeats = game.seats(); // turn seats are not identities: nothing is credited
+        } else {
+            List<Integer> bound = new ArrayList<>();
+            for (int s = 0; s < seatCount; s++) {
+                if (seats[s] != null) {
+                    bound.add(s);
+                }
+            }
+            runtimeToBus = new int[bound.size()];
+            for (int r = 0; r < runtimeToBus.length; r++) {
+                int bus = bound.get(r);
+                runtimeToBus[r] = bus;
+                busToRuntime[bus] = r;
+                matchSeats[r] = seats[bus].playerUuid;
+            }
+            runtimeSeats = Math.max(1, runtimeToBus.length);
         }
         seed = game.def().seed().orElseGet(env::newSeed);
-        ArcadeRuntime rt = new ArcadeRuntime(game, ArcadeRuntime.newState(game, seatCount), null);
+        ArcadeRuntime rt = new ArcadeRuntime(game, ArcadeRuntime.newState(game, runtimeSeats), null);
         rt.start(seed);
         runtime = rt;
         stream = new SnapshotCodec.Stream(Budgets.keyframeTicks(), Budgets.snapshotMaxBytes());
         phase = BusPhase.COUNTDOWN;
     }
 
-    /** The only leaderboard write path; once per match; never for an abandoned result. */
+    /** The only leaderboard write path; once per match; never for an abandoned or hot-seat result. */
     private void finish(MatchResult r) {
         if (finished) {
             return;
@@ -357,19 +513,37 @@ public final class MatchHost {
         lastResult = r;
         phase = BusPhase.RESULTS;
         phaseTicks = RESULTS_TICKS;
-        if (r.outcome() != MatchResult.Outcome.ABANDONED) {
-            writer.record(toBusResult(r));
+        newBestMask = 0;
+        if (r.outcome() == MatchResult.Outcome.ABANDONED) {
+            broadcastPhase(); // an abandoned match skips everything but the phase packet (003 §6.1)
+            return;
+        }
+        RecordOutcome written = RecordOutcome.NONE;
+        if (!hotSeat) {
+            RecordOutcome outcome = writer.record(toBusResult(r));
+            written = outcome == null ? RecordOutcome.NONE : outcome;
+            newBestMask = written.newBestMask();
+        }
+        boolean firstPlay = !playCounted;
+        playCounted = true;
+        try {
+            listener.onMatchEnd(new MatchListener.MatchEnd(toBusResult(r), game, written, hotSeat, firstPlay, hostPos));
+        } catch (RuntimeException e) {
+            // a listener (events, seams) must never take the match down with it
+            za.co.neroland.neroarcade.NeroArcadeCommon.LOGGER.warn("[NeroArcade] match-end listener failed ({})",
+                    e.getClass().getName());
         }
         broadcastPhase();
     }
 
     private BusMatchResult toBusResult(MatchResult r) {
         int[] scores = r.scores();
-        int[] ranks = ranks(scores, seatCount);
+        int n = runtime == null ? runtimeToBus.length : runtime.state().seatCount();
+        int[] ranks = ranks(scores, n);
         int dropped = runtime == null ? 0 : runtime.state().droppedSeatMask();
         int opponent = runtime == null ? -1 : runtime.opponentSeat();
         List<BusMatchResult.SeatResult> lines = new ArrayList<>();
-        for (int s = 0; s < seatCount; s++) {
+        for (int s = 0; s < n && s < matchSeats.length; s++) {
             if (matchSeats[s] == null || s == opponent) {
                 continue;
             }
@@ -380,28 +554,43 @@ public final class MatchHost {
                 BusMatchResult.EndedBy.RULE, r.finalHash());
     }
 
-    private void maybeStartFromLobby() {
-        if (phase != BusPhase.LOBBY || boundCount() < minimumSeats()) {
-            return;
-        }
-        for (Seat s : seats) {
-            if (s != null && !s.ready) {
-                return;
+    private boolean allBoundReady() {
+        for (int s = 0; s < seatCount; s++) {
+            if (seats[s] != null && !seats[s].ready) {
+                return false;
             }
+        }
+        return true;
+    }
+
+    private void maybeStartFromLobby() {
+        if (phase != BusPhase.LOBBY || boundCount() < minimumSeats() || !allBoundReady()) {
+            return;
         }
         startCountdown();
     }
 
-    private void toLobbyOrIdle() {
+    private void abortToLobby() {
         runtime = null;
         stream = null;
-        paused = false;
+        Arrays.fill(busToRuntime, -1);
         for (Seat s : seats) {
             if (s != null) {
                 s.ready = false;
             }
         }
         phase = hasSeat() ? BusPhase.LOBBY : BusPhase.IDLE;
+        applyPending();
+    }
+
+    private void toLobbyOrIdle() {
+        abortToLobby();
+    }
+
+    private void applyPending() {
+        if (pendingSeatCount > 0 && !phase.running()) {
+            applySeatCount(pendingSeatCount);
+        }
     }
 
     /** START is a lobby/results button: a rising edge of the START bit on a latched input presses it. */
@@ -426,7 +615,7 @@ public final class MatchHost {
         for (UUID viewer : viewers) {
             if (!knownViewers.contains(viewer)) {
                 newcomer = true;
-                env.send(viewer, phasePayload().forSeat(seatIndexOf(viewer)));
+                sendPhase(viewer, phasePayload());
             }
         }
         knownViewers = viewers;
@@ -440,6 +629,7 @@ public final class MatchHost {
         if (next.isEmpty()) {
             return;
         }
+        // one viewer group per bus: every node, marquee and seat hears the host's frame verbatim (003 §3.2)
         SnapshotPayload payload = new SnapshotPayload(hostPos, matchId, next.get().body());
         for (UUID viewer : viewers) {
             env.send(viewer, payload);
@@ -448,9 +638,9 @@ public final class MatchHost {
 
     private Set<UUID> recipients() {
         Set<UUID> out = new LinkedHashSet<>(env.viewers());
-        for (Seat s : seats) {
-            if (s != null) {
-                out.add(s.playerUuid);
+        for (int s = 0; s < seatCount; s++) {
+            if (seats[s] != null) {
+                out.add(seats[s].playerUuid);
             }
         }
         return out;
@@ -459,8 +649,30 @@ public final class MatchHost {
     private void broadcastPhase() {
         MatchPhasePayload base = phasePayload();
         for (UUID recipient : recipients()) {
-            env.send(recipient, base.forSeat(seatIndexOf(recipient)));
+            sendPhase(recipient, base);
         }
+    }
+
+    private void sendPhase(UUID recipient, MatchPhasePayload base) {
+        int bus = busSeatOf(recipient);
+        BlockPos at = bus >= 0 && seats[bus].at != null ? seats[bus].at : hostPos;
+        env.send(recipient, base.forSeat(mySeat(bus), at));
+    }
+
+    /** The seat number a recipient sees: its runtime seat while a match is on, else its bus seat. */
+    private int mySeat(int busSeat) {
+        if (busSeat < 0) {
+            return -1;
+        }
+        boolean inMatch = phase.running() || (phase == BusPhase.RESULTS && lastResult != null);
+        if (!inMatch) {
+            return busSeat;
+        }
+        if (hotSeat) {
+            return 0;
+        }
+        int r = runtimeSeatOf(busSeat);
+        return r >= 0 ? r : -1;
     }
 
     /** The phase packet as a spectator would see it ({@code mySeat = -1}). */
@@ -475,22 +687,25 @@ public final class MatchHost {
                 }
             }
         }
-        int[] scores = new int[seatCount];
-        int[] ranks = new int[seatCount];
+        int[] scores = new int[0];
+        int[] ranks = new int[0];
         int outcome = -1;
+        int best = 0;
         if (phase == BusPhase.RESULTS && lastResult != null) {
             int[] all = lastResult.scores();
-            System.arraycopy(all, 0, scores, 0, Math.min(all.length, seatCount));
-            ranks = ranks(scores, seatCount);
+            int n = Math.min(all.length, Budgets.MAX_SEATS);
+            scores = Arrays.copyOf(all, n);
+            ranks = ranks(scores, n);
             outcome = lastResult.outcome().ordinal();
+            best = newBestMask;
         }
         int ticksLeft = switch (phase) {
             case COUNTDOWN -> runtime == null ? 0 : runtime.state().countdownTicks();
             case RESULTS -> Math.max(0, phaseTicks);
             default -> 0;
         };
-        return new MatchPhasePayload(hostPos, matchId, phase, seatCount, bound, ready, -1, ranks, scores, 0,
-                ticksLeft, paused, outcome);
+        return new MatchPhasePayload(hostPos, matchId, phase, seatCount, bound, ready, -1, ranks, scores, best,
+                ticksLeft, paused, outcome, hostPos);
     }
 
     private HudLegendPayload legend() {
@@ -498,7 +713,7 @@ public final class MatchHost {
                 game.rule().hudArgs(game.ruleProps()));
     }
 
-    private int seatIndexOf(UUID player) {
+    private int busSeatOf(UUID player) {
         for (int s = 0; s < seatCount; s++) {
             if (seats[s] != null && seats[s].playerUuid.equals(player)) {
                 return s;
@@ -509,8 +724,8 @@ public final class MatchHost {
 
     private int boundCount() {
         int n = 0;
-        for (Seat s : seats) {
-            if (s != null) {
+        for (int s = 0; s < seatCount; s++) {
+            if (seats[s] != null) {
                 n++;
             }
         }

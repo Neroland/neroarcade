@@ -107,4 +107,10 @@ public final class Grid16Arena implements ArenaModule {
     public Object[] effectArgs(PropertyValues props) {
         return new Object[] {Component.translatable(PROPERTIES.get(0).constantLangKey(this, props.getEnum("obstacles")))};
     }
+
+    /** The Arcade Exchange genre word ({@code neroarcade.tag.grid}). */
+    @Override
+    public String genreTag() {
+        return "grid";
+    }
 }

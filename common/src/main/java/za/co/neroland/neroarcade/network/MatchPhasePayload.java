@@ -22,14 +22,16 @@ import za.co.neroland.neroarcade.runtime.Budgets;
  * @param mySeat           the recipient's seat, or -1 for a spectator / a player who just left
  * @param ranks            per seat, 1-based (RESULTS only; zeros otherwise)
  * @param scores           per seat (RESULTS only; zeros otherwise)
- * @param newBestMask      bit s = seat s set a personal best (always 0 until Stage 4 leaderboards)
+ * @param newBestMask      bit s = seat s set a personal best (RESULTS only)
  * @param ticksLeftInPhase COUNTDOWN ticks left, RESULTS ticks left, else 0
  * @param paused           PLAYING but frozen for lack of power
  * @param outcome          {@code MatchResult.Outcome} ordinal in RESULTS, -1 otherwise
+ * @param seatAt           the block the recipient sits at (a bus node or the host) — where its input and leave
+ *                         packets go; the host for spectators. Only ever the recipient's own seat.
  */
 public record MatchPhasePayload(BlockPos host, int matchId, BusPhase phase, int seatCount, int boundMask,
         int readyMask, int mySeat, int[] ranks, int[] scores, int newBestMask, int ticksLeftInPhase, boolean paused,
-        int outcome) implements CustomPacketPayload {
+        int outcome, BlockPos seatAt) implements CustomPacketPayload {
 
     public static final CustomPacketPayload.Type<MatchPhasePayload> TYPE =
             new CustomPacketPayload.Type<>(Identifier.fromNamespaceAndPath("neroarcade", "match_phase"));
@@ -40,6 +42,7 @@ public record MatchPhasePayload(BlockPos host, int matchId, BusPhase phase, int 
     public MatchPhasePayload {
         ranks = ranks == null ? new int[0] : ranks.clone();
         scores = scores == null ? new int[0] : scores.clone();
+        seatAt = seatAt == null ? host : seatAt;
         if (ranks.length > Budgets.MAX_SEATS || scores.length > Budgets.MAX_SEATS) {
             throw new IllegalArgumentException("at most " + Budgets.MAX_SEATS + " seats");
         }
@@ -55,10 +58,15 @@ public record MatchPhasePayload(BlockPos host, int matchId, BusPhase phase, int 
         return scores.clone();
     }
 
-    /** The same packet addressed to another recipient. */
+    /** The same packet addressed to another recipient (seated at the host, or a spectator). */
     public MatchPhasePayload forSeat(int seat) {
+        return forSeat(seat, host);
+    }
+
+    /** The same packet addressed to a recipient seated at {@code at}. */
+    public MatchPhasePayload forSeat(int seat, BlockPos at) {
         return new MatchPhasePayload(host, matchId, phase, seatCount, boundMask, readyMask, seat, ranks, scores,
-                newBestMask, ticksLeftInPhase, paused, outcome);
+                newBestMask, ticksLeftInPhase, paused, outcome, at);
     }
 
     private static void write(ByteBuf buf, MatchPhasePayload p) {
@@ -81,6 +89,7 @@ public record MatchPhasePayload(BlockPos host, int matchId, BusPhase phase, int 
         ByteBufCodecs.VAR_INT.encode(buf, p.ticksLeftInPhase);
         buf.writeBoolean(p.paused);
         buf.writeByte(p.outcome);
+        BlockPos.STREAM_CODEC.encode(buf, p.seatAt);
     }
 
     private static MatchPhasePayload read(ByteBuf buf) {
@@ -104,8 +113,9 @@ public record MatchPhasePayload(BlockPos host, int matchId, BusPhase phase, int 
         int ticksLeft = ByteBufCodecs.VAR_INT.decode(buf);
         boolean paused = buf.readBoolean();
         int outcome = buf.readByte();
+        BlockPos seatAt = BlockPos.STREAM_CODEC.decode(buf);
         return new MatchPhasePayload(host, matchId, phase, seatCount, bound, ready, mySeat, ranks, scores, newBest,
-                ticksLeft, paused, outcome);
+                ticksLeft, paused, outcome, seatAt);
     }
 
     @Override

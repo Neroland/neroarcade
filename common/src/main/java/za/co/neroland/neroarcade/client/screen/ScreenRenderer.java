@@ -2,6 +2,7 @@ package za.co.neroland.neroarcade.client.screen;
 
 import java.util.List;
 
+import za.co.neroland.neroarcade.client.board.ClientBoards;
 import za.co.neroland.neroarcade.runtime.Cell;
 import za.co.neroland.neroarcade.runtime.Entities;
 import za.co.neroland.neroarcade.runtime.EntityKind;
@@ -165,6 +166,12 @@ public final class ScreenRenderer {
                     centred(why.get(i), 36 + i * 9, TEXT_DIM, 1);
                 }
             }
+            case LINKED_CONFLICT -> {
+                centredBlock(List.of("LINKED", "REMOVE", "CARTRIDGE"), HAZARD_HOT);
+            }
+            case BUS_FULL -> {
+                centredBlock(List.of("BUS", "FULL"), TEXT_DIM);
+            }
             case LINKED_WAITING -> {
                 centredBlock(List.of("LINKED", "WAITING"), EXIT);
                 int lit = (ticks / 10) % 4;
@@ -181,6 +188,14 @@ public final class ScreenRenderer {
      * scores (none until Stage 4 leaderboards).
      */
     public void drawAttract(String title, MatchState arena, SpriteMap map, int ticks) {
+        drawAttract(title, arena, map, ticks, List.of());
+    }
+
+    /**
+     * The attract loop with this cartridge's high scores (from the server's board page, when one arrived); with
+     * none the scores page says "NONE YET".
+     */
+    public void drawAttract(String title, MatchState arena, SpriteMap map, int ticks, List<ClientBoards.Line> scores) {
         int t = Math.floorMod(ticks, ATTRACT_TICKS);
         if (t >= 40 && t < 100 && arena != null) {
             ArenaLayout layout = ArenaLayout.of(arena.width(), arena.height());
@@ -207,6 +222,10 @@ public final class ScreenRenderer {
         }
         clear(BACKGROUND);
         if (t >= 100) {
+            if (scores != null && !scores.isEmpty()) {
+                drawBoard("HI SCORE", scores, t - 100);
+                return;
+            }
             centred("HIGH", 14, TEXT, 1);
             centred("SCORES", 23, TEXT, 1);
             centred("NONE YET", 38, TEXT_DIM, 1);
@@ -349,6 +368,50 @@ public final class ScreenRenderer {
                             BACKGROUND);
                 }
             }
+        }
+    }
+
+    /** Rows on one board screen under the header. */
+    public static final int BOARD_ROWS = 6;
+    /** Ticks each board row stays before the list rolls by one (one row per 2 s). */
+    public static final int BOARD_ROLL_TICKS = 40;
+
+    /**
+     * A leaderboard screen (the marquee idle loop, 003 §5): a header and up to {@link #BOARD_ROWS} rows — rank and
+     * short name on the left, score on the right — rolling one row every 2 s when there are more.
+     */
+    public void drawBoard(String header, List<ClientBoards.Line> rows, int ticks) {
+        clear(BACKGROUND);
+        centred(header, 2, SIGNATURE, 1);
+        if (rows == null || rows.isEmpty()) {
+            centred("NO SCORES", 26, TEXT_DIM, 1);
+            centred("YET", 35, TEXT_DIM, 1);
+            return;
+        }
+        int extra = Math.max(0, rows.size() - BOARD_ROWS);
+        int offset = extra == 0 ? 0 : Math.floorMod(ticks / BOARD_ROLL_TICKS, extra + 1);
+        for (int i = 0; i < BOARD_ROWS && offset + i < rows.size(); i++) {
+            ClientBoards.Line row = rows.get(offset + i);
+            int y = 12 + i * 9;
+            text(row.left(), 1, y, offset + i == 0 ? FLASH : TEXT, 1);
+            text(row.right(), SIZE - 1 - ArcadeFont.width(row.right()), y, TEXT_DIM, 1);
+        }
+    }
+
+    /**
+     * The marquee's score strip (004 §4.6) in the left half of the frame (32 x 64, mapped onto the right third of
+     * the marquee): a mode word, the timer, then one line per seat ("1 120").
+     */
+    public void drawScoreStrip(String mode, String timer, int[] scores, int highlight) {
+        clear(BACKGROUND);
+        text(mode, 1, 2, SIGNATURE, 1);
+        if (timer != null && !timer.isEmpty()) {
+            text(timer, 1, 11, EXIT, 1);
+        }
+        for (int s = 0; s < scores.length && s < 4; s++) {
+            int score = scores[s];
+            String value = score >= 1000 ? Math.min(99, score / 1000) + "K" : Integer.toString(Math.max(0, score));
+            text((s + 1) + " " + value, 1, 24 + s * 10, s == highlight ? FLASH : TEXT, 1);
         }
     }
 

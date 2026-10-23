@@ -1,0 +1,79 @@
+{
+  "schema": 1,
+  "id": "kkkrayyyenp7qbse",
+  "title": "Blind Tube",
+  "author": "00000000-0000-4000-8000-00000000dead",
+  "lineage": [],
+  "seed": 1015,
+  "slots": {
+    "arena": [
+      {
+        "id": "neroarcade:arena/ring_24"
+      }
+    ],
+    "pawn": [
+      {
+        "id": "neroarcade:pawn/serpent",
+        "props": {
+          "speed": 3,
+          "start_length": 4
+        }
+      }
+    ],
+    "rule": [
+      {
+        "id": "neroarcade:rule/clear_board",
+        "props": {
+          "lives": 1
+        }
+      }
+    ],
+    "hazard": [
+      {
+        "id": "neroarcade:hazard/chaser",
+        "props": {
+          "count": 1,
+          "speed": 1
+        }
+      }
+    ],
+    "pickup": [
+      {
+        "id": "neroarcade:pickup/score_orb",
+        "props": {
+          "count": 16
+        }
+      }
+    ],
+    "control": [
+      {
+        "id": "neroarcade:control/one_button"
+      }
+    ],
+    "pace": [
+      {
+        "id": "neroarcade:pace/steady"
+      }
+    ],
+    "modifier": [
+      {
+        "id": "neroarcade:modifier/fog",
+        "props": {
+          "radius": 4
+        }
+      }
+    ],
+    "multiplayer": [
+      {
+        "id": "neroarcade:multiplayer/solo"
+      }
+    ],
+    "theme": [
+      {
+        "id": "neroarcade:theme/hangar"
+      }
+    ]
+  },
+  "created_at": 1761177614,
+  "revision": 1
+}

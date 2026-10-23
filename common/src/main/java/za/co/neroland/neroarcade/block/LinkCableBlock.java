@@ -6,9 +6,14 @@ import com.mojang.serialization.MapCodec;
 
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
+import net.minecraft.server.level.ServerLevel;
 import net.minecraft.util.RandomSource;
+import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.context.BlockPlaceContext;
 import net.minecraft.world.level.BlockGetter;
+import net.minecraft.world.level.Level;
 import net.minecraft.world.level.LevelReader;
 import net.minecraft.world.level.ScheduledTickAccess;
 import net.minecraft.world.level.block.Block;
@@ -21,10 +26,13 @@ import net.minecraft.world.phys.shapes.VoxelShape;
 
 import za.co.neroland.nerolandcore.registry.BlockCodecs;
 
+import za.co.neroland.neroarcade.bus.BusRegistry;
+
 /**
  * A Link Cable ({@code neroarcade:link_cable}): six connection booleans set from adjacency to another cable, a
- * Link Bus or a cabinet's lower half (003 §3.1), and {@code active} (set by a playing host in Stage 4; always
- * false until then). Carrying a game between cabinets arrives in Stage 4.
+ * Link Bus, a cabinet's lower half or a Marquee Screen (003 §3.1), and {@code active} (the hub sets it while its
+ * host counts down or plays). Placing, breaking or changing a neighbour makes the bus rediscover at once (the hub
+ * also rediscovers every second as a safety net, which covers explosions and pistons).
  */
 public class LinkCableBlock extends Block {
 
@@ -71,13 +79,38 @@ public class LinkCableBlock extends Block {
     @Override
     protected BlockState updateShape(BlockState state, LevelReader level, ScheduledTickAccess ticks, BlockPos pos,
             Direction direction, BlockPos neighbourPos, BlockState neighbourState, RandomSource random) {
-        return state.setValue(BY_DIRECTION.get(direction), connects(neighbourState));
+        BlockState next = state.setValue(BY_DIRECTION.get(direction), connects(neighbourState));
+        if (next != state && level instanceof ServerLevel serverLevel) {
+            touch(serverLevel, pos);
+        }
+        return next;
     }
 
-    /** Cables join cables, the bus hub and a cabinet's lower half. */
+    @Override
+    public void setPlacedBy(Level level, BlockPos pos, BlockState state, LivingEntity placer, ItemStack stack) {
+        super.setPlacedBy(level, pos, state, placer, stack);
+        if (level instanceof ServerLevel serverLevel) {
+            touch(serverLevel, pos);
+        }
+    }
+
+    @Override
+    public BlockState playerWillDestroy(Level level, BlockPos pos, BlockState state, Player player) {
+        if (level instanceof ServerLevel serverLevel) {
+            touch(serverLevel, pos);
+        }
+        return super.playerWillDestroy(level, pos, state, player);
+    }
+
+    private static void touch(ServerLevel level, BlockPos pos) {
+        BusRegistry.SERVER.touch(level.dimension().identifier().toString(), pos);
+    }
+
+    /** Cables join cables, the bus hub, a cabinet's lower half and a Marquee Screen. */
     static boolean connects(BlockState neighbour) {
         return neighbour.getBlock() instanceof LinkCableBlock
                 || neighbour.getBlock() instanceof LinkBusBlock
+                || neighbour.getBlock() instanceof MarqueeScreenBlock
                 || neighbour.getBlock() instanceof ArcadeCabinetBlock && TwoHighBlock.isLower(neighbour);
     }
 

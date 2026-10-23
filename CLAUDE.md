@@ -3,7 +3,7 @@
 NeroArcade is a Minecraft mod for building, playing and sharing mini games inside Minecraft. It is part of
 the Neroland mod family and is built on **Neroland Core**.
 
-**Status: Stage 2 — core loop playable solo (needs in-game verification) (0.0.1-alpha.1).**
+**Status: Stage 4A — linked multiplayer + leaderboards (needs in-game verification) (0.0.1-alpha.1).**
 
 ## Repository layout
 
@@ -18,7 +18,7 @@ the Neroland mod family and is built on **Neroland Core**.
 | `wiki/` | Player-facing wiki pages, published to the public GitHub wiki |
 
 Common packages so far: `platform` (the `PlatformInfo` / `NetworkPlatform` / `Services` trio), `config`,
-`telemetry`, `data` (erasure registration), `privacy` (`BackupHook`), `menu` (`MenuOpener`), `server`
+`telemetry`, `data` (erasure registration), `privacy` (`BackupHook`, `CreditOptIn` + `CreditTable`, `Tombstones`), `menu` (`MenuOpener`), `server`
 (`ServerHooks` lifecycle seam, `ArcadeServer` seat cleanup), `command` (`/neroarcade`), and:
 
 | Package | What lives there |
@@ -26,9 +26,11 @@ Common packages so far: `platform` (the `PlatformInfo` / `NetworkPlatform` / `Se
 | `registry` | `ArcadeIds` (every registry path as a plain string), `ModDataComponents`, `ModItems`, `ModBlocks`, `ModBlockEntities`, `ModMenus`, `ModSounds`, `ModCreativeTab` |
 | `block` | The seven blocks, `ArcadeBlockProperties` (every blockstate property; `AssetContractTest` checks it against the JSONs), `TwoHighBlock` (1x2), `CabinetStatus`, `PadDirection` |
 | `item` | `StoredCartridge` (the `neroarcade:game_def` value: canonical NBT, read through the validator), `CartridgeItem`, `ModuleChipItem` + `ModuleChips`, `CartridgeTint`, `ArcadeBlockItem` |
-| `cabinet` | `ArcadeCabinetBlockEntity`, `MatchHost` (phase machine, the one board-write path), `Seat`, `SeatRegistry`, `InputGate`, `AwakeCabinets`, `SleepClock`, `HostEnv`/`LevelHostEnv`, `SeatHolder`, `SeatPackets`, `CabinetInteraction`, `BoardWriter`, `BusMatchResult` |
+| `cabinet` | `ArcadeCabinetBlockEntity` (solo / bus host / bus node, `BusRole`), `MatchHost` (phase machine, lobby + ready, packed runtime seats, the one board-write path), `HotSeat`, `Seat`, `SeatRegistry`, `InputGate`, `AwakeCabinets`, `SleepClock`, `HostEnv`/`LevelHostEnv`, `SeatHolder`, `SeatPackets`, `CabinetInteraction`, `BoardWriter`, `BusMatchResult` |
+| `bus` | Link Bus: `BusTopology` (pure flood fill: 16 cables, 4 cabinets, marquees), `BusElection` (pure host election), `BusRegistry` (runtime, per dimension: claims, dirty buses), `LinkBusBlockEntity` (discovery, roles, cable pulse, board pages), `MarqueeScreenBlockEntity`, `LevelBusWorld` |
+| `board` | Leaderboards: `LeaderboardTable` (pure rules + NBT), `LeaderboardStore` (SavedData via `SavedDataRecovery`; package-private `record`), `Boards` (the `BoardWriter`, retention sweep, erasure registration, page builder), `RecordOutcome` |
 | `bench` | `GameBenchBlockEntity`, `GameBenchMenu`, `BenchDraft` (pure), `BenchActions`, `BenchSlots`, `BenchLayout`, `TitleRules`, `CreditResolver` |
-| `network` | `ArcadeNetwork` (seven payloads), the payload records, `ArcadeClientSink` (where client-bound payloads land) |
+| `network` | `ArcadeNetwork` (eight payloads), the payload records, `ArcadeClientSink` (where client-bound payloads land) |
 | `client` | Client only (never loaded on a dedicated server): `ArcadeClient` (sink, tick, Esc = leave, sounds), `ArcadeColours`, `ArcadeClientConfig`; `client.screen` (`ScreenRenderer` 64x64 indexed screens, `ThemePalettes`, `SpriteSheets`, `ArcadeFont`, `ArenaLayout`, `ScreenPixels`, `GameBenchScreen`); `client.render` (`ArcadeCabinetRenderer` BER, `CabinetScreens`, `ScreenTexture`, `TextureLru`, `ScreenAssets`); `client.match` (`ClientMatches`, `ClientMatch`, `LocalPrediction`, `Interpolation`); `client.input` (`ArcadeKeys`, `InputSender`, `SeatedInput`); `client.hud` (`ArcadeHud`); `client.bench` (`ClientBenchState`, `BenchModel`, `BenchPreview`); `client.widget` |
 
 The game core:
@@ -44,6 +46,29 @@ The game core:
 
 A new chip is a class in `module.pack.<slot>` registered from `ArcadeModules`; it never needs a change to
 `module`, `module.hook` or `runtime`.
+
+### Shipped chips (43)
+
+`ArcadeModules.init()` registers the seven empty-slot defaults (marked *), then each slot's
+`<Slot>Pack.registerAll()` in slot order, each alphabetical by id.
+
+| Slot | Chips |
+|------|-------|
+| ARENA | `grid_16`*, `grid_32`, `ring_24`, `strip_9` |
+| PAWN | `cursor`*, `paddle`, `runner`, `serpent`, `ship`, `stacker` |
+| RULE | `survive_time`*, `clear_board`, `last_standing`, `reach_exit`, `score_target` |
+| HAZARD (stack of 3) | `bouncing_ball`, `chaser`, `falling_blocks`, `laser_sweep`, `shrinking_floor` |
+| PICKUP (stack of 3) | `key`, `score_orb`, `shield`, `speed_boost` |
+| CONTROL | `four_way`*, `one_button`, `twin_stick`, `two_way` |
+| PACE | `steady`*, `pulse`, `ramp` |
+| MODIFIER (optional) | `fog`, `low_gravity`, `mirror`, `wrap_around` |
+| MULTIPLAYER | `solo`*, `coop`, `turns`, `versus` |
+| THEME | `neon_void`*, `cindara_dusk`, `hangar`, `terminal_green` |
+
+The 16 example cartridges in `common/src/test/resources/cartridges/` (also the gallery seed) cover every chip;
+`ExampleCartridgesTest` runs each one's scripted input to its outcome, replays it, and pins its final hash in
+`cartridges/hashes.txt` as `<name>@<variant>`. A change to any chip's behaviour that moves a pinned hash is a
+determinism change: re-pin only on purpose and say why in the change.
 
 ## Build
 
@@ -86,10 +111,20 @@ and JVM. Desync is a defect, and `ReplayTest` pins final state hashes per exampl
 - **The pawn decides hits, the runtime applies them.** `PawnModule.onHit` returns a `HitOutcome`
   (DAMAGE / DEFLECT / IGNORE); a hook never calls `damageSeat` for the hit itself. A HAZARD or another seat's
   PROJECTILE on a `Cell.GOAL_<seat>` cell costs that seat a life. The runtime opponent's input comes from
-  `PawnModule.opponentInput` (default `RuntimeOpponent.greedy`) every `OPPONENT_CADENCE` simulated ticks; it
-  is an input, never logged, and re-derived by a replay. A pawn that keeps the default gets the greedy split:
-  `RuntimeOpponent.target` is re-chosen every `OPPONENT_CADENCE` ticks and `RuntimeOpponent.steer` runs every
-  simulated tick (both pure; the target is a runtime latch like the held input), so it can stop on any cell.
+  `PawnModule.opponentInput` (default `RuntimeOpponent.greedy`); it is an input, never logged, and re-derived
+  by a replay. A pawn that overrides `opponentInput` is asked every simulated tick (A15.a). A pawn that keeps
+  the default gets the greedy split: `RuntimeOpponent.target` is re-chosen every `OPPONENT_CADENCE` ticks and
+  `RuntimeOpponent.steer` runs every simulated tick (both pure; the target is a runtime latch like the held
+  input), so it can stop on any cell. The greedy treats VOID as blocking and, with nothing to do, heads for the
+  board centre (an `AUTO_MOVE` pawn turns instead of reversing).
+- **Respawn grace (A15.b).** Every housekeeping respawn sets `SeatState.SHIELD` to
+  `max(remaining, Budgets.RESPAWN_GRACE_TICKS = 20)`; not at the initial spawn and not for a MULTIPLAYER chip's
+  own `onRespawn`. A chip that re-serves a ball faster than 41 ticks after a goal must amend A15.b first.
+- **Hidden is off the board (A15.c).** The collision pass (8), goal pass (8b) and projectile pass (8c) skip any
+  entity carrying `Entities.F_HIDDEN`, on either side of a pair. Hide an entity to stop it colliding; never
+  park it elsewhere.
+- **A body's shots go with it (A15.d).** `MatchState.removeSeatBody` also removes every PROJECTILE the seat
+  owns. Projectile movement stays a pawn duty.
 - **Cells are append-only bytes** (`runtime.Cell`): EMPTY 0, WALL 1, VOID 2, EXIT 3, EXIT_LOCKED 4, LANE 5,
   GOAL_0..3 6-9, BLOCK 10. `Cell.BLOCK` is a settled stack cell (the stacker writes and clears it, arenas never
   do): solid and non-lethal, `Cell.blocks` is true, so it stops pawns, hazards and the opponent exactly like WALL
@@ -117,7 +152,18 @@ and JVM. Desync is a defect, and `ReplayTest` pins final state hashes per exampl
 - **A solo cabinet is a bus of one** (`busId 0`, seat 0). `MatchHost` is the only host; Stage 4 adds joining,
   never a second path. `MatchHost` takes a `HostEnv`, so it runs in a plain JVM test.
 - **One write path.** `MatchHost.finish` is the only caller of `BoardWriter.record`, once per match, never for
-  an `ABANDONED` result. Stage 2 wires `BoardWriter.NONE`.
+  an `ABANDONED` or hot-seat result. A cabinet host gets `Boards.writer(server)`, the only caller of the
+  package-private `LeaderboardStore.record`; a bench test play gets `BoardWriter.NONE`.
+  `LeaderboardWriteOnlyFromMatchHostTest` scans the sources for any other `.record(` caller.
+- **A bus is one simulation.** The host cabinet (first readable cartridge in) runs the only `MatchHost` and holds
+  the bus's one awake slot; nodes hold a seat each (bus seat = discovery index, host = 0) and forward input into
+  the host in-process, resolving the host every tick (never cached). Snapshots go once per viewer: one viewer
+  group = players near any node or marquee plus every seat. A host or hub break ends the match `ABANDONED`; the
+  simulation never migrates. Roles, seats and topology are runtime only; a cabinet saves only its bus-id hint.
+- **Names only with consent.** A leaderboard row stores a profile name only if the player turned credit on
+  (`/neroarcade privacy credit on`, default off) when the row was written; turning it off strips every stored
+  name (`CreditOptIn.onOptOut`). Rows expire after `privacy.leaderboardRetentionDays` (90, max 365); personal
+  bests stay until erasure. Both stores are registered in `NeroArcadeData` (`Boards.erasers()`).
 - **Seats are runtime only.** `Seat`, `SeatRegistry` and `AwakeCabinets` are memory; nothing about a seat is
   saved, exported or logged. One seat per player server-wide.
 - **Input acceptance** (`InputGate`): the sender is the connection's player; the seat's UUID must match; the

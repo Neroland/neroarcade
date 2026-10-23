@@ -18,7 +18,8 @@ import za.co.neroland.neroarcade.runtime.MatchState;
 import za.co.neroland.neroarcade.runtime.SeatInput;
 
 /**
- * {@code neroarcade:pawn/stacker} — guide falling pieces; full rows clear and score. Flag {@code AUTO_MOVE}.
+ * {@code neroarcade:pawn/stacker} — guide falling pieces; full rows clear and score. Flags {@code AUTO_MOVE},
+ * {@code SCORES} (it scores on landings and row clears, so a {@code score_target} rule has a source).
  * <ul>
  *   <li>{@code fall} — auto-fall rate: {@code acc += fall * 256 / 20} per tick, one row per 256 (fall 1 ≈ a row
  *       every 22 ticks, fall 5 every 4).</li>
@@ -64,7 +65,7 @@ public final class StackerPawn implements PawnModule {
             PropertySpec.enumeration("shapes", "mixed", "bars", "mixed"),
             PropertySpec.integer("row_bonus", 10, 1, 100));
 
-    private static final Set<ModuleFlag> FLAGS = Set.of(ModuleFlag.AUTO_MOVE);
+    private static final Set<ModuleFlag> FLAGS = Set.of(ModuleFlag.AUTO_MOVE, ModuleFlag.SCORES);
 
     private StackerPawn() {
     }
@@ -434,5 +435,11 @@ public final class StackerPawn implements PawnModule {
     @Override
     public Object[] effectArgs(PropertyValues props) {
         return new Object[] {props.getInt("fall"), props.getInt("row_bonus")};
+    }
+
+    /** The Arcade Exchange genre word ({@code neroarcade.tag.stack}). */
+    @Override
+    public String genreTag() {
+        return "stack";
     }
 }

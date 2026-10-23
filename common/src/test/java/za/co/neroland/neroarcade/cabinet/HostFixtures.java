@@ -7,6 +7,7 @@ import java.util.UUID;
 
 import net.minecraft.core.BlockPos;
 
+import za.co.neroland.neroarcade.board.RecordOutcome;
 import za.co.neroland.neroarcade.game.CartridgeValidator;
 import za.co.neroland.neroarcade.game.GameDef;
 import za.co.neroland.neroarcade.game.ResolvedGame;
@@ -44,14 +45,35 @@ final class HostFixtures {
         }
     }
 
+    static final UUID CAROL = UUID.fromString("bbbbbbbb-cccc-4ddd-8eee-ffffffffffff");
+    static final BlockPos NODE = new BlockPos(12, 64, -3);
+
+    /** A 10-second survive game whose MULTIPLAYER chip is {@code multiplayer/<chip>} with {@code seats} seats. */
+    static ResolvedGame tenSecondGame(String chip, int seats) {
+        TestModules.installShipped();
+        Map<ModuleType, List<SlotEntry>> slots = new EnumMap<>(ModuleType.class);
+        slots.put(ModuleType.RULE, List.of(new SlotEntry(ModuleDefaults.RULE,
+                Map.of("seconds", new PropertyValue.IntValue(10)))));
+        slots.put(ModuleType.MULTIPLAYER, List.of(new SlotEntry(
+                net.minecraft.resources.Identifier.fromNamespaceAndPath("neroarcade", "multiplayer/" + chip),
+                Map.of("seats", new PropertyValue.IntValue(seats)))));
+        GameDef def = TestModules.def(slots);
+        try {
+            return CartridgeValidator.validate(def);
+        } catch (ValidationError e) {
+            throw new AssertionError(e);
+        }
+    }
+
     static final class CountingWriter implements BoardWriter {
         int calls;
         BusMatchResult last;
 
         @Override
-        public void record(BusMatchResult result) {
+        public RecordOutcome record(BusMatchResult result) {
             calls++;
             last = result;
+            return RecordOutcome.NONE;
         }
     }
 

@@ -90,6 +90,11 @@ public final class ClientMatch {
         return mySeat() >= 0;
     }
 
+    /** The block this player sits at (a bus node or the host) — where input and leave packets go. */
+    public BlockPos seatAt() {
+        return phase == null ? host : phase.seatAt();
+    }
+
     public @Nullable HudLegendPayload legend() {
         return legend;
     }

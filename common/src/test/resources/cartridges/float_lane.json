@@ -1,0 +1,81 @@
+{
+  "schema": 1,
+  "id": "i4a43g3qrw4jmxkr",
+  "title": "Float Lane",
+  "author": "00000000-0000-4000-8000-00000000dead",
+  "lineage": [],
+  "seed": 1012,
+  "slots": {
+    "arena": [
+      {
+        "id": "neroarcade:arena/strip_9",
+        "props": {
+          "scroll": "up",
+          "period": 8,
+          "length": 32
+        }
+      }
+    ],
+    "pawn": [
+      {
+        "id": "neroarcade:pawn/runner",
+        "props": {
+          "speed": 3,
+          "jump": 3
+        }
+      }
+    ],
+    "rule": [
+      {
+        "id": "neroarcade:rule/survive_time",
+        "props": {
+          "lives": 2
+        }
+      }
+    ],
+    "hazard": [
+      {
+        "id": "neroarcade:hazard/falling_blocks",
+        "props": {
+          "rate": 6,
+          "speed": 3
+        }
+      }
+    ],
+    "pickup": [
+      {
+        "id": "neroarcade:pickup/shield"
+      }
+    ],
+    "control": [
+      {
+        "id": "neroarcade:control/two_way"
+      }
+    ],
+    "pace": [
+      {
+        "id": "neroarcade:pace/ramp",
+        "props": {
+          "every_seconds": 15
+        }
+      }
+    ],
+    "modifier": [
+      {
+        "id": "neroarcade:modifier/low_gravity"
+      }
+    ],
+    "multiplayer": [
+      {
+        "id": "neroarcade:multiplayer/solo"
+      }
+    ],
+    "theme": [
+      {
+        "id": "neroarcade:theme/terminal_green"
+      }
+    ]
+  },
+  "created_at": 1761177611,
+  "revision": 1
+}

@@ -59,6 +59,36 @@ class OddCombinationRunsTest {
         });
     }
 
+    /** 008 §6.6: the odd rows that use real Stage 3 chips run 1 200 ticks without throwing. */
+    @Test
+    void realChipOddRowsRun() {
+        Map<String, ResolvedGame> combos = new LinkedHashMap<>();
+        combos.put("paddle + reach_exit", TestModules.resolvedOf(
+                za.co.neroland.neroarcade.module.pack.pawn.PaddlePawn.INSTANCE,
+                za.co.neroland.neroarcade.module.pack.rule.ReachExitRule.INSTANCE));
+        combos.put("stacker + shrinking_floor", TestModules.resolvedOf(
+                za.co.neroland.neroarcade.module.pack.pawn.StackerPawn.INSTANCE,
+                za.co.neroland.neroarcade.module.pack.hazard.ShrinkingFloorHazard.INSTANCE));
+        combos.put("serpent + one_button", TestModules.resolvedOf(
+                za.co.neroland.neroarcade.module.pack.pawn.SerpentPawn.INSTANCE,
+                za.co.neroland.neroarcade.module.pack.control.OneButtonControl.INSTANCE));
+        combos.put("runner + grid_16", TestModules.resolvedOf(
+                za.co.neroland.neroarcade.module.pack.pawn.RunnerPawn.INSTANCE));
+        combos.put("laser_sweep + paddle", TestModules.resolvedOf(
+                za.co.neroland.neroarcade.module.pack.pawn.PaddlePawn.INSTANCE,
+                za.co.neroland.neroarcade.module.pack.hazard.LaserSweepHazard.INSTANCE));
+        combos.forEach((name, game) -> {
+            HeadlessMatch match = HeadlessMatch.of(game, 1, name.hashCode());
+            match.runToEnd(HeadlessMatch.InputScript.randomWalk(), 1200);
+            assertTrue(match.runtime().steps() > 0, name);
+        });
+        // score_target with no SCORES source never reaches its target: the hard stop ends it in a draw
+        HeadlessMatch noSource = HeadlessMatch.of(TestModules.resolvedOf(
+                za.co.neroland.neroarcade.module.pack.rule.ScoreTargetRule.INSTANCE), 1, 7L)
+                .runToEnd(HeadlessMatch.InputScript.idle(), 40 * 20 + Budgets.COUNTDOWN_TICKS);
+        assertEquals(MatchResult.Outcome.DRAW, noSource.result().orElseThrow().outcome());
+    }
+
     @Test
     void runtimeOpponentFillsSeatOne() {
         HeadlessMatch match = HeadlessMatch.of(TestModules.resolvedOf(TestModules.rule(ModuleFlag.MULTI_SEAT_ONLY),

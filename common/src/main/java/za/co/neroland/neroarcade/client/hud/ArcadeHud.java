@@ -10,15 +10,19 @@ import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.network.chat.Component;
 
 import za.co.neroland.neroarcade.cabinet.BusPhase;
+import za.co.neroland.neroarcade.cabinet.HotSeat;
 import za.co.neroland.neroarcade.client.ArcadeClient;
 import za.co.neroland.neroarcade.client.ArcadeColours;
 import za.co.neroland.neroarcade.client.input.ArcadeKeys;
 import za.co.neroland.neroarcade.client.match.ClientMatch;
 import za.co.neroland.neroarcade.client.match.ClientMatches;
+import za.co.neroland.neroarcade.game.ResolvedGame;
+import za.co.neroland.neroarcade.module.hook.ModuleContext;
 import za.co.neroland.neroarcade.network.HudLegendPayload;
 import za.co.neroland.neroarcade.network.MatchPhasePayload;
 import za.co.neroland.neroarcade.runtime.MatchResult;
 import za.co.neroland.neroarcade.runtime.MatchState;
+import za.co.neroland.neroarcade.runtime.Rng;
 
 /**
  * The seated player's HUD (004 §5, §8.2) — drawn only for the player holding a seat, never for spectators:
@@ -120,9 +124,14 @@ public final class ArcadeHud {
             }
         }
         Component leave = leaveHint();
+        int turnSeat = hotSeatTurn(match);
+        Component turn = turnSeat < 0 ? null : Component.translatable("neroarcade.hud.hot_seat", turnSeat + 1);
         int w = Math.max(Math.max(Math.max(font.width(rule), font.width(score) * 2),
                 font.width(String.join("   ", others))), font.width(leave)) + 8;
-        int h = 4 + 10 + 18 + (timer.isEmpty() ? 0 : 10) + (others.isEmpty() ? 0 : 10) + 10;
+        if (turn != null) {
+            w = Math.max(w, font.width(turn) + 8);
+        }
+        int h = 4 + 10 + 18 + (timer.isEmpty() ? 0 : 10) + (others.isEmpty() ? 0 : 10) + (turn == null ? 0 : 10) + 10;
         int x = 6;
         int y = 6;
         g.fill(x - 2, y - 2, x + w, y + h, ArcadeColours.HUD_BACK);
@@ -141,7 +150,30 @@ public final class ArcadeHud {
             g.text(font, String.join("   ", others), x + 2, line, ArcadeColours.SUBTLE, false);
             line += 10;
         }
+        if (turn != null) {
+            g.text(font, turn, x + 2, line, ArcadeColours.CYAN_TEXT, false);
+            line += 10;
+        }
         g.text(font, leave, x + 2, line, ArcadeColours.SUBTLE, false);
+    }
+
+    /**
+     * In a hot-seat game, the seat on turn (0-based) from the latest snapshot, asked of the MULTIPLAYER chip itself
+     * (a pure read; no chip id is compared), else -1.
+     */
+    static int hotSeatTurn(ClientMatch match) {
+        ResolvedGame game = match.game();
+        MatchState state = match.latest();
+        if (game == null || state == null || !HotSeat.is(game)) {
+            return -1;
+        }
+        try {
+            int mask = game.multiplayer().activeSeatMask(new ModuleContext(state, game.multiplayerProps(),
+                    Rng.view(state), game, state.tick(), 0));
+            return mask == 0 ? -1 : Integer.numberOfTrailingZeros(mask);
+        } catch (RuntimeException e) {
+            return -1;
+        }
     }
 
     /** "ESC leave" — the standing way out, always the last line of the stats block. */

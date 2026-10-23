@@ -161,4 +161,10 @@ public final class Strip9Arena implements ArenaModule {
         return new Object[] {props.getInt("length"),
                 Component.translatable(PROPERTIES.get(0).constantLangKey(this, props.getEnum("scroll")))};
     }
+
+    /** The Arcade Exchange genre word ({@code neroarcade.tag.strip}). */
+    @Override
+    public String genreTag() {
+        return "strip";
+    }
 }

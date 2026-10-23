@@ -5,6 +5,8 @@ import java.util.Set;
 
 import net.minecraft.resources.Identifier;
 
+import org.jetbrains.annotations.Nullable;
+
 /**
  * One chip: a piece of game behaviour that fills one slot. Modules are Java and registered once at init;
  * their parameters are data ({@link PropertyValues}) carried by the cartridge.
@@ -59,5 +61,14 @@ public interface ArcadeModule {
      */
     default Object[] effectArgs(PropertyValues props) {
         return new Object[0];
+    }
+
+    /**
+     * The chip's Arcade Exchange genre word (003 §8.1): a lang-key suffix of {@code neroarcade.tag.<word>}, lowercase
+     * letters only, or {@code null} when this chip adds no tag (HAZARD, PICKUP, CONTROL, PACE, MODIFIER chips). The
+     * Exchange reads it from the chip itself, never from another mod's ids. Pure constant.
+     */
+    default @Nullable String genreTag() {
+        return null;
     }
 }

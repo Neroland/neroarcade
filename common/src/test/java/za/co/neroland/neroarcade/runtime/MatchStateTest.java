@@ -150,6 +150,26 @@ class MatchStateTest {
         assertEquals(0, s.entityCount());
     }
 
+    /** 001 A15.d: a body's shots go with it; another seat's shots and ownerless entities stay. */
+    @Test
+    void removeSeatBodyDropsOwnedProjectiles() {
+        MatchState s = new MatchState(8, 8, 16, 2);
+        s.setPawnId(0, s.spawn(EntityKind.PAWN, 0, 0, 0, 0));
+        s.setPawnId(1, s.spawn(EntityKind.PAWN, 0, 0, 1, 0));
+        s.spawn(EntityKind.SEGMENT, 0, 0, 0, 0);
+        s.spawn(EntityKind.PROJECTILE, 256, 256, 0, 0);
+        s.spawn(EntityKind.PROJECTILE, 512, 256, 0, 0);
+        int theirs = s.spawn(EntityKind.PROJECTILE, 768, 256, 1, 0);
+        int hazard = s.spawn(EntityKind.HAZARD, 768, 512, -1, 0);
+        s.removeSeatBody(0);
+        assertEquals(-1, s.pawnId(0));
+        assertEquals(0, s.count(EntityKind.SEGMENT));
+        assertEquals(1, s.count(EntityKind.PROJECTILE), "only seat 1's shot is left");
+        assertTrue(s.exists(theirs));
+        assertTrue(s.exists(hazard));
+        assertTrue(s.exists(s.pawnId(1)));
+    }
+
     @Test
     void solidEntitiesBlock() {
         MatchState s = new MatchState(8, 8, 8, 1);

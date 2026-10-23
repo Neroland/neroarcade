@@ -189,4 +189,10 @@ public final class ShipPawn implements PawnModule {
         return new Object[] {props.getInt("thrust"),
                 Component.translatable(PROPERTIES.get(1).constantLangKey(this, props.getEnum("drag")))};
     }
+
+    /** The Arcade Exchange genre word ({@code neroarcade.tag.shoot}). */
+    @Override
+    public String genreTag() {
+        return "shoot";
+    }
 }

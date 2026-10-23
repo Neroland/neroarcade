@@ -8,6 +8,7 @@ import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
 
 import za.co.neroland.neroarcade.bench.BenchActions;
+import za.co.neroland.neroarcade.bus.BusRegistry;
 import za.co.neroland.neroarcade.cabinet.AwakeCabinets;
 import za.co.neroland.neroarcade.cabinet.DropReason;
 import za.co.neroland.neroarcade.cabinet.SeatHolder;
@@ -30,6 +31,7 @@ public final class ArcadeServer {
         ServerHooks.onStopping(server -> {
             SeatRegistry.SERVER.clear();
             AwakeCabinets.SERVER.clear();
+            BusRegistry.SERVER.clear();
             BenchActions.clear();
         });
     }

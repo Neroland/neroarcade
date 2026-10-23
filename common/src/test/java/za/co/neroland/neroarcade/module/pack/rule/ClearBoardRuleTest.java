@@ -108,6 +108,7 @@ class ClearBoardRuleTest {
     void nonClearablePickupsDoNotCount() {
         HeadlessMatch match = playing(TestModules.resolvedOf(ClearBoardRule.INSTANCE,
                 placedOnce(ModuleFlag.CLEARABLE), placedOnce(ModuleFlag.IS_KEY)), 22L);
+        match.run(5, HeadlessMatch.InputScript.idle()); // simulated tick 0 never counts as cleared
         List<Integer> ids = new ArrayList<>();
         match.state().forEach(EntityKind.PICKUP, id -> {
             if (match.state().tag(id) == 0) {

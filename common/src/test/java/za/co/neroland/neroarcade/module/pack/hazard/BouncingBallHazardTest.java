@@ -120,6 +120,35 @@ class BouncingBallHazardTest {
         assertNotEquals(0, s.get(ball, Entities.VY));
     }
 
+    /** 008b Q2: english never drives the along component under {@code MIN_ALONG} (a dead vertical ball). */
+    @Test
+    void englishNeverFlattensTheBall() {
+        ResolvedGame game = solo();
+        HeadlessMatch match = Kit.playing(game, 1, 8L);
+        MatchState s = match.state();
+        int ball = Kit.ids(s, EntityKind.HAZARD, 0).get(0);
+        int pawn = s.pawnId(0);
+        Kit.putPawn(s, 0, 8, 10);
+        s.set(ball, Entities.VX, 32);
+        s.set(ball, Entities.VY, 192);
+        int barV = -256;
+        for (int k = 0; k < 8; k++) {
+            s.set(pawn, Entities.VX, barV);
+            s.set(pawn, Entities.VY, 0);
+            s.set(ball, Entities.X, Kit.at(8));
+            s.set(ball, Entities.Y, Kit.at(10));
+            BouncingBallHazard.INSTANCE.onDeflected(Kit.ctx(s, game, 0), 0, ball, pawn);
+            int vx = s.get(ball, Entities.VX);
+            int vy = s.get(ball, Entities.VY);
+            assertTrue(Math.abs(vx) >= BouncingBallHazard.MIN_ALONG, "deflection " + k + ": VX " + vx);
+            assertTrue(Math.abs(vy) >= BouncingBallHazard.MIN_PERPENDICULAR, "deflection " + k + ": VY " + vy);
+            if (k == 0) {
+                assertEquals(-64, vx, "32 + english -32 = 0 takes the bat's sign at the minimum");
+            }
+            barV = -barV;
+        }
+    }
+
     @Test
     void replayStable() {
         Kit.assertReplayStable(solo(), 1);

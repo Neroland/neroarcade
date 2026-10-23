@@ -31,15 +31,17 @@ import za.co.neroland.neroarcade.runtime.SeatInput;
  *       columns {@code w - 3}/{@code w - 2} and 2/1.</li>
  * </ul>
  * {@code spawn} keeps the given cell's coordinate along the line, centres the bar on it and clamps it so every cell
- * is inside {@code 1..side-2}, then paints every non-WALL cell of its goal line {@code Cell.goal(seat)} (nothing
- * else writes goal cells in 0.1.0). It stops when either end cell would enter a blocking cell or a solid entity.
+ * is inside {@code 1..side-2}, then paints every {@code Cell.EMPTY} cell of its goal line {@code Cell.goal(seat)}
+ * (never over EXIT, EXIT_LOCKED, WALL, BLOCK or VOID, so a {@code reach_exit} exit survives; nothing else writes
+ * goal cells in 0.1.0). It stops when either end cell would enter a blocking cell or a solid entity.
  * {@code onHit}: DEFLECT for HAZARD and PROJECTILE (the runtime reflects the toucher), IGNORE otherwise.
  *
  * <p>Odd combinations: with a {@code BUTTONS_ONLY} control it slides on its own (horizontal: starts right,
  * vertical: down); A reverses, B held stops it. A one-axis rule input of the wrong axis still moves it. On
  * {@code ring_24} the bars sit on rows 5 / 2; on {@code strip_9} the goal line is all nine cells. Runtime opponent
- * (override): tracks the nearest lethal hazard moving toward its line to its projected crossing, else the board
- * centre, with a one-cell dead zone and no buttons. Sprite role {@code paddle} (segments too). Stateless; pure.
+ * (override, asked every simulated tick, 001 A15.a): tracks the nearest lethal hazard moving toward its line to
+ * its wall-reflected projected crossing, else the board centre, with a one-cell dead zone and no buttons. Sprite
+ * role {@code paddle} (segments too). Stateless; pure.
  */
 public final class PaddlePawn implements PawnModule {
 
@@ -130,7 +132,7 @@ public final class PaddlePawn implements PawnModule {
         for (int i = 0; i < side; i++) {
             int gx = horiz ? i : goal;
             int gy = horiz ? goal : i;
-            if (s.cell(gx, gy) != Cell.WALL) {
+            if (s.cell(gx, gy) == Cell.EMPTY) {
                 s.setCell(gx, gy, Cell.goal(seat));
             }
         }
@@ -239,9 +241,13 @@ public final class PaddlePawn implements PawnModule {
     }
 
     /**
-     * The nearest lethal hazard moving toward this bar's line is projected to its crossing coordinate
-     * {@code c = pos + vAlong * (dist / |vPerp|)}; the bar moves toward {@code c} (no hazard: the board centre) with
-     * a one-cell dead zone. No buttons. Pure.
+     * The nearest lethal hazard moving toward this bar's line is projected to its crossing, closed form and
+     * bounce-aware: {@code t = dist / |vPerp|}, {@code a = bAlong + vAlong * t}; on a wrapping axis
+     * {@code target = floorMod(a, extent)}, otherwise {@code a} is reflected into the open span {@code [L, H]} of
+     * the bar's own body line ({@code L = lo << 8}, {@code H = ((hi + 1) << 8) - 1}, {@code W = H - L + 1},
+     * {@code p = floorMod(a - L, 2W)}, {@code if (p >= W) p = 2W - 1 - p}, {@code target = L + p}; pillars inside
+     * the line are ignored). The bar moves toward the target (no hazard: the board centre) with a one-cell dead
+     * zone. No buttons. Pure.
      */
     @Override
     public SeatInput opponentInput(ModuleContext ctx, int seat) {
@@ -257,6 +263,8 @@ public final class PaddlePawn implements PawnModule {
         boolean wraps = horiz ? s.wrapsX() : s.wrapsY();
         int target = extent / 2;
         int bestDist = Integer.MAX_VALUE;
+        int bestA = 0;
+        boolean found = false;
         for (int i = 0; i < s.entityCount(); i++) {
             int id = s.entityIdAt(i);
             if (s.get(id, Entities.KIND) != EntityKind.HAZARD.ordinal() || !lethal(ctx, id)) {
@@ -272,8 +280,12 @@ public final class PaddlePawn implements PawnModule {
             int dist = Math.abs(linePos - bPerp);
             if (dist < bestDist) {
                 bestDist = dist;
-                target = bAlong + vAlong * (dist / Math.abs(vPerp));
+                bestA = bAlong + vAlong * (dist / Math.abs(vPerp));
+                found = true;
             }
+        }
+        if (found) {
+            target = wraps ? Math.floorMod(bestA, extent) : reflect(s, horiz, seat, bestA);
         }
         target = wraps ? Math.floorMod(target, extent) : Math.max(0, Math.min(extent - 1, target));
         int diff = target - pos;
@@ -285,6 +297,37 @@ public final class PaddlePawn implements PawnModule {
         }
         int button = horiz ? (diff > 0 ? SeatInput.RIGHT : SeatInput.LEFT) : (diff > 0 ? SeatInput.DOWN : SeatInput.UP);
         return SeatInput.of(button, 0, 0);
+    }
+
+    /**
+     * {@code a} reflected into the open span of the bar's body line: {@code lo}/{@code hi} are the first/last cells
+     * that do not block; with no open cell the raw value is returned (the caller clamps).
+     */
+    static int reflect(MatchState s, boolean horiz, int seat, int a) {
+        int line = bodyLine(s, horiz, seat);
+        int side = horiz ? s.width() : s.height();
+        int lo = -1;
+        int hi = -1;
+        for (int i = 0; i < side; i++) {
+            boolean open = !(horiz ? GridStep.blocked(s, i, line) : GridStep.blocked(s, line, i));
+            if (open) {
+                if (lo < 0) {
+                    lo = i;
+                }
+                hi = i;
+            }
+        }
+        if (lo < 0) {
+            return a;
+        }
+        int l = lo << MatchState.FP_SHIFT;
+        int h = ((hi + 1) << MatchState.FP_SHIFT) - 1;
+        int w = h - l + 1;
+        int p = Math.floorMod(a - l, 2 * w);
+        if (p >= w) {
+            p = 2 * w - 1 - p;
+        }
+        return l + p;
     }
 
     /** As the stock opponent decides it: the owning chip's {@code lethal(props)}, else the entity's F_LETHAL bit. */
@@ -303,5 +346,11 @@ public final class PaddlePawn implements PawnModule {
     @Override
     public Object[] effectArgs(PropertyValues props) {
         return new Object[] {props.getInt("length"), props.getInt("speed")};
+    }
+
+    /** The Arcade Exchange genre word ({@code neroarcade.tag.duel}). */
+    @Override
+    public String genreTag() {
+        return "duel";
     }
 }

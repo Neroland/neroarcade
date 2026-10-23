@@ -117,4 +117,23 @@ class RunnerPawnTest {
                 .run(600, HeadlessMatch.InputScript.randomWalk()).hash();
         assertEquals(a, b);
     }
+
+    /** 008b F6: a held A hops with a 4-tick landing lockout between hops, so it is grounded a third of the time. */
+    @Test
+    void heldAHopsWithLandingGaps() {
+        HeadlessMatch match = playing();
+        MatchState s = match.state();
+        int grounded = 0;
+        int airborne = 0;
+        for (int t = 0; t < 100; t++) {
+            match.step(SeatInput.of(SeatInput.A, 0, 0));
+            if (GridStep.counter(s.aux(s.pawnId(0))) == 0) {
+                grounded++;
+            } else {
+                airborne++;
+            }
+        }
+        assertTrue(grounded >= 25, "grounded ticks with A held: " + grounded);
+        assertTrue(airborne > 0, "it still hops");
+    }
 }

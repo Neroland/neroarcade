@@ -26,8 +26,8 @@ import za.co.neroland.neroarcade.runtime.MatchState;
  * blocks, e.g. a pillar), holds it still for 40 ticks (aux {@code counter}), then launches it on one of the four
  * diagonals from the match RNG. It moves in half-cell sub-steps per axis; entering a blocking cell negates that
  * axis and stops it for the tick; wrap axes pass through. A deflection reflects (the default) and adds
- * <em>english</em> from the bat's motion, clamped to {@code ±speed×64}, keeping the perpendicular component at
- * least 64 (no flat shots); a still bat adds none. On a goal every other alive seat scores 1 (the runtime has
+ * <em>english</em> from the bat's motion, clamped to {@code ±speed×64}, keeping both the perpendicular and the
+ * along component at least 64 (no flat shots, no dead vertical ball); a still bat adds none. On a goal every other alive seat scores 1 (the runtime has
  * charged the goal seat) and the ball is re-served. Declares {@code SCORES}. Odd combinations: with a
  * {@code cursor} or {@code serpent} it is simply a ball to dodge (touch = damage); on {@code ring_24} it wraps on
  * X and only scores top/bottom; with {@code score_target} and no paddle nobody scores. Stateless; pure.
@@ -42,6 +42,8 @@ public final class BouncingBallHazard implements HazardModule {
     static final int ENGLISH = 32;
     /** The smallest perpendicular speed after a deflection. */
     static final int MIN_PERPENDICULAR = 64;
+    /** The smallest along-bat speed after english (008b Q2): english never flattens the ball onto one axis. */
+    static final int MIN_ALONG = 64;
 
     private static final int SUB_STEP = MatchState.FP / 2;
 
@@ -187,8 +189,9 @@ public final class BouncingBallHazard implements HazardModule {
 
     /**
      * Reflect (the default), then english: the bat's non-zero velocity component (VX first) adds
-     * {@code sign × 32} to the ball's matching component, clamped to {@code ±speed×64}; the other component is
-     * kept at a magnitude of at least 64, pointing away from the bat when it was zero.
+     * {@code sign × 32} to the ball's matching component, clamped to {@code ±speed×64}, then kept at a magnitude
+     * of at least {@link #MIN_ALONG} (its own sign, or the bat's when it is zero); the other component is kept at a
+     * magnitude of at least 64, pointing away from the bat when it was zero.
      */
     @Override
     public void onDeflected(ModuleContext ctx, int seat, int hazardEntityId, int pawnEntityId) {
@@ -214,7 +217,11 @@ public final class BouncingBallHazard implements HazardModule {
         int alongField = alongX ? Entities.VX : Entities.VY;
         int perpField = alongX ? Entities.VY : Entities.VX;
         int along = state.get(hazardEntityId, alongField) + Integer.signum(pawnV) * ENGLISH;
-        state.set(hazardEntityId, alongField, Math.max(-max, Math.min(max, along)));
+        along = Math.max(-max, Math.min(max, along));
+        if (Math.abs(along) < MIN_ALONG) {
+            along = (along == 0 ? Integer.signum(pawnV) : Integer.signum(along)) * MIN_ALONG;
+        }
+        state.set(hazardEntityId, alongField, along);
         int perp = state.get(hazardEntityId, perpField);
         if (Math.abs(perp) < MIN_PERPENDICULAR) {
             int sign = Integer.signum(perp);

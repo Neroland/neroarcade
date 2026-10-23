@@ -28,11 +28,28 @@ public final class ServerHooks {
         void on(ServerPlayer player);
     }
 
+    /** End of every server tick. Keep listeners cheap: count ticks and do real work rarely. */
+    @FunctionalInterface
+    public interface Tick {
+        void on(MinecraftServer server);
+    }
+
+    private static final List<Tick> TICK = new CopyOnWriteArrayList<>();
     private static final List<Stopping> STOPPING = new CopyOnWriteArrayList<>();
     private static final List<PlayerLeave> LEAVE = new CopyOnWriteArrayList<>();
     private static final Set<String> WARNED = ConcurrentHashMap.newKeySet();
 
     private ServerHooks() {
+    }
+
+    public static void onTick(Tick listener) {
+        TICK.add(listener);
+    }
+
+    public static void fireTick(MinecraftServer server) {
+        for (Tick listener : TICK) {
+            guard(listener, "tick", () -> listener.on(server));
+        }
     }
 
     public static void onStopping(Stopping listener) {

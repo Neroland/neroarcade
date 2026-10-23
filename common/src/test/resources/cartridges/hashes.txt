@@ -1,5 +1,62 @@
-# Final state hashes of ReplayTest's scripted 1200-tick run per example cartridge (seed 0x5EED).
+# Final state hashes of ReplayTest's scripted 1200-tick run per example cartridge (seed 0x5EED, random walk).
 # Every loader x Minecraft cell must produce exactly these; a change here is a determinism change.
-coop_mirror=91aa3ecc2a76735d
+# Stage 3 (module packs) re-pin: the three Stage 1 cartridges were unchanged (old == new).
+# Stage 3 review re-pin (008b F9): coop_mirror and orb_dodge moved with the A15.b respawn grace alone (both
+# respawn under the random walk; with RESPAWN_GRACE_TICKS = 0 all three Stage 1 pins are bit-identical);
+# default_survive is unchanged.
+blind_tube=44a141ad9fffc99e
+coop_mirror=79185b1e4d6492da
+crate_catch=28441832725123c1
 default_survive=1d062381a0de37af
-orb_dodge=17a9eb436d11e29d
+drone_maze=f65205b445f91d6d
+float_lane=b5b5083c8237ab11
+four_way_rally=1d0d0ced8d740770
+gunner_ring=3152288182ccfccc
+hot_seat_orbs=bbbf3c47364b2553
+lane_hopper=8c914f84dc674de0
+mirror_pulse=592adae8ca50dfd7
+orb_dodge=68f280e099da0966
+paddle_duel=5cf8dc58e5576fc1
+serpent_garden=423c9c7579739a7e
+shrink_island=ab583e539969103d
+stack_duel=217d858fb0d77609
+stack_nine=2c069a11b9fe6c34
+tandem_sweep=6c2e28abb96d7652
+vault_run=4dda23780f68cdbd
+
+# ExampleCartridgesTest: final hash of each example's scripted run to its outcome (the cartridge's own seed),
+# as <name>@<variant>: script = 008's open-loop script (one human seat), script2/script4 = two/four human
+# seats, attract = the gallery-attract run.
+paddle_duel@script=4331e002a020c358
+paddle_duel@script2=a7a20806b4f351b2
+paddle_duel@attract=9b978d88b9c26625
+serpent_garden@script=7c7fd72975922305
+serpent_garden@attract=724c6e154d3f4cd6
+stack_nine@script=3864b94560f8c5e6
+drone_maze@script=ceb2df0d62f0f0d7
+drone_maze@attract=9e42fc7fb1b6dc32
+lane_hopper@script=c7a043e68e75c1e5
+lane_hopper@attract=523d9db5c227f464
+hot_seat_orbs@script2=6796d9eeefb5a86a
+tandem_sweep@script2=a5cf626b7877cc87
+tandem_sweep@attract=49db88760e495026
+vault_run@script=a4be4a366cdcd375
+vault_run@attract=7e8273f6e4c9606c
+gunner_ring@script=9311d7ec1f7fc964
+gunner_ring@attract=cf8cdbbdd90eddf6
+shrink_island@script=fad48cc82914bc41
+shrink_island@attract=093414407f27548a
+mirror_pulse@script=0bb599a6ee0d4953
+mirror_pulse@attract=ada50894b5771a18
+float_lane@script=04316b4829c9561e
+float_lane@attract=3dc7141d2c3ae33e
+four_way_rally@script=c0d1e06a869f4e65
+four_way_rally@script4=2857f3b5cb244b16
+four_way_rally@attract=6e7ad67ecd75dc03
+crate_catch@script2=36853b4cacdd997c
+crate_catch@attract=19ff8e95dc9e965e
+blind_tube@script=ee5dd4e149e19973
+blind_tube@attract=cac5b2eb1774ecf9
+stack_duel@script=5a55374a51e9a489
+stack_duel@script2=1273f07d58682bd6
+stack_duel@attract=3682b78ffe050dd8

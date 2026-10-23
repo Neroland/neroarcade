@@ -36,7 +36,7 @@ class ThemePackTest {
 
     @BeforeEach
     void registry() {
-        ModuleRegistry.resetForTests();
+        TestModules.reset();
         ArcadeModules.registerDefaults();
         ThemePack.registerAll();
         ModuleRegistry.freeze();

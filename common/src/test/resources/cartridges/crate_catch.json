@@ -1,0 +1,66 @@
+{
+  "schema": 1,
+  "id": "sdgutojb72wlgxxz",
+  "title": "Crate Catch",
+  "author": "00000000-0000-4000-8000-00000000dead",
+  "lineage": [],
+  "seed": 1014,
+  "slots": {
+    "arena": [
+      {
+        "id": "neroarcade:arena/grid_16"
+      }
+    ],
+    "pawn": [
+      {
+        "id": "neroarcade:pawn/paddle",
+        "props": {
+          "length": 4,
+          "speed": 4
+        }
+      }
+    ],
+    "rule": [
+      {
+        "id": "neroarcade:rule/survive_time",
+        "props": {
+          "lives": 3
+        }
+      }
+    ],
+    "hazard": [
+      {
+        "id": "neroarcade:hazard/falling_blocks",
+        "props": {
+          "rate": 5
+        }
+      }
+    ],
+    "control": [
+      {
+        "id": "neroarcade:control/two_way"
+      }
+    ],
+    "pace": [
+      {
+        "id": "neroarcade:pace/steady"
+      }
+    ],
+    "multiplayer": [
+      {
+        "id": "neroarcade:multiplayer/coop",
+        "props": {
+          "seats": 2,
+          "shared_lives": false
+        }
+      }
+    ],
+    "theme": [
+      {
+        "id": "neroarcade:theme/neon_void"
+      }
+    ]
+  },
+  "created_at": 1761177613,
+  "revision": 1
+}

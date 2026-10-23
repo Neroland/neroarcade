@@ -98,4 +98,10 @@ public final class ScoreTargetRule implements RuleModule {
         }
         return RuleOutcome.CONTINUE;
     }
+
+    /** The Arcade Exchange genre word ({@code neroarcade.tag.score}). */
+    @Override
+    public String genreTag() {
+        return "score";
+    }
 }

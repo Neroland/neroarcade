@@ -1,0 +1,83 @@
+{
+  "schema": 1,
+  "id": "ajkyrglc74fasv53",
+  "title": "Four-Way Rally",
+  "author": "00000000-0000-4000-8000-00000000dead",
+  "lineage": [],
+  "seed": 1013,
+  "slots": {
+    "arena": [
+      {
+        "id": "neroarcade:arena/grid_32",
+        "props": {
+          "obstacles": "pillars"
+        }
+      }
+    ],
+    "pawn": [
+      {
+        "id": "neroarcade:pawn/cursor",
+        "props": {
+          "speed": 4
+        }
+      }
+    ],
+    "rule": [
+      {
+        "id": "neroarcade:rule/score_target",
+        "props": {
+          "lives": 3
+        }
+      }
+    ],
+    "hazard": [
+      {
+        "id": "neroarcade:hazard/chaser",
+        "props": {
+          "speed": 3
+        }
+      }
+    ],
+    "pickup": [
+      {
+        "id": "neroarcade:pickup/score_orb",
+        "props": {
+          "count": 8
+        }
+      }
+    ],
+    "control": [
+      {
+        "id": "neroarcade:control/four_way"
+      }
+    ],
+    "pace": [
+      {
+        "id": "neroarcade:pace/steady"
+      }
+    ],
+    "modifier": [
+      {
+        "id": "neroarcade:modifier/wrap_around",
+        "props": {
+          "axes": "horizontal"
+        }
+      }
+    ],
+    "multiplayer": [
+      {
+        "id": "neroarcade:multiplayer/versus",
+        "props": {
+          "seats": 4
+        }
+      }
+    ],
+    "theme": [
+      {
+        "id": "neroarcade:theme/cindara_dusk"
+      }
+    ]
+  },
+  "created_at": 1761177612,
+  "revision": 1
+}

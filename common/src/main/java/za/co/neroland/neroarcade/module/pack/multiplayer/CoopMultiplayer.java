@@ -86,4 +86,10 @@ public final class CoopMultiplayer implements MultiplayerModule {
     public RuleOutcome resolve(ModuleContext ctx, RuleOutcome fromRule) {
         return fromRule;
     }
+
+    /** The Arcade Exchange genre word ({@code neroarcade.tag.coop}). */
+    @Override
+    public String genreTag() {
+        return "coop";
+    }
 }

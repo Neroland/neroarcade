@@ -77,7 +77,8 @@ class ReplayTest {
         Path file = TestFiles.testResources().resolve("cartridges/hashes.txt");
         if (Files.exists(file)) {
             for (String line : TestFiles.read(file).lines().map(String::strip).toList()) {
-                if (!line.isEmpty() && !line.startsWith("#")) {
+                // "<name>@<variant>" lines are ExampleCartridgesTest's scripted runs
+                if (!line.isEmpty() && !line.startsWith("#") && !line.contains("@")) {
                     String[] parts = line.split("=");
                     out.put(parts[0].strip(), Long.parseUnsignedLong(parts[1].strip().replace("0x", ""), 16));
                 }

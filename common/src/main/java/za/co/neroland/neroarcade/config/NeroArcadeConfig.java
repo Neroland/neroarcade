@@ -20,8 +20,9 @@ import za.co.neroland.neroarcade.NeroArcadeCommon;
  *       per match start, so a running match never sees a value change.</li>
  *   <li><b>client</b> — {@code client.scanlines}, {@code client.screenRenderRange}: this computer's look,
  *       never server-authoritative.</li>
- *   <li><b>privacy</b> — reserved for {@code privacy...} retention keys; empty until NeroArcade stores
- *       player data.</li>
+ *   <li><b>kill switches</b> — {@code multiplayer.enabled}, {@code leaderboards.enabled},
+ *       {@code exchange.enabled}, {@code economy.*} (003 §13).</li>
+ *   <li><b>privacy</b> — {@code privacy.*}: leaderboard retention and caps.</li>
  * </ul>
  *
  * <p>Every gameplay key is server-authoritative: Core syncs it to clients on join, so the client's bench
@@ -117,8 +118,67 @@ public final class NeroArcadeConfig {
             "this computer only: draw arcade screens only within this many blocks (0 = the server's "
                     + "screenRenderRange; a larger number than the server's is capped to it)");
 
-    // --- Privacy ---------------------------------------------------------------
-    // Reserved: retention and export keys (prefix "privacy") land here with the first player-keyed store.
+    // --- Kill switches and economy (003 §13) ------------------------------------
+
+    /** Off: every Link Bus discovers nothing and every cabinet plays solo. */
+    public static final ConfigValue<Boolean> MULTIPLAYER_ENABLED = SCHEMA.bool(
+            "multiplayer.enabled", true, true,
+            "if false, Link Buses join nothing and every cabinet plays on its own");
+
+    /** Off: no match writes a leaderboard row or personal best; existing boards are kept and still shown. */
+    public static final ConfigValue<Boolean> LEADERBOARDS_ENABLED = SCHEMA.bool(
+            "leaderboards.enabled", true, true,
+            "if false, finished matches write no leaderboard rows or personal bests");
+
+    public static final ConfigValue<Boolean> EXCHANGE_ENABLED = SCHEMA.bool(
+            "exchange.enabled", true, true,
+            "if false, the Arcade Exchange kiosk refuses every action");
+
+    public static final ConfigValue<Integer> EXCHANGE_PAGE_SIZE = SCHEMA.intRange(
+            "exchange.pageSize", 8, 4, 16, true,
+            "listings per page on the Arcade Exchange");
+
+    public static final ConfigValue<Boolean> ECONOMY_COIN_OP = SCHEMA.bool(
+            "economy.coinOp", false, true,
+            "if true and NeroEconomy is installed, taking a cabinet seat costs economy.coinOpPrice");
+
+    public static final ConfigValue<Integer> ECONOMY_COIN_OP_PRICE = SCHEMA.intRange(
+            "economy.coinOpPrice", 10, 0, 10_000, true,
+            "price of one cabinet seat when economy.coinOp is true");
+
+    public static final ConfigValue<Integer> ECONOMY_DOWNLOAD_PRICE = SCHEMA.intRange(
+            "economy.downloadPrice", 0, 0, 10_000, true,
+            "price of one Arcade Exchange download, paid to the author (0 = free)");
+
+    // --- Privacy (privacy.*) -------------------------------------------------------
+
+    /**
+     * Days a leaderboard row is kept. Hard cap 365: a leaderboard row is personal data; a year is the longest a
+     * score is interesting. Personal bests are kept until the player erases their data.
+     */
+    public static final ConfigValue<Integer> LEADERBOARD_RETENTION_DAYS = SCHEMA.intRange(
+            "privacy.leaderboardRetentionDays", 90, 1, 365, true,
+            "days a leaderboard row is kept (a row is personal data; a year is the longest a score is interesting)");
+
+    public static final ConfigValue<Integer> LEADERBOARD_MAX_ENTRIES = SCHEMA.intRange(
+            "privacy.leaderboardMaxEntries", 10, 1, 25, true,
+            "rows kept on each cartridge's leaderboard");
+
+    public static final ConfigValue<Integer> EXCHANGE_MAX_LISTINGS = SCHEMA.intRange(
+            "privacy.exchangeMaxListings", 200, 1, 1000, true,
+            "most games listed on the Arcade Exchange at once (no eviction: an admin unpublishes)");
+
+    public static final ConfigValue<Integer> DRAFTS_PER_PLAYER = SCHEMA.intRange(
+            "privacy.draftsPerPlayer", 8, 1, 32, true,
+            "imported game drafts kept per player");
+
+    /**
+     * Declared for the disclosure only: NeroArcade keeps no per-player play history, and no code path reads this
+     * as true.
+     */
+    public static final ConfigValue<Boolean> PLAY_HISTORY = SCHEMA.bool(
+            "privacy.playHistory", false, true,
+            "always false: NeroArcade keeps no record of which games a player played (declared for the disclosure)");
 
     private NeroArcadeConfig() {
     }

@@ -123,6 +123,31 @@ class TurnsMultiplayerTest {
         assertEquals(2, s.lives(0));
     }
 
+    /**
+     * 001 A14: a waiting seat whose respawn timer runs out is not respawned by the runtime's housekeeping (its
+     * body would sit on the board for a tick); it gets its body when its turn comes.
+     */
+    @Test
+    void waitingSeatNeverRespawnsOnBoard() {
+        HeadlessMatch match = match(TWO, 2, 3);
+        MatchState s = match.state();
+        runTo(match, 50);
+        assertTrue(body(s, 0) && !body(s, 1));
+        s.damageSeat(1, 1);
+        assertEquals(2, s.lives(1), "a waiting seat can still lose a life");
+        assertTrue(s.respawnTicks(1) > 0);
+        for (int t = 51; t <= 50 + Budgets.RESPAWN_TICKS + 5; t++) {
+            runTo(match, t);
+            assertTrue(!body(s, 1), "waiting seat 1 has no body at tick " + t);
+            assertEquals(1, s.count(EntityKind.PAWN));
+        }
+        assertEquals(0, s.respawnTicks(1), "the timer ran out while waiting");
+        runTo(match, TURN);
+        assertTrue(body(s, 0) && !body(s, 1));
+        runTo(match, TURN + 1);
+        assertTrue(!body(s, 0) && body(s, 1), "seat 1 gets its body when its turn comes");
+    }
+
     @Test
     void hudMaskIsPureFunctionOfState() {
         HeadlessMatch match = match(THREE, 3, 1);

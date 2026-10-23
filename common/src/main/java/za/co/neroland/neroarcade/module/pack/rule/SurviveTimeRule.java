@@ -87,4 +87,10 @@ public final class SurviveTimeRule implements RuleModule {
         }
         return RuleOutcome.CONTINUE;
     }
+
+    /** The Arcade Exchange genre word ({@code neroarcade.tag.survive}). */
+    @Override
+    public String genreTag() {
+        return "survive";
+    }
 }

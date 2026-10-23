@@ -45,10 +45,11 @@ public final class TestModules {
     private TestModules() {
     }
 
-    /** Shipped defaults + test chips + {@code extra}, frozen. */
+    /** Every shipped module (defaults + the Stage 3 packs) + test chips + {@code extra}, frozen. */
     public static void install(ArcadeModule... extra) {
         ModuleRegistry.resetForTests();
         ArcadeModules.registerDefaults();
+        ArcadeModules.registerPacks();
         TestChips.all().forEach(ModuleRegistry::register);
         for (ArcadeModule module : extra) {
             ModuleRegistry.register(module);

@@ -21,14 +21,15 @@ import za.co.neroland.neroarcade.runtime.MatchState;
  * <ul>
  *   <li>{@code speed} — it runs along Y on its own at {@code speed * 64} units per tick (smooth mover), starting
  *       up, and reverses when the next cell blocks; SPEED adds 2, STUN stops it.</li>
- *   <li>{@code jump} — a hop (A, while grounded) lasts {@code T = max(1, 128 * jump / gravity)} ticks (8 per 2
- *       cells at default gravity, twice that at half gravity) and carries it {@code jump} extra cells along its
- *       run: {@code jump * 256 / T} extra units per airborne tick. Walls still stop it.</li>
+ *   <li>{@code jump} — a hop (A, while grounded and out of lockout) lasts {@code T = max(1, 128 * jump / gravity)}
+ *       ticks (8 per 2 cells at default gravity, twice that at half gravity) and carries it {@code jump} extra
+ *       cells along its run: {@code jump * 256 / T} extra units per airborne tick. Walls still stop it.</li>
  * </ul>
  * Its one input axis is X (one-axis rule, X first): each new press shifts it one whole column, if that cell does
  * not block, with a 4-tick lockout; no lane change while airborne or with a {@code BUTTONS_ONLY} control. While
  * airborne {@code onHit} returns IGNORE (hazards and shots pass under it) and the VOID check is skipped (a hop
- * clears a VOID gap).
+ * clears a VOID gap). Landing sets the lockout to at least 4 ticks (008b F6), so a held A hops with four grounded
+ * ticks between hops (no permanent airborne immunity) and a landing also costs four ticks of lane lock.
  *
  * <p>Aux: dir (up/down), counter = airborne ticks left, data bits 0-3 = lane lockout, bits 4-5 = last lane input
  * (0 none, 1 right, 2 left). Odd combinations: on {@code grid_16} it shuttles up and down its column (legal);
@@ -39,7 +40,7 @@ public final class RunnerPawn implements PawnModule {
 
     public static final RunnerPawn INSTANCE = new RunnerPawn();
 
-    /** Ticks after a lane change before the next one. */
+    /** Ticks after a lane change, or after a landing, before the next lane change or hop. */
     static final int LANE_LOCKOUT = 4;
 
     private static final List<PropertySpec> PROPERTIES = List.of(
@@ -85,6 +86,7 @@ public final class RunnerPawn implements PawnModule {
         int id = s.pawnId(seat);
         int aux = s.aux(id);
         int airborne = GridStep.counter(aux);
+        boolean wasAirborne = airborne > 0;
         if (airborne > 0) {
             airborne--;
         }
@@ -92,6 +94,9 @@ public final class RunnerPawn implements PawnModule {
         int lockout = data & 15;
         if (lockout > 0) {
             lockout--;
+        }
+        if (wasAirborne && airborne == 0) {
+            lockout = Math.max(lockout, LANE_LOCKOUT);
         }
         int lastM = (data >> 4) & 3;
         int m = GridStep.oneAxis(intent, true);
@@ -105,7 +110,7 @@ public final class RunnerPawn implements PawnModule {
                 lockout = LANE_LOCKOUT;
             }
         }
-        if (airborne == 0 && (intent.aPressed() || intent.a())) {
+        if (airborne == 0 && lockout == 0 && (intent.aPressed() || intent.a())) {
             airborne = hopTicks(ctx.props().getInt("jump"), s.gravity());
         }
         aux = GridStep.withCounter(aux, airborne);
@@ -158,5 +163,11 @@ public final class RunnerPawn implements PawnModule {
     @Override
     public Object[] effectArgs(PropertyValues props) {
         return new Object[] {props.getInt("speed"), props.getInt("jump")};
+    }
+
+    /** The Arcade Exchange genre word ({@code neroarcade.tag.run}). */
+    @Override
+    public String genreTag() {
+        return "run";
     }
 }

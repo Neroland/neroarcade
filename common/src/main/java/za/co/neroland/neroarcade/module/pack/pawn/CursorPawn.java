@@ -106,4 +106,10 @@ public final class CursorPawn implements PawnModule {
     public Object[] effectArgs(PropertyValues props) {
         return new Object[] {props.getInt("speed")};
     }
+
+    /** The Arcade Exchange genre word ({@code neroarcade.tag.move}). */
+    @Override
+    public String genreTag() {
+        return "move";
+    }
 }

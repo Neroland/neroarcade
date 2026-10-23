@@ -14,6 +14,7 @@ import za.co.neroland.neroarcade.client.ArcadeClient;
 import za.co.neroland.neroarcade.client.hud.ArcadeHud;
 import za.co.neroland.neroarcade.client.input.ArcadeKeys;
 import za.co.neroland.neroarcade.client.render.ArcadeCabinetRenderer;
+import za.co.neroland.neroarcade.client.render.MarqueeScreenRenderer;
 import za.co.neroland.neroarcade.client.screen.GameBenchScreen;
 import za.co.neroland.neroarcade.network.ArcadeNetwork;
 import za.co.neroland.neroarcade.registry.ModBlockEntities;
@@ -33,6 +34,7 @@ public final class NeroArcadeFabricClient implements ClientModInitializer {
         ArcadeClient.init();
         MenuScreens.register(ModMenus.GAME_BENCH.get(), GameBenchScreen::new);
         BlockEntityRendererRegistry.register(ModBlockEntities.ARCADE_CABINET.get(), ctx -> new ArcadeCabinetRenderer());
+        BlockEntityRendererRegistry.register(ModBlockEntities.MARQUEE_SCREEN.get(), ctx -> new MarqueeScreenRenderer());
         HudElementRegistry.addLast(Identifier.fromNamespaceAndPath(NeroArcadeCommon.MOD_ID, "arcade_hud"),
                 (graphics, delta) -> ArcadeHud.render(graphics));
         ArcadeKeys.all().forEach(KeyMappingHelper::registerKeyMapping);

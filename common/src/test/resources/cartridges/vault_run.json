@@ -1,0 +1,69 @@
+{
+  "schema": 1,
+  "id": "crydgxq54angizov",
+  "title": "Vault Run",
+  "author": "00000000-0000-4000-8000-00000000dead",
+  "lineage": [],
+  "seed": 1008,
+  "slots": {
+    "arena": [
+      {
+        "id": "neroarcade:arena/grid_32",
+        "props": {
+          "obstacles": "maze_lite"
+        }
+      }
+    ],
+    "pawn": [
+      {
+        "id": "neroarcade:pawn/cursor"
+      }
+    ],
+    "rule": [
+      {
+        "id": "neroarcade:rule/reach_exit",
+        "props": {
+          "needs_key": true
+        }
+      }
+    ],
+    "hazard": [
+      {
+        "id": "neroarcade:hazard/chaser",
+        "props": {
+          "count": 2
+        }
+      }
+    ],
+    "pickup": [
+      {
+        "id": "neroarcade:pickup/key",
+        "props": {
+          "count": 3
+        }
+      }
+    ],
+    "control": [
+      {
+        "id": "neroarcade:control/four_way"
+      }
+    ],
+    "pace": [
+      {
+        "id": "neroarcade:pace/steady"
+      }
+    ],
+    "multiplayer": [
+      {
+        "id": "neroarcade:multiplayer/solo"
+      }
+    ],
+    "theme": [
+      {
+        "id": "neroarcade:theme/terminal_green"
+      }
+    ]
+  },
+  "created_at": 1761177607,
+  "revision": 1
+}

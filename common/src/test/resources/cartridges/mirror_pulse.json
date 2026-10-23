@@ -1,0 +1,72 @@
+{
+  "schema": 1,
+  "id": "wbjdm5yxmii5eidq",
+  "title": "Mirror Pulse",
+  "author": "00000000-0000-4000-8000-00000000dead",
+  "lineage": [],
+  "seed": 1011,
+  "slots": {
+    "arena": [
+      {
+        "id": "neroarcade:arena/grid_16"
+      }
+    ],
+    "pawn": [
+      {
+        "id": "neroarcade:pawn/serpent"
+      }
+    ],
+    "rule": [
+      {
+        "id": "neroarcade:rule/survive_time",
+        "props": {
+          "seconds": 45
+        }
+      }
+    ],
+    "hazard": [
+      {
+        "id": "neroarcade:hazard/bouncing_ball",
+        "props": {
+          "count": 2,
+          "speed": 2
+        }
+      }
+    ],
+    "pickup": [
+      {
+        "id": "neroarcade:pickup/score_orb",
+        "props": {
+          "value": 5
+        }
+      }
+    ],
+    "control": [
+      {
+        "id": "neroarcade:control/four_way"
+      }
+    ],
+    "pace": [
+      {
+        "id": "neroarcade:pace/pulse"
+      }
+    ],
+    "modifier": [
+      {
+        "id": "neroarcade:modifier/mirror"
+      }
+    ],
+    "multiplayer": [
+      {
+        "id": "neroarcade:multiplayer/solo"
+      }
+    ],
+    "theme": [
+      {
+        "id": "neroarcade:theme/hangar"
+      }
+    ]
+  },
+  "created_at": 1761177610,
+  "revision": 1
+}

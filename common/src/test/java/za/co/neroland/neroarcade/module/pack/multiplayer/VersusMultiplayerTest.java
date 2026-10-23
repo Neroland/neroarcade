@@ -134,7 +134,7 @@ class VersusMultiplayerTest {
      */
     @Test
     void twoSeatAsymmetricInputsReplayToIdenticalHashes() {
-        TestModules.install(VersusMultiplayer.INSTANCE);
+        TestModules.install(); // versus is shipped (registered by the packs)
         ResolvedGame game = MultiplayerPackTest.game(VersusMultiplayer.INSTANCE, TWO);
         HeadlessMatch first = MultiplayerPackTest.playing(game, 2, 0xBEEFL).run(600, MultiplayerPackTest.asymmetric());
         MatchState s = first.state();

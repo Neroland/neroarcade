@@ -139,4 +139,10 @@ public final class ClearBoardRule implements RuleModule {
         }
         return count;
     }
+
+    /** The Arcade Exchange genre word ({@code neroarcade.tag.score}). */
+    @Override
+    public String genreTag() {
+        return "score";
+    }
 }

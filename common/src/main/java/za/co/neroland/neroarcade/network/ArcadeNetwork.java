@@ -13,6 +13,7 @@ import net.minecraft.server.level.ServerPlayer;
 
 import za.co.neroland.neroarcade.bench.BenchActions;
 import za.co.neroland.neroarcade.cabinet.SeatPackets;
+import za.co.neroland.neroarcade.exchange.ExchangeActions;
 import za.co.neroland.neroarcade.platform.Services;
 import za.co.neroland.neroarcade.runtime.net.SeatInputPayload;
 import za.co.neroland.neroarcade.runtime.net.SnapshotPayload;
@@ -24,9 +25,10 @@ import za.co.neroland.neroarcade.runtime.net.SnapshotPayload;
  * {@code ChannelBuilder}, Fabric's {@code PayloadTypeRegistry} + {@code Client/ServerPlayNetworking}.
  * Sending goes through the {@link Services#NETWORK} seam.
  *
- * <p>Stage 2 declares seven payloads: {@code seat_input}, {@code leave_seat}, {@code bench_edit} (to the server)
- * and {@code snapshot}, {@code match_phase}, {@code hud_legend}, {@code bench_state} (to the client, forwarded to
- * {@link ArcadeClientSink}). Adding one is a one-line {@link #clientbound}/{@link #serverbound} call in
+ * <p>Ten payloads: {@code seat_input}, {@code leave_seat}, {@code bench_edit}, {@code exchange_action} (to the server)
+ * and {@code snapshot}, {@code match_phase}, {@code hud_legend}, {@code bench_state}, {@code board_page},
+ * {@code exchange_page} (to the client,
+ * forwarded to {@link ArcadeClientSink}). Adding one is a one-line {@link #clientbound}/{@link #serverbound} call in
  * {@link #init()}. NeroArcade never adds to Neroland
  * Core's network registry (see
  * {@link za.co.neroland.neroarcade.platform.NetworkPlatform} for why).
@@ -113,6 +115,12 @@ public final class ArcadeNetwork {
         clientbound(MatchPhasePayload.TYPE, MatchPhasePayload.STREAM_CODEC, p -> ArcadeClientSink.get().onMatchPhase(p));
         clientbound(HudLegendPayload.TYPE, HudLegendPayload.STREAM_CODEC, p -> ArcadeClientSink.get().onHudLegend(p));
         clientbound(BenchStatePayload.TYPE, BenchStatePayload.STREAM_CODEC, p -> ArcadeClientSink.get().onBenchState(p));
+        // Stage 4A: a cartridge's leaderboard for the marquee and the attract screen.
+        clientbound(BoardPagePayload.TYPE, BoardPagePayload.STREAM_CODEC, p -> ArcadeClientSink.get().onBoardPage(p));
+        // Stage 4B: the Arcade Exchange (pages are metadata only; actions are re-checked server side).
+        serverbound(ExchangeActionPayload.TYPE, ExchangeActionPayload.STREAM_CODEC, ExchangeActions::handle);
+        clientbound(ExchangePagePayload.TYPE, ExchangePagePayload.STREAM_CODEC,
+                p -> ArcadeClientSink.get().onExchangePage(p));
     }
 
     /**

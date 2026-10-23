@@ -5,6 +5,7 @@ import net.neoforged.neoforge.common.NeoForge;
 import net.neoforged.neoforge.event.RegisterCommandsEvent;
 import net.neoforged.neoforge.event.entity.player.PlayerEvent;
 import net.neoforged.neoforge.event.server.ServerStoppingEvent;
+import net.neoforged.neoforge.event.tick.ServerTickEvent;
 
 import za.co.neroland.neroarcade.command.ArcadeCommands;
 import za.co.neroland.neroarcade.server.ServerHooks;
@@ -19,6 +20,7 @@ public final class NeoForgeArcadeEvents {
     public static void register() {
         NeoForge.EVENT_BUS.addListener((RegisterCommandsEvent event) -> ArcadeCommands.register(event.getDispatcher()));
         NeoForge.EVENT_BUS.addListener((ServerStoppingEvent event) -> ServerHooks.fireStopping(event.getServer()));
+        NeoForge.EVENT_BUS.addListener((ServerTickEvent.Post event) -> ServerHooks.fireTick(event.getServer()));
         NeoForge.EVENT_BUS.addListener((PlayerEvent.PlayerLoggedOutEvent event) -> {
             if (event.getEntity() instanceof ServerPlayer player) {
                 ServerHooks.firePlayerLeave(player);

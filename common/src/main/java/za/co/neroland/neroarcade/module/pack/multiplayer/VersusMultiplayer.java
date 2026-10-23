@@ -143,4 +143,10 @@ public final class VersusMultiplayer implements MultiplayerModule {
         }
         return out;
     }
+
+    /** The Arcade Exchange genre word ({@code neroarcade.tag.versus}). */
+    @Override
+    public String genreTag() {
+        return "versus";
+    }
 }

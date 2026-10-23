@@ -1,5 +1,7 @@
 package za.co.neroland.neroarcade.cabinet;
 
+import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -30,6 +32,8 @@ import za.co.neroland.neroarcade.NeroArcadeCommon;
 import za.co.neroland.neroarcade.block.ArcadeBlockProperties;
 import za.co.neroland.neroarcade.block.CabinetStatus;
 import za.co.neroland.neroarcade.block.PadDirection;
+import za.co.neroland.neroarcade.board.Boards;
+import za.co.neroland.neroarcade.bus.BusRegistry;
 import za.co.neroland.neroarcade.config.NeroArcadeConfig;
 import za.co.neroland.neroarcade.game.GameDef;
 import za.co.neroland.neroarcade.game.ResolvedGame;
@@ -45,27 +49,41 @@ import za.co.neroland.neroarcade.runtime.SeatInput;
 
 /**
  * The cabinet's controller (lower half), shaped per 003 §1. A cabinet with a cartridge and no bus is its own
- * host on the loopback bus ({@code busId 0}, seat 0).
+ * host on the loopback bus ({@code busId 0}, seat 0). On a Link Bus the hub assigns it a {@link BusRole}: the
+ * <b>host</b> (it holds the bus's cartridge and runs the one {@link MatchHost}), a <b>node</b> (it mirrors the host
+ * and seats one player as bus seat {@code busSeatIndex}), or one of the waiting/locked roles.
  *
- * <p><b>Persisted:</b> the cartridge item and the bus id cache (always 0 until Stage 4). <b>Runtime only:</b> the
+ * <p><b>Persisted:</b> the cartridge item and the bus id cache. <b>Runtime only:</b> the role, the
  * {@link MatchHost}, the {@link Seat}, the sleep clock and the awake slot — a seat is a live session, never
  * written to the region file (no player UUID at rest), and an unload ends a running match as ABANDONED with no
- * board write.
+ * board write. A bus holds <b>one</b> awake slot: the host's.
  *
- * <p>Server tick (lower half): seat validity every 10 ticks; a promoted queue slot wakes the host; the host
- * ticks; the sleep rule; the blockstate mirror at ≤ 10 Hz and only on change. Teardown with world access lives in
- * {@link #preRemoveSideEffects} (real removal only); {@link #setRemoved} (also chunk unload) stays world-inert.
+ * <p>Server tick (lower half): the bus check every 20 ticks; seat validity every 10 ticks (a node whose host is
+ * gone drops its seat); a promoted queue slot wakes the host; the host ticks; the sleep rule (any seat on the bus,
+ * or any player near any screen on the bus, keeps it awake); the blockstate mirror at ≤ 10 Hz and only on change.
+ * Teardown with world access lives in {@link #preRemoveSideEffects} (real removal only); {@link #setRemoved} (also
+ * chunk unload) stays world-inert.
  */
 public class ArcadeCabinetBlockEntity extends BlockEntity implements SeatHolder {
 
     private static final String KEY_CARTRIDGE = "cartridge";
     private static final String KEY_BUS = "bus";
+    /** Update tag only: the host a node mirrors, and the bus role. Never in saved data. */
+    public static final String KEY_DISPLAY_OF = "display_of";
+    public static final String KEY_ROLE = "role";
 
     // --- persisted --------------------------------------------------------------------------------
     private ItemStack cartridge = ItemStack.EMPTY;
     private long busId;
 
     // --- runtime only -----------------------------------------------------------------------------
+    private BusRole role = BusRole.SOLO;
+    private int busSeatIndex = -1;
+    private @Nullable BlockPos displayOf;
+    private int busCabinets = 1;
+    private List<BlockPos> busScreens = List.of();
+    private long insertedAt = Long.MAX_VALUE;
+    private boolean firstTick = true;
     private @Nullable MatchHost host;
     private @Nullable LevelHostEnv env;
     private @Nullable Seat seat;
@@ -79,6 +97,8 @@ public class ArcadeCabinetBlockEntity extends BlockEntity implements SeatHolder 
     private @Nullable Readability readability;
     /** Client side only: what the update tag said about the cartridge (never the cartridge itself). */
     private CabinetClientInfo clientInfo = CabinetClientInfo.EMPTY;
+    private @Nullable BlockPos clientDisplayOf;
+    private BusRole clientRole = BusRole.SOLO;
 
     /** The cartridge's state on this server. */
     private record Readability(@Nullable ResolvedGame game, @Nullable ValidationError error) {
@@ -93,8 +113,13 @@ public class ArcadeCabinetBlockEntity extends BlockEntity implements SeatHolder 
 
     // --- SeatHolder -------------------------------------------------------------------------------
 
+    /** The match this cabinet plays in: its own host, or (a node) the bus host's. */
     @Override
     public @Nullable MatchHost matchHost() {
+        if (role == BusRole.NODE) {
+            ArcadeCabinetBlockEntity h = hostCabinet();
+            return h == null ? null : h.host;
+        }
         return host;
     }
 
@@ -120,8 +145,9 @@ public class ArcadeCabinetBlockEntity extends BlockEntity implements SeatHolder 
             return;
         }
         seat = null;
-        if (host != null) {
-            host.unbind(leaving.seat, why);
+        MatchHost match = matchHost();
+        if (match != null) {
+            match.unbind(leaving.seat, why);
         }
         if (level instanceof ServerLevel serverLevel) {
             SeatRegistry.SERVER.release(leaving.playerUuid, seatKey(serverLevel));
@@ -129,6 +155,124 @@ public class ArcadeCabinetBlockEntity extends BlockEntity implements SeatHolder 
             if (player != null && why != DropReason.ESC) {
                 player.sendOverlayMessage(Component.translatable(why.langKey()));
             }
+        }
+    }
+
+    // --- bus --------------------------------------------------------------------------------------
+
+    public BusRole role() {
+        return role;
+    }
+
+    public long busId() {
+        return busId;
+    }
+
+    public int busSeatIndex() {
+        return busSeatIndex;
+    }
+
+    /** A node: the host it mirrors (same dimension); null otherwise. */
+    public @Nullable BlockPos displayOf() {
+        return displayOf;
+    }
+
+    /** Runtime-only insertion time for host election (first inserted wins). */
+    public long insertedAt() {
+        return insertedAt;
+    }
+
+    /** The bus host's block entity for a node, or null when it is not loaded / gone. Resolved on every call. */
+    public @Nullable ArcadeCabinetBlockEntity hostCabinet() {
+        BlockPos at = displayOf;
+        if (at == null || level == null || !level.isLoaded(at)) {
+            return null;
+        }
+        return level.getBlockEntity(at) instanceof ArcadeCabinetBlockEntity h && h.role == BusRole.HOST ? h : null;
+    }
+
+    /**
+     * The hub's assignment after a discovery (003 §3.2). A node whose host, index or role changed loses its seat;
+     * a host or solo cabinet that stops hosting ends its match (ABANDONED) and frees its awake slot.
+     *
+     * @param cabinets bus cabinets that can seat a player (host + nodes)
+     * @param screens  the bus's other nodes and marquees (the host's viewer group)
+     */
+    public void assignBus(long newBusId, BusRole newRole, int index, @Nullable BlockPos hostPos, int cabinets,
+            List<BlockPos> screens) {
+        BlockPos newDisplay = newRole == BusRole.NODE && hostPos != null ? hostPos.immutable() : null;
+        boolean changed = busId != newBusId || role != newRole || busSeatIndex != index
+                || !Objects.equals(displayOf, newDisplay);
+        if (changed) {
+            BusRole old = role;
+            if (old == BusRole.NODE && seat != null) {
+                dropSeat(DropReason.HOST_GONE);
+            }
+            boolean wasHosting = old == BusRole.HOST || old == BusRole.SOLO;
+            boolean hosts = newRole == BusRole.HOST;
+            if (wasHosting && !hosts && host != null) {
+                sleepNow(DropReason.HOST_GONE);
+            }
+            if (!hosts && seat != null && newRole != BusRole.NODE) {
+                dropSeat(DropReason.HOST_GONE);
+            }
+            busId = newBusId;
+            role = newRole;
+            busSeatIndex = index;
+            displayOf = newDisplay;
+            sync();
+        }
+        if (role == BusRole.HOST) {
+            busCabinets = Math.max(1, cabinets);
+            busScreens = List.copyOf(screens);
+            MatchHost current = host;
+            ResolvedGame game = game();
+            if (current != null && game != null) {
+                current.setBusSeats(MatchHost.busSeatsFor(game, busCabinets));
+            }
+        } else {
+            busCabinets = 1;
+            busScreens = List.of();
+        }
+    }
+
+    /**
+     * Leaves bus {@code fromBus} (hub broken or gone, cable cut, multiplayer disabled): back to solo. A host whose
+     * running match has players from other cabinets ends it ABANDONED — it cannot go on with ghost seats.
+     */
+    public void leaveBus(long fromBus) {
+        if (busId != fromBus || fromBus == 0) {
+            return;
+        }
+        if (role == BusRole.HOST && host != null && host.busSeatsInMatch()) {
+            host.end(MatchResult.Outcome.ABANDONED);
+        }
+        if (role == BusRole.NODE && seat != null) {
+            dropSeat(DropReason.HOST_GONE);
+        }
+        role = BusRole.SOLO;
+        busId = 0;
+        busSeatIndex = -1;
+        displayOf = null;
+        busCabinets = 1;
+        busScreens = List.of();
+        if (host != null) {
+            host.setBusSeats(1);
+        }
+        sync();
+    }
+
+    private String dimension(ServerLevel serverLevel) {
+        return serverLevel.dimension().identifier().toString();
+    }
+
+    /** Every 20 ticks: a bus whose hub is gone (unloaded, broken) makes this cabinet solo (003 §3.3). */
+    private void checkBus(ServerLevel serverLevel) {
+        if (role == BusRole.SOLO || busId == 0) {
+            return;
+        }
+        if (BusRegistry.SERVER.get(dimension(serverLevel), busId) == null) {
+            leaveBus(busId);
         }
     }
 
@@ -177,6 +321,8 @@ public class ArcadeCabinetBlockEntity extends BlockEntity implements SeatHolder 
     void insert(ItemStack one) {
         cartridge = one.copyWithCount(1);
         readability = null;
+        insertedAt = level == null ? 0L : level.getGameTime();
+        touchBus();
         sync();
     }
 
@@ -186,8 +332,17 @@ public class ArcadeCabinetBlockEntity extends BlockEntity implements SeatHolder 
         sleepNow(DropReason.BROKEN);
         cartridge = ItemStack.EMPTY;
         readability = null;
+        insertedAt = Long.MAX_VALUE;
+        touchBus();
         sync();
         return out;
+    }
+
+    /** The bus re-elects its host on the hub's next tick (a cartridge came or went). */
+    private void touchBus() {
+        if (busId != 0 && level instanceof ServerLevel serverLevel) {
+            BusRegistry.SERVER.markDirty(dimension(serverLevel), busId);
+        }
     }
 
     // --- seats ------------------------------------------------------------------------------------
@@ -198,59 +353,93 @@ public class ArcadeCabinetBlockEntity extends BlockEntity implements SeatHolder 
         QUEUED,
         TAKEN,
         IN_PROGRESS,
-        NOT_READY
+        NOT_READY,
+        /** A node on a bus with no host (or a full bus). */
+        NO_HOST,
+        /** Holds a cartridge on a bus that already has a host. */
+        CONFLICT,
+        /** This cabinet's bus seat is beyond what the game seats. */
+        NO_SEAT_HERE,
+        /** A hot-seat game is played at the host cabinet only. */
+        HOT_SEAT_HOST
     }
 
     /**
-     * Wakes the cabinet if needed (or queues it at the awake cap) and binds {@code player} to seat 0. The caller
-     * has checked the cartridge, the registry and power.
+     * Wakes the bus host if needed (or queues it at the awake cap) and binds {@code player} to this cabinet's bus
+     * seat. The caller has checked the registry and power.
      */
     SeatResult seat(ServerPlayer player) {
         ServerLevel serverLevel = (ServerLevel) level;
         if (seat != null) {
             return SeatResult.TAKEN;
         }
-        if (host != null && host.phase().running()) {
+        switch (role) {
+            case FULL, NODE_NO_HOST -> {
+                return SeatResult.NO_HOST;
+            }
+            case CONFLICT -> {
+                return SeatResult.CONFLICT;
+            }
+            default -> {
+            }
+        }
+        ArcadeCabinetBlockEntity hostBe = role == BusRole.NODE ? hostCabinet() : this;
+        if (hostBe == null || hostBe.game() == null) {
+            return role == BusRole.NODE ? SeatResult.NO_HOST : SeatResult.NOT_READY;
+        }
+        if (role == BusRole.NODE && HotSeat.is(hostBe.game())) {
+            return SeatResult.HOT_SEAT_HOST;
+        }
+        int index = role == BusRole.NODE ? busSeatIndex : 0;
+        MatchHost current = hostBe.host;
+        if (current != null && current.phase().running() && !current.hotSeat()) {
             return SeatResult.IN_PROGRESS;
         }
-        if (!awake) {
-            AwakeCabinets.Grant grant = AwakeCabinets.SERVER.request(this);
+        if (!hostBe.awake) {
+            AwakeCabinets.Grant grant = AwakeCabinets.SERVER.request(hostBe);
             if (grant == AwakeCabinets.Grant.QUEUED) {
-                queued = true;
-                queuedFor = player.getUUID();
+                hostBe.queued = true;
+                hostBe.queuedFor = player.getUUID();
                 return SeatResult.QUEUED;
             }
-            awake = true;
-            queued = false;
+            hostBe.awake = true;
+            hostBe.queued = false;
         }
-        if (host == null && !startHost(serverLevel)) {
+        if (hostBe.host == null && !hostBe.startHost(serverLevel)) {
             return SeatResult.NOT_READY;
         }
-        Seat candidate = new Seat(0, player.getUUID(), serverLevel.getGameTime());
+        current = hostBe.host;
+        if (index < 0 || index >= current.seatCount()) {
+            return SeatResult.NO_SEAT_HERE;
+        }
+        Seat candidate = new Seat(index, player.getUUID(), serverLevel.getGameTime(), worldPosition);
         if (!SeatRegistry.SERVER.claim(player.getUUID(), seatKey(serverLevel))) {
             return SeatResult.TAKEN;
         }
-        if (host == null || !host.bind(0, candidate)) {
+        if (!current.bind(index, candidate)) {
             SeatRegistry.SERVER.release(player.getUUID(), seatKey(serverLevel));
-            return SeatResult.IN_PROGRESS;
+            return current.phase().running() ? SeatResult.IN_PROGRESS : SeatResult.TAKEN;
         }
         seat = candidate;
-        sleep.reset();
+        hostBe.sleep.reset();
         return SeatResult.SEATED;
     }
 
-    /** The queue position while waiting for an awake slot, else 0. */
+    /** The queue position while waiting for an awake slot (the host's), else 0. */
     int queuePosition() {
-        return queued ? AwakeCabinets.SERVER.queuePosition(this) : 0;
+        ArcadeCabinetBlockEntity hostBe = role == BusRole.NODE ? hostCabinet() : this;
+        return hostBe != null && hostBe.queued ? AwakeCabinets.SERVER.queuePosition(hostBe) : 0;
     }
 
     private boolean startHost(ServerLevel serverLevel) {
         ResolvedGame game = game();
-        if (game == null) {
+        if (game == null || role == BusRole.NODE || role == BusRole.CONFLICT) {
             return false;
         }
-        env = new LevelHostEnv(serverLevel, worldPosition, ArcadeCabinetBlockEntity::powerAvailable);
-        host = MatchHost.solo(env, worldPosition, game, BoardWriter.NONE);
+        env = new LevelHostEnv(serverLevel, worldPosition, ArcadeCabinetBlockEntity::powerAvailable,
+                () -> busScreens);
+        int seats = role == BusRole.HOST ? MatchHost.busSeatsFor(game, busCabinets) : 1;
+        host = new MatchHost(env, worldPosition, game, Boards.writer(serverLevel.getServer()), seats);
         lastPhase = host.phase();
         sleep.reset();
         return true;
@@ -262,7 +451,7 @@ public class ArcadeCabinetBlockEntity extends BlockEntity implements SeatHolder 
     }
 
     public SeatRegistry.SeatKey seatKey(ServerLevel serverLevel) {
-        return new SeatRegistry.SeatKey(serverLevel.dimension().identifier().toString(), worldPosition.asLong());
+        return new SeatRegistry.SeatKey(dimension(serverLevel), worldPosition.asLong());
     }
 
     // --- tick -------------------------------------------------------------------------------------
@@ -273,6 +462,15 @@ public class ArcadeCabinetBlockEntity extends BlockEntity implements SeatHolder 
             return;
         }
         long time = serverLevel.getGameTime();
+        if (firstTick) {
+            firstTick = false;
+            // a loaded cabinet with a cached bus asks its hub to pick it up again (003 §3.3)
+            BusRegistry.SERVER.markDirty(dimension(serverLevel), busId);
+            BusRegistry.SERVER.touch(dimension(serverLevel), worldPosition);
+        }
+        if (time % 20 == 0) {
+            checkBus(serverLevel);
+        }
         if (time % 10 == 0) {
             validateSeat(serverLevel);
         }
@@ -293,7 +491,7 @@ public class ArcadeCabinetBlockEntity extends BlockEntity implements SeatHolder 
             current.tick();
             onPhase(serverLevel, current);
             boolean nearby = env != null && !env.viewers().isEmpty();
-            if (sleep.tick(seat != null, nearby, Budgets.sleepAfterTicks())) {
+            if (sleep.tick(current.hasSeat(), nearby, Budgets.sleepAfterTicks())) {
                 sleepNow(DropReason.SLEEP);
             }
         }
@@ -305,6 +503,10 @@ public class ArcadeCabinetBlockEntity extends BlockEntity implements SeatHolder 
     private void validateSeat(ServerLevel serverLevel) {
         Seat current = seat;
         if (current == null) {
+            return;
+        }
+        if (role == BusRole.NODE && matchHost() == null) {
+            dropSeat(DropReason.HOST_GONE);
             return;
         }
         ServerPlayer player = serverLevel.getServer().getPlayerList().getPlayer(current.playerUuid);
@@ -359,8 +561,31 @@ public class ArcadeCabinetBlockEntity extends BlockEntity implements SeatHolder 
         queuedFor = null;
     }
 
-    /** The status strip per 003 §3.6 (solo subset). */
+    /** The phase of the match this cabinet shows (its own, or its host's for a node); null when asleep. */
+    public @Nullable BusPhase shownPhase() {
+        MatchHost match = matchHost();
+        return match == null ? null : match.phase();
+    }
+
+    /** The status strip per 003 §3.6. */
     public CabinetStatus computeStatus() {
+        switch (role) {
+            case FULL, NODE_NO_HOST -> {
+                return CabinetStatus.LINKED;
+            }
+            case CONFLICT -> {
+                return CabinetStatus.LOCKED;
+            }
+            case NODE -> {
+                ArcadeCabinetBlockEntity h = hostCabinet();
+                if (h == null) {
+                    return CabinetStatus.LINKED;
+                }
+                return CabinetStatus.of(true, true, powerAvailable(), h.host == null ? null : h.host.phase());
+            }
+            default -> {
+            }
+        }
         if (cartridge.isEmpty()) {
             return CabinetStatus.of(false, false, powerAvailable(), null);
         }
@@ -381,7 +606,7 @@ public class ArcadeCabinetBlockEntity extends BlockEntity implements SeatHolder 
                 .setValue(ArcadeBlockProperties.BTN_A, input.has(SeatInput.A))
                 .setValue(ArcadeBlockProperties.BTN_B, input.has(SeatInput.B))
                 .setValue(ArcadeBlockProperties.CARTRIDGE, !cartridge.isEmpty())
-                .setValue(ArcadeBlockProperties.LINKED, busId != 0);
+                .setValue(ArcadeBlockProperties.LINKED, role.linked());
         if (wanted != state) {
             serverLevel.setBlock(worldPosition, wanted, Block.UPDATE_CLIENTS);
         }
@@ -390,13 +615,17 @@ public class ArcadeCabinetBlockEntity extends BlockEntity implements SeatHolder 
     // --- removal ----------------------------------------------------------------------------------
 
     /**
-     * Real removal only (never chunk unload): end the match, drop the seat with a message, free the slot and
-     * drop the cartridge item.
+     * Real removal only (never chunk unload): end the match, drop the seat with a message, free the slot, drop the
+     * cartridge item and make the bus rediscover.
      */
     @Override
     public void preRemoveSideEffects(BlockPos pos, BlockState state) {
         super.preRemoveSideEffects(pos, state);
         sleepNow(DropReason.BROKEN);
+        if (level instanceof ServerLevel serverLevel) {
+            BusRegistry.SERVER.markDirty(dimension(serverLevel), busId);
+            BusRegistry.SERVER.touch(dimension(serverLevel), pos);
+        }
         if (level != null && !cartridge.isEmpty()) {
             Containers.dropItemStack(level, pos.getX() + 0.5, pos.getY() + 0.5, pos.getZ() + 0.5, cartridge);
             cartridge = ItemStack.EMPTY;
@@ -405,7 +634,8 @@ public class ArcadeCabinetBlockEntity extends BlockEntity implements SeatHolder 
 
     /**
      * Block removal and chunk unload: world-inert bookkeeping only (a world read here can reload the chunk being
-     * unloaded). The seat and the slot are memory, so releasing them is safe; the match is simply discarded.
+     * unloaded). The seat and the slot are memory, so releasing them is safe; the match is simply discarded (nodes
+     * notice their host is gone on their next seat check).
      */
     @Override
     public void setRemoved() {
@@ -444,6 +674,9 @@ public class ArcadeCabinetBlockEntity extends BlockEntity implements SeatHolder 
                         input.getBooleanOr(CabinetClientInfo.KEY_READABLE, false),
                         input.getStringOr(CabinetClientInfo.KEY_ERROR, ""),
                         input.read(CabinetClientInfo.KEY_DEF, GameDef.CODEC));
+        long display = input.getLongOr(KEY_DISPLAY_OF, 0L);
+        clientDisplayOf = display == 0L ? null : BlockPos.of(display);
+        clientRole = BusRole.byOrdinal(input.getIntOr(KEY_ROLE, 0));
     }
 
     /** Client side: the synced view of the cartridge for the screen renderer and the seated player's prediction. */
@@ -451,9 +684,19 @@ public class ArcadeCabinetBlockEntity extends BlockEntity implements SeatHolder 
         return clientInfo;
     }
 
+    /** Client side: the host this node mirrors, or null. */
+    public @Nullable BlockPos clientDisplayOf() {
+        return clientDisplayOf;
+    }
+
+    /** Client side: this cabinet's bus role. */
+    public BusRole clientRole() {
+        return clientRole;
+    }
+
     /**
-     * What the client renderer needs and nothing more: the title, the theme tint and whether the cartridge is
-     * readable. Never the cartridge itself (it carries the author UUID).
+     * What the client renderer needs and nothing more: the title, the theme tint, whether the cartridge is
+     * readable, and for a bus node the host it mirrors. Never the cartridge itself (it carries the author UUID).
      */
     @Override
     public CompoundTag getUpdateTag(HolderLookup.Provider registries) {
@@ -474,6 +717,10 @@ public class ArcadeCabinetBlockEntity extends BlockEntity implements SeatHolder 
                         .ifPresent(encoded -> tag.put(CabinetClientInfo.KEY_DEF, encoded));
             }
         }
+        if (displayOf != null) {
+            tag.putLong(KEY_DISPLAY_OF, displayOf.asLong());
+        }
+        tag.putInt(KEY_ROLE, role.ordinal());
         return tag;
     }
 

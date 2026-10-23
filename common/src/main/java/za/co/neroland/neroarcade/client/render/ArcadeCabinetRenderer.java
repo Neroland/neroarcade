@@ -105,7 +105,7 @@ public class ArcadeCabinetRenderer implements BlockEntityRenderer<ArcadeCabinetB
         collector.order(1).submitCustomGeometry(poseStack, renderType(screen), (pose, c) -> screenQuad(c, pose, q));
     }
 
-    private static RenderType renderType(Identifier id) {
+    static RenderType renderType(Identifier id) {
         for (int i = 0; i < TYPES.length; i++) {
             if (TYPE_IDS[i] == null) {
                 TYPE_IDS[i] = id;

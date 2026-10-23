@@ -1,0 +1,62 @@
+{
+  "schema": 1,
+  "id": "udal3vocq4b7zy3g",
+  "title": "Lane Hopper",
+  "author": "00000000-0000-4000-8000-00000000dead",
+  "lineage": [],
+  "seed": 1005,
+  "slots": {
+    "arena": [
+      {
+        "id": "neroarcade:arena/strip_9",
+        "props": {
+          "scroll": "down",
+          "length": 24
+        }
+      }
+    ],
+    "pawn": [
+      {
+        "id": "neroarcade:pawn/runner",
+        "props": {
+          "speed": 2
+        }
+      }
+    ],
+    "rule": [
+      {
+        "id": "neroarcade:rule/survive_time",
+        "props": {
+          "lives": 3
+        }
+      }
+    ],
+    "hazard": [
+      {
+        "id": "neroarcade:hazard/falling_blocks"
+      }
+    ],
+    "control": [
+      {
+        "id": "neroarcade:control/one_button"
+      }
+    ],
+    "pace": [
+      {
+        "id": "neroarcade:pace/steady"
+      }
+    ],
+    "multiplayer": [
+      {
+        "id": "neroarcade:multiplayer/solo"
+      }
+    ],
+    "theme": [
+      {
+        "id": "neroarcade:theme/cindara_dusk"
+      }
+    ]
+  },
+  "created_at": 1761177604,
+  "revision": 1
+}

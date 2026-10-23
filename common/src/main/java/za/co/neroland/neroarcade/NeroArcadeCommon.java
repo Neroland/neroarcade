@@ -3,6 +3,7 @@ package za.co.neroland.neroarcade;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import za.co.neroland.neroarcade.board.Boards;
 import za.co.neroland.neroarcade.config.NeroArcadeConfig;
 import za.co.neroland.neroarcade.data.NeroArcadeData;
 import za.co.neroland.neroarcade.module.pack.ArcadeModules;
@@ -72,8 +73,10 @@ public final class NeroArcadeCommon {
         // 4. Player-data erasure registration. Registered before any store can exist on purpose:
         //    registering late is how an erasure request silently misses a store (POPIA/GDPR). Every
         //    player-keyed store adds itself to NeroArcadeData and reads its SavedData through Core's
-        //    SavedDataRecovery. No store exists yet.
+        //    SavedDataRecovery. Stage 4A: the leaderboards and the credit opt-in (Boards adds both, installs the
+        //    bench's credit resolver and the hourly retention sweep).
         NeroArcadeData.init();
+        Boards.init();
 
         // 5. Compat detection (reserved) — resolved once here, never per interaction.
 

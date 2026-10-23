@@ -65,4 +65,10 @@ public final class NeonVoidTheme implements ThemeModule {
     private static Identifier id(String path) {
         return Identifier.fromNamespaceAndPath("neroarcade", path);
     }
+
+    /** The Arcade Exchange genre word ({@code neroarcade.tag.neon}). */
+    @Override
+    public String genreTag() {
+        return "neon";
+    }
 }

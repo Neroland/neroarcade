@@ -16,6 +16,7 @@ import org.jetbrains.annotations.Nullable;
 import za.co.neroland.neroarcade.cabinet.ArcadeCabinetBlockEntity;
 import za.co.neroland.neroarcade.cabinet.BusPhase;
 import za.co.neroland.neroarcade.client.bench.ClientBenchState;
+import za.co.neroland.neroarcade.client.board.ClientBoards;
 import za.co.neroland.neroarcade.client.input.ArcadeKeys;
 import za.co.neroland.neroarcade.client.input.InputSender;
 import za.co.neroland.neroarcade.client.input.SeatedInput;
@@ -26,6 +27,7 @@ import za.co.neroland.neroarcade.client.screen.GameBenchScreen;
 import za.co.neroland.neroarcade.game.ResolvedGame;
 import za.co.neroland.neroarcade.network.ArcadeClientSink;
 import za.co.neroland.neroarcade.network.BenchStatePayload;
+import za.co.neroland.neroarcade.network.BoardPagePayload;
 import za.co.neroland.neroarcade.network.HudLegendPayload;
 import za.co.neroland.neroarcade.network.LeaveSeatPayload;
 import za.co.neroland.neroarcade.network.MatchPhasePayload;
@@ -101,6 +103,7 @@ public final class ArcadeClient {
         if (level != lastLevel) {
             lastLevel = level;
             ClientMatches.clear(); // a new world or dimension never shows the last one's matches
+            ClientBoards.clear();
             SENDER.reset();
         }
         if (level == null || mc.player == null) {
@@ -108,7 +111,7 @@ public final class ArcadeClient {
             return;
         }
         ClientMatch seated = ClientMatches.seated();
-        boolean atCabinet = seated != null && level.getBlockEntity(seated.host()) instanceof ArcadeCabinetBlockEntity;
+        boolean atCabinet = seated != null && level.getBlockEntity(seated.seatAt()) instanceof ArcadeCabinetBlockEntity;
         Screen screen = screen();
         if (atCabinet && screen instanceof PauseScreen && mc.isWindowActive()) {
             setScreen(null); // Esc while seated means "leave", not "pause"
@@ -132,7 +135,7 @@ public final class ArcadeClient {
         if (seated != null && phase != BusPhase.IDLE) {
             SeatInput send = SENDER.poll(input, seated.matchId(), ticks);
             if (send != null) {
-                Services.NETWORK.sendToServer(new SeatInputPayload(seated.host(), seated.matchId(), send, (int) ticks));
+                Services.NETWORK.sendToServer(new SeatInputPayload(seated.seatAt(), seated.matchId(), send, (int) ticks));
             }
         } else {
             SENDER.reset();
@@ -142,7 +145,7 @@ public final class ArcadeClient {
 
     /** Asks to leave the seat at {@code match}'s host. */
     public static void leave(ClientMatch match) {
-        Services.NETWORK.sendToServer(new LeaveSeatPayload(match.host()));
+        Services.NETWORK.sendToServer(new LeaveSeatPayload(match.seatAt()));
         match.forgetSeat();
         SENDER.reset();
     }
@@ -164,6 +167,8 @@ public final class ArcadeClient {
     public static void clear() {
         ClientMatches.clear();
         ClientBenchState.clear();
+        ClientBoards.clear();
+        za.co.neroland.neroarcade.client.exchange.ClientExchange.clear();
         CabinetScreens.clear();
         SENDER.reset();
         ArcadeKeys.releaseScreenKeys();
@@ -202,6 +207,16 @@ public final class ArcadeClient {
         public void onBenchState(BenchStatePayload payload) {
             ClientBenchState.accept(payload);
             ClientMatches.refreshGame(payload.bench());
+        }
+
+        @Override
+        public void onBoardPage(BoardPagePayload payload) {
+            ClientBoards.accept(payload);
+        }
+
+        @Override
+        public void onExchangePage(za.co.neroland.neroarcade.network.ExchangePagePayload payload) {
+            za.co.neroland.neroarcade.client.exchange.ClientExchange.accept(payload);
         }
 
         @Override

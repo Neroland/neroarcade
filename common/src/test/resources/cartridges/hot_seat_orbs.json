@@ -1,0 +1,74 @@
+{
+  "schema": 1,
+  "id": "6gzhuqc645wxsoti",
+  "title": "Hot-Seat Orbs",
+  "author": "00000000-0000-4000-8000-00000000dead",
+  "lineage": [],
+  "seed": 1006,
+  "slots": {
+    "arena": [
+      {
+        "id": "neroarcade:arena/grid_16",
+        "props": {
+          "obstacles": "pillars"
+        }
+      }
+    ],
+    "pawn": [
+      {
+        "id": "neroarcade:pawn/cursor"
+      }
+    ],
+    "rule": [
+      {
+        "id": "neroarcade:rule/score_target",
+        "props": {
+          "target": 50,
+          "lives": 3
+        }
+      }
+    ],
+    "hazard": [
+      {
+        "id": "neroarcade:hazard/bouncing_ball",
+        "props": {
+          "speed": 2
+        }
+      }
+    ],
+    "pickup": [
+      {
+        "id": "neroarcade:pickup/score_orb",
+        "props": {
+          "count": 5
+        }
+      }
+    ],
+    "control": [
+      {
+        "id": "neroarcade:control/four_way"
+      }
+    ],
+    "pace": [
+      {
+        "id": "neroarcade:pace/steady"
+      }
+    ],
+    "multiplayer": [
+      {
+        "id": "neroarcade:multiplayer/turns",
+        "props": {
+          "seats": 2,
+          "turn_seconds": 15
+        }
+      }
+    ],
+    "theme": [
+      {
+        "id": "neroarcade:theme/neon_void"
+      }
+    ]
+  },
+  "created_at": 1761177605,
+  "revision": 1
+}

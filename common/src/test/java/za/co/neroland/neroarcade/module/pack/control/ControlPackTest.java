@@ -22,7 +22,7 @@ class ControlPackTest {
 
     @BeforeEach
     void registry() {
-        ModuleRegistry.resetForTests();
+        TestModules.reset();
         ArcadeModules.registerDefaults();
         ControlPack.registerAll();
         ModuleRegistry.freeze();

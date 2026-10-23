@@ -2,6 +2,8 @@ package za.co.neroland.neroarcade.cabinet;
 
 import java.util.UUID;
 
+import net.minecraft.core.BlockPos;
+
 import org.jetbrains.annotations.Nullable;
 
 import za.co.neroland.neroarcade.runtime.SeatInput;
@@ -18,6 +20,8 @@ public final class Seat {
     public final UUID playerUuid;
     /** Server game time at bind; informational ordering only. */
     public final long joinedAt;
+    /** The block the player sits at (a bus node, the host, or a bench); null = the host itself. */
+    public final @Nullable BlockPos at;
 
     boolean ready;
     long lastInputTick;
@@ -27,9 +31,14 @@ public final class Seat {
     int droppedInputs;
 
     public Seat(int seat, UUID playerUuid, long joinedAt) {
+        this(seat, playerUuid, joinedAt, null);
+    }
+
+    public Seat(int seat, UUID playerUuid, long joinedAt, @Nullable BlockPos at) {
         this.seat = seat;
         this.playerUuid = playerUuid;
         this.joinedAt = joinedAt;
+        this.at = at == null ? null : at.immutable();
     }
 
     public boolean ready() {

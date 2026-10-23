@@ -21,9 +21,13 @@ import za.co.neroland.neroarcade.module.hook.ModuleContext;
  *       when that one is blocked).</li>
  *   <li><b>Hunt.</b> Else, when the PAWN has {@code LETHAL_TO_PAWNS} or {@code FIRES}, step toward the nearest
  *       other seat's pawn the same way, pressing A when aligned on an axis.</li>
- *   <li><b>Wander.</b> Else hold the pawn's current direction of travel, reversing at a wall; from rest, take
- *       the direction with the most free cells.</li>
+ *   <li><b>Wander</b> (008b Q7). Else head for the board centre {@code (w/2, h/2)} along the axis of larger
+ *       distance; within one cell of it a pawn without {@code AUTO_MOVE} stands still and an {@code AUTO_MOVE} pawn
+ *       holds its travel direction. An {@code AUTO_MOVE} pawn never reverses: a 180° choice becomes the
+ *       counter-clockwise turn if open, else the clockwise one. A blocked choice falls back to the direction with
+ *       the most free cells.</li>
  * </ol>
+ * VOID cells block like walls for every step and every free-run count (the opponent never walks into the void).
  * Entities are scanned in id order and seats 0→3; distance ties keep the lower id / seat. Distances wrap where
  * the board wraps.
  *
@@ -197,12 +201,29 @@ public final class RuntimeOpponent {
             default -> {
             }
         }
-        // 4. wander
+        // 4. wander: toward the centre; AUTO_MOVE pawns turn instead of reversing
+        boolean autoMove = ctx.game() != null && ctx.game().flags(ModuleType.PAWN).contains(ModuleFlag.AUTO_MOVE);
         int vx = s.get(pawn, Entities.VX);
         int vy = s.get(pawn, Entities.VY);
-        int dir = vx > 0 ? RIGHT : vx < 0 ? LEFT : vy > 0 ? DOWN : vy < 0 ? UP : NONE;
-        if (dir != NONE && blocked(s, px + dx(dir), py + dy(dir))) {
-            dir = reverse(dir);
+        int travel = vx > 0 ? RIGHT : vx < 0 ? LEFT : vy > 0 ? DOWN : vy < 0 ? UP : NONE;
+        int cdx = deltaX(s, px, s.width() / 2);
+        int cdy = deltaY(s, py, s.height() / 2);
+        int dir;
+        if (Math.max(Math.abs(cdx), Math.abs(cdy)) > 1) {
+            dir = toward(s, px, py, cdx, cdy);
+        } else if (!autoMove) {
+            return SeatInput.NONE;
+        } else {
+            dir = travel;
+        }
+        if (autoMove && travel != NONE && dir == reverse(travel)) {
+            int ccw = ccw(travel);
+            int cw = reverse(ccw);
+            if (!blocked(s, px + dx(ccw), py + dy(ccw))) {
+                dir = ccw;
+            } else if (!blocked(s, px + dx(cw), py + dy(cw))) {
+                dir = cw;
+            }
         }
         if (dir == NONE || blocked(s, px + dx(dir), py + dy(dir))) {
             dir = mostFree(s, px, py);
@@ -279,8 +300,10 @@ public final class RuntimeOpponent {
         return n;
     }
 
+    /** Walls, BLOCKs, solid entities and (008b Q7) VOID cells. */
     private static boolean blocked(MatchState s, int cx, int cy) {
-        return Cell.blocks(s.cell(cx, cy)) || s.solidAt(cx, cy);
+        byte cell = s.cell(cx, cy);
+        return Cell.blocks(cell) || cell == Cell.VOID || s.solidAt(cx, cy);
     }
 
     private static int deltaX(MatchState s, int from, int to) {
@@ -314,6 +337,17 @@ public final class RuntimeOpponent {
             case DOWN -> UP;
             case LEFT -> RIGHT;
             case RIGHT -> LEFT;
+            default -> NONE;
+        };
+    }
+
+    /** The 90° counter-clockwise turn on screen (y grows down): UP → LEFT → DOWN → RIGHT → UP. */
+    private static int ccw(int dir) {
+        return switch (dir) {
+            case UP -> LEFT;
+            case LEFT -> DOWN;
+            case DOWN -> RIGHT;
+            case RIGHT -> UP;
             default -> NONE;
         };
     }

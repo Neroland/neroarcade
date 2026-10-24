@@ -12,7 +12,7 @@ them.
 
 | Key | Default | Range | What it does |
 | --- | --- | --- | --- |
-| `telemetryEnabled` | true | | Anonymous NeroArcade-only crash reports. Set `false` to opt out (restart). Inert in this version: nothing is sent. See [Privacy](Privacy.md). |
+| `telemetryEnabled` | true | | Anonymous NeroArcade-only crash reports. On by default; set `false` to opt out (restart). See [Privacy](Privacy.md). |
 | `client.scanlines` | false | | Draws arcade screens with CRT scanlines. |
 | `client.screenRenderRange` | 0 | 0–64 | Draws arcade screens only within this many blocks. 0 uses the server's `screenRenderRange`; a larger number than the server's is capped to it. |
 

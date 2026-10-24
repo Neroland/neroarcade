@@ -14,7 +14,7 @@ external error-reporting service.
   played or when, who hearted or downloaded what, chat, positions of players, IP addresses.
 - **Your choices, in game:** `/neroarcade privacy credit on|off` (be named, or not; off by default),
   `/neroarcade privacy export` (get a copy), `/neroland data eraseme` (erase).
-- **Crash reports:** opt-out, anonymous, EU servers; **inert in this build** (nothing is sent). See
+- **Crash reports:** anonymous, EU servers, **on by default**; opt out with `telemetryEnabled=false`. See
   [Crash reports](#crash-reports-telemetry).
 
 ## What NeroArcade stores, and what it does not
@@ -233,9 +233,8 @@ under NeroArcade's control.
 
 ## Crash reports (telemetry)
 
-NeroArcade contains opt-out, anonymous crash reporting through [Sentry](https://sentry.io) (EU servers). **In this
-build it is inert:** no reporting project is configured, so nothing is sent and no connection is opened. When a
-future release enables it, a report will contain only:
+NeroArcade sends opt-out, anonymous crash reports through [Sentry](https://sentry.io) (EU servers). Reporting is
+**on by default**; a report contains only:
 
 - the stack trace of an error that involves NeroArcade code (errors from other mods or Minecraft are dropped), and
   for an error NeroArcade caught and recovered from, a short fixed label of where it happened (never a player name,

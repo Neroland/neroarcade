@@ -321,8 +321,8 @@ and JVM. Desync is a defect, and `ReplayTest` pins final state hashes per exampl
 - **Numbered init.** `NeroArcadeCommon.init()` runs fixed, numbered steps; new work fills the reserved slot.
 - **`MenuOpener` for every GUI.** Never call `Player#openMenu` directly.
 - **Config through Core's `ConfigSchema`** (`config/neroarcade.properties`).
-- **Opt-out Sentry telemetry** with no personal data. The DSN is a placeholder until NeroArcade has its own
-  Sentry project; keep the placeholder guard.
+- **Opt-out Sentry telemetry** with no personal data. The DSN is NeroArcade's own Sentry project (EU ingest);
+  keep the placeholder guard so a fork with the placeholder DSN stays silent.
 - **`publish.yml` rules.** Direct-curl CurseForge upload with `max-parallel: 1` and the 5xx retry loop, plus
   the Modrinth v3 environment-metadata step after `mc-publish`.
 - **Own creative tab** (`registry/ModCreativeTab`, id `neroarcade`, title `itemGroup.neroarcade`). Never add

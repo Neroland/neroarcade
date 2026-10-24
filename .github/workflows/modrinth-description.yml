@@ -56,8 +56,8 @@ jobs:
           jq -Rs '{
             body: .,
             title: "NeroArcade",
-            description: "Mine alien ore, power up your machines, build rockets — then terraform a dead world until it rains.",
-            categories: ["technology", "worldgen", "adventure"],
+            description: "Build mini games from module chips, save them to cartridges, and play, share and chase high scores on arcade cabinets.",
+            categories: ["minigame", "social", "game-mechanics"],
             client_side: "required",
             server_side: "required",
             issues_url: "https://github.com/Neroland/neroarcade/issues",

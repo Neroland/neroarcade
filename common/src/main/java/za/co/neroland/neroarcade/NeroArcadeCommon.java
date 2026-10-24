@@ -54,7 +54,7 @@ public final class NeroArcadeCommon {
 
         // 2. Anonymous, NeroArcade-only crash reporting. Must follow the config registration and
         //    precede the rest of init so early failures are still reported. On by default (opt-out via
-        //    telemetryEnabled=false); stays inert while the build's DSN is the placeholder
+        //    telemetryEnabled=false); a build whose DSN is the placeholder stays inert
         //    (see NeroArcadeTelemetry's PLACEHOLDER_DSN guard).
         NeroArcadeTelemetry.init();
 

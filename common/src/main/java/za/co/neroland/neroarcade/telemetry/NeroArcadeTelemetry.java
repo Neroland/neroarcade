@@ -59,10 +59,9 @@ public final class NeroArcadeTelemetry {
 
     /**
      * Sentry DSN for the NeroArcade project (EU ingest) — a public client key (write-only ingest), safe to
-     * ship in the jar. Still the placeholder: replace it with NeroArcade's own project DSN once that
-     * Sentry project exists.
+     * ship in the jar. NeroArcade's own Sentry project.
      */
-    private static final String DSN = PLACEHOLDER_DSN;
+    private static final String DSN = "https://bc848610712415182eea39a4abcd9a5c@o4511183823241216.ingest.de.sentry.io/4512309900148816";
 
     /** Stack traces must contain this package for an event to be sent. */
     private static final String PACKAGE_MARKER = "za.co.neroland.neroarcade";

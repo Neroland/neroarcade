@@ -23,8 +23,8 @@ import za.co.neroland.neroarcade.module.BenchWarning;
  * after every accepted change (003 §11). The client runs its preview from {@link #draft} through the same
  * common runtime.
  *
- * <p>Privacy: the draft never carries an author UUID (stripped server side); a credit string appears only if
- * the loaded cartridge already carried one.
+ * <p>Privacy: the draft never carries an author UUID or a credit string (both stripped server side by
+ * {@code BenchDraft.preview()}, compliance review F3); the screen's credit line is the editor's own opt-in hint.
  *
  * @param draft      the GameDef the rack would save now (placeholder id until the first save; empty slots = defaults)
  * @param warnings   bench warnings, grey, never refusals

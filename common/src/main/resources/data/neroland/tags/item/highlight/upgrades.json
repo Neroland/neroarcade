@@ -1,0 +1,9 @@
+{
+  "replace": false,
+  "values": [
+    {
+      "id": "neroarcade:module_chip",
+      "required": false
+    }
+  ]
+}

@@ -28,8 +28,10 @@ import za.co.neroland.neroarcade.privacy.BackupHook;
  * <h2>API for the NeroLink module (Stage 7, 007 §2.1, §3)</h2>
  * <ul>
  *   <li>{@code library}: {@link #listingsBy(UUID)} + {@link #drafts(UUID)} + {@link #draftsUsed(UUID)}.</li>
- *   <li>{@code export_cartridge}: {@link #draft(UUID, String)} then {@link #listingForRoot(String)}.</li>
- *   <li>{@code import_cartridge}: {@link #isListedByOther(String, UUID)} (re-mint the id if true), then
+ *   <li>{@code export_cartridge}: {@link #draft(UUID, String)} then {@link #listingByCartridgeId(String)} (by id
+ *       only; there is no by-root lookup).</li>
+ *   <li>{@code import_cartridge}: the id is kept only if the requester holds a draft with it or it is their own
+ *       listing ({@link #draft(UUID, String)}, {@link #listingByCartridgeId(String)}); otherwise it is re-minted, then
  *       {@link #addDraft(MinecraftServer, UUID, GameDef)} ({@code FULL} = "drafts full").</li>
  * </ul>
  * Every write backs the store up; every read is a copy.
@@ -49,10 +51,22 @@ public final class ExchangeStore extends SavedData {
     public static final SavedDataType<ExchangeStore> TYPE = new SavedDataType<ExchangeStore>(
             Identifier.fromNamespaceAndPath(NeroArcadeCommon.MOD_ID, "exchange"), FACTORY, CODEC, null);
 
+    /** Where the erasers find this store (tests swap in an instance). */
+    public static final za.co.neroland.neroarcade.privacy.StoreAccess<ExchangeStore> ACCESS =
+            new za.co.neroland.neroarcade.privacy.StoreAccess<>(ExchangeStore::get);
+
     private final ExchangeTable table;
+
+    /** The fixed author of the creative gallery's showcase listings (never a player). */
+    public static final UUID SHOWCASE_AUTHOR = UUID.fromString("00000000-0000-4000-8000-00006a11e7a0");
 
     public ExchangeStore() {
         this(new ExchangeTable());
+    }
+
+    /** A store around an existing table (tests and the erasure fixtures). */
+    public static ExchangeStore of(ExchangeTable table) {
+        return new ExchangeStore(table);
     }
 
     private ExchangeStore(ExchangeTable table) {
@@ -110,6 +124,15 @@ public final class ExchangeStore extends SavedData {
         return table.size();
     }
 
+    /**
+     * Listings real players published: every listing except the gallery's showcase ({@link #SHOWCASE_AUTHOR}). The
+     * {@code cartridge_published} channel counts these, so {@code /neroarcade gallery} cannot complete a server quest
+     * (final review L1).
+     */
+    public int publishedCount() {
+        return table.sizeExcluding(SHOWCASE_AUTHOR);
+    }
+
     /** True when {@code cartridgeId} is listed and its author is not {@code requester} (import must re-mint). */
     public boolean isListedByOther(String cartridgeId, UUID requester) {
         return table.listingByCartridgeId(cartridgeId).filter(l -> !l.authorUuid().equals(requester)).isPresent();
@@ -117,14 +140,57 @@ public final class ExchangeStore extends SavedData {
 
     // --- writes -------------------------------------------------------------------------------------
 
+    /**
+     * @param authorCap most listings per author; 0 = none (ops are exempt)
+     * @param op        an operator may replace another author's listing of the same id; nobody else may
+     */
     ExchangeTable.PublishResult publish(MinecraftServer server, GameDef def, UUID author, Optional<String> credit,
-            List<String> tags, long now) {
+            List<String> tags, long now, int authorCap, boolean op) {
         ExchangeTable.PublishResult result = table.publish(def, author, credit, tags, now,
-                NeroArcadeConfig.EXCHANGE_MAX_LISTINGS.get());
-        if (result.status() != ExchangeTable.PublishStatus.FULL) {
+                NeroArcadeConfig.EXCHANGE_MAX_LISTINGS.get(), authorCap, op);
+        if (result.status() == ExchangeTable.PublishStatus.PUBLISHED
+                || result.status() == ExchangeTable.PublishStatus.REPLACED) {
             changed(server);
         }
         return result;
+    }
+
+    /**
+     * The creative gallery's showcase (an operator's command in a test world): lists each cartridge under
+     * {@code author} with {@code credit}, no per-author cap, the world cap still applies; a cartridge that does not
+     * validate is skipped. {@code /neroarcade gallery clear} takes them down again with {@link #unpublishBy}.
+     *
+     * @return listings published or replaced
+     */
+    public int publishShowcase(MinecraftServer server, List<GameDef> defs, UUID author, String credit, long now) {
+        int n = 0;
+        for (GameDef def : defs) {
+            List<String> tags;
+            try {
+                tags = GenreTags.of(za.co.neroland.neroarcade.game.CartridgeValidator.validate(def));
+            } catch (za.co.neroland.neroarcade.game.ValidationError invalid) {
+                continue;
+            }
+            ExchangeTable.PublishResult result = table.publish(def, author, Optional.of(credit), tags, now,
+                    NeroArcadeConfig.EXCHANGE_MAX_LISTINGS.get(), 0, true);
+            if (result.status() == ExchangeTable.PublishStatus.PUBLISHED
+                    || result.status() == ExchangeTable.PublishStatus.REPLACED) {
+                n++;
+            }
+        }
+        if (n > 0) {
+            changed(server);
+        }
+        return n;
+    }
+
+    /** Admin purge: every listing {@code author} published (review 003b F5). @return listings removed */
+    public int unpublishBy(MinecraftServer server, UUID author) {
+        int removed = table.unpublishBy(author);
+        if (removed > 0) {
+            changed(server);
+        }
+        return removed;
     }
 
     Optional<Listing> unpublish(MinecraftServer server, int listingId) {
@@ -142,6 +208,31 @@ public final class ExchangeStore extends SavedData {
             return true;
         }
         return false;
+    }
+
+    /** One download of a listing, counted for the NeroLink daily digest (aggregate; no downloader is kept). */
+    public void countDownload(int listingId) {
+        if (table.countDownload(listingId)) {
+            setDirty();
+        }
+    }
+
+    /** The NeroLink daily digest: listingId → downloads since the last digest, then every counter reset. */
+    public java.util.Map<Integer, Integer> drainDownloads() {
+        java.util.Map<Integer, Integer> out = table.drainDownloads();
+        if (!out.isEmpty()) {
+            setDirty();
+        }
+        return out;
+    }
+
+    /** Removes {@code owner}'s draft of {@code cartridgeId} (an import whose title the chat filter refused late). */
+    public boolean removeDraft(MinecraftServer server, UUID owner, String cartridgeId) {
+        boolean removed = table.removeDraft(owner, cartridgeId);
+        if (removed) {
+            changed(server);
+        }
+        return removed;
     }
 
     int heart(int listingId) {
@@ -220,11 +311,13 @@ public final class ExchangeStore extends SavedData {
         backup(server);
     }
 
+    /** What this store's saved form (and so its backup) holds. */
+    public net.minecraft.nbt.CompoundTag saveForm() {
+        return table.save();
+    }
+
     public void backup(MinecraftServer server) {
-        if (server == null) {
-            return;
-        }
-        BackupHook.current().backup(server, "exchange",
+        BackupHook.current().backup(server, "exchange", table::save,
                 () -> SavedDataRecovery.backupNow(server.overworld(), TYPE, this, RECOVERY_NAME));
     }
 }

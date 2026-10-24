@@ -41,6 +41,7 @@ import za.co.neroland.neroarcade.client.render.ScreenAssets;
 import za.co.neroland.neroarcade.client.render.ScreenTexture;
 import za.co.neroland.neroarcade.client.widget.ArcadeButton;
 import za.co.neroland.neroarcade.client.widget.PropControl;
+import za.co.neroland.neroarcade.client.widget.SlotGlyph;
 import za.co.neroland.neroarcade.game.ResolvedGame;
 import za.co.neroland.neroarcade.game.ValidationError;
 import za.co.neroland.neroarcade.item.ModuleChips;
@@ -427,6 +428,11 @@ public class GameBenchScreen extends AbstractContainerScreen<GameBenchMenu> {
         if (key.equals(builtPropsFor)) {
             return;
         }
+        for (PropControl control : propControls) {
+            if (control.isDragging()) {
+                return; // 005a P4: never pull a slider out from under the mouse; rebuild after the release
+            }
+        }
         builtPropsFor = key;
         for (PropControl control : propControls) {
             removeWidget(control);
@@ -449,7 +455,9 @@ public class GameBenchScreen extends AbstractContainerScreen<GameBenchMenu> {
             PropControl control = new PropControl(leftPos + COL_L + 62, topPos + PARAMS_TOP + 12 + row * 11, 104, 10,
                     chip, spec, value, colour, (s, v) -> send(BenchEditPayload.Op.SET_PROP, type, stack, s.name(), v,
                             v != 0, ""));
-            control.active = !testing;
+            if (testing) {
+                control.disableWith(Component.translatable("neroarcade.bench.why.testing"));
+            }
             propControls.add(addRenderableWidget(control));
             row++;
         }
@@ -667,13 +675,7 @@ public class GameBenchScreen extends AbstractContainerScreen<GameBenchMenu> {
             int gy = rowTop + 3;
             g.fill(gx, gy, gx + 12, gy + 12, ArcadeColours.SLOT_FRAME);
             int colour = ArcadeColours.opaque(type.colour);
-            for (int cy = 0; cy < 5; cy++) {
-                for (int cx = 0; cx < 5; cx++) {
-                    if (BenchModel.glyph(type, cx, cy)) {
-                        g.fill(gx + 1 + cx * 2, gy + 1 + cy * 2, gx + 3 + cx * 2, gy + 3 + cy * 2, colour);
-                    }
-                }
-            }
+            SlotGlyph.draw(g, gx + 1, gy + 1, type, colour, 2);
             Component word = Component.translatable(type.langKey());
             fitted(g, word, x + 16, rowTop + 5, 60, colour);
 
@@ -762,14 +764,9 @@ public class GameBenchScreen extends AbstractContainerScreen<GameBenchMenu> {
                     chip.effectArgs(values != null ? values : PropertyValues.defaults(chip)));
         }
         if (chips.size() > 1) {
-            MutableComponent names = Component.empty();
-            for (int i = 0; i < chips.size(); i++) {
-                if (i > 0) {
-                    names.append(", ");
-                }
-                names.append(Component.translatable(chips.get(i).langKey()));
-            }
-            return names;
+            // 005a P11: "Falling block + 1 more" reads better than a truncated comma list
+            return Component.translatable("neroarcade.bench.row_more", Component.translatable(chips.get(0).langKey()),
+                    chips.size() - 1);
         }
         Optional<String> defaultName = BenchModel.defaultName(type);
         return defaultName.isPresent()
@@ -869,6 +866,13 @@ public class GameBenchScreen extends AbstractContainerScreen<GameBenchMenu> {
             ModuleType type = BenchSlots.typeAt(hoveredSlot.index);
             tooltip(g, List.of(Component.translatable("neroarcade.bench.slot_tip", Component.translatable(type.langKey()))),
                     mouseX, mouseY);
+        }
+        // the credit line's opt-in hint (review 005a P1, Stage 6)
+        int creditX = leftPos + PAD;
+        int creditY = topPos + 236;
+        int creditW = font.width(Component.translatable("neroarcade.bench.credit_off"));
+        if (mouseX >= creditX && mouseX < creditX + creditW && mouseY >= creditY && mouseY < creditY + 9) {
+            tooltip(g, List.of(Component.translatable("neroarcade.bench.credit_hint")), mouseX, mouseY);
         }
     }
 

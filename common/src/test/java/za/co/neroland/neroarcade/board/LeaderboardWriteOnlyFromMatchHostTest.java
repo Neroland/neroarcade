@@ -95,7 +95,7 @@ class LeaderboardWriteOnlyFromMatchHostTest {
         RecordOutcome out = table.record(BoardFixtures.result(MatchResult.Outcome.WIN,
                 BoardFixtures.seat(BoardFixtures.ALICE, 0, 300, false),
                 BoardFixtures.seat(BoardFixtures.BOB, 1, 900, true)), 1000L, 10, u -> null);
-        LeaderboardTable.Board board = table.board(BoardFixtures.LINEAGE).orElseThrow();
+        LeaderboardTable.Board board = table.board(BoardFixtures.CARTRIDGE).orElseThrow();
         assertEquals(1, board.top().size());
         assertEquals(BoardFixtures.ALICE, board.top().get(0).uuid());
         assertEquals(900, board.personalBest().get(BoardFixtures.BOB));
@@ -112,13 +112,13 @@ class LeaderboardWriteOnlyFromMatchHostTest {
                 false)), 2L, 2, u -> null);
         table.record(BoardFixtures.result(MatchResult.Outcome.WIN, BoardFixtures.seat(BoardFixtures.ALICE, 0, 200,
                 false)), 3L, 2, u -> null);
-        LeaderboardTable.Board board = table.board(BoardFixtures.LINEAGE).orElseThrow();
+        LeaderboardTable.Board board = table.board(BoardFixtures.CARTRIDGE).orElseThrow();
         assertEquals(1, board.top().size(), "a player holds one row: their best");
         assertEquals(200, board.top().get(0).score());
         table.record(BoardFixtures.result(MatchResult.Outcome.WIN,
                 BoardFixtures.seat(BoardFixtures.BOB, 0, 300, false),
                 BoardFixtures.seat(java.util.UUID.randomUUID(), 1, 10, false)), 4L, 2, u -> null);
-        board = table.board(BoardFixtures.LINEAGE).orElseThrow();
+        board = table.board(BoardFixtures.CARTRIDGE).orElseThrow();
         assertEquals(2, board.top().size(), "capped at maxEntries");
         assertEquals(BoardFixtures.BOB, board.top().get(0).uuid());
     }

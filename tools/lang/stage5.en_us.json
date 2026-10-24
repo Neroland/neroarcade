@@ -1,0 +1,13 @@
+{
+  "neroarcade.bench.row_more": "%s + %s more",
+  "neroarcade.hud.again": "Ready for another go?",
+  "neroarcade.command.gallery.players_only": "Only a player can build or clear the gallery.",
+  "neroarcade.command.gallery.creative_only": "Switch to creative mode to build or clear the gallery.",
+  "neroarcade.command.gallery.others_nearby": "Someone else is within %s blocks. Build the gallery in a test world with nobody nearby.",
+  "neroarcade.command.gallery.occupied": "The gallery's space holds %s blocks with contents (chests, machines). Move somewhere empty first, so nothing is lost.",
+  "neroarcade.command.gallery.no_replays": "The gallery's demo games are missing from this copy of the mod.",
+  "neroarcade.command.gallery.built": "Gallery built: %s cabinets running demo games, a link row under a marquee, and %s games on the Exchange. Stand inside it and use /neroarcade gallery clear to remove it.",
+  "neroarcade.command.gallery.nothing_here": "There is no gallery here. Stand inside one to clear it.",
+  "neroarcade.command.gallery.cleared": "Gallery cleared: %s blocks put back and %s Exchange listings taken down.",
+  "neroarcade.command.awake": "Arcade hosts running now: %s of %s (%s waiting for a slot). A host with nobody seated and nobody near falls asleep after runtime.sleepAfterTicks."
+}

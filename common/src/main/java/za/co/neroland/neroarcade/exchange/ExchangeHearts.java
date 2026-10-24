@@ -64,6 +64,16 @@ public final class ExchangeHearts {
         recent.remove(player);
     }
 
+    /** How many listings {@code player} hearted this session (the export reports the count, never which). */
+    public int heartsGiven(UUID player) {
+        return (int) given.stream().filter(k -> k.player().equals(player)).count();
+    }
+
+    /** Erasure-conformance probe: does this session remember anything about {@code player}? */
+    public boolean holds(UUID player) {
+        return recent.containsKey(player) || given.stream().anyMatch(k -> k.player().equals(player));
+    }
+
     /** Server stop: the set dies with the session. */
     public void clear() {
         given.clear();

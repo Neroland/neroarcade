@@ -1,0 +1,13 @@
+{
+  "replace": false,
+  "values": [
+    {
+      "id": "neroarcade:blank_chip",
+      "required": false
+    },
+    {
+      "id": "neroarcade:blank_cartridge",
+      "required": false
+    }
+  ]
+}

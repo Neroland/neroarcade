@@ -60,6 +60,7 @@ class MatchHostTest {
         assertEquals(1, result.seats().get(0).rank());
         assertFalse(result.seats().get(0).dropped());
         assertEquals(host.game().def().lineageRoot(), result.lineageRoot());
+        assertEquals(host.game().def().id(), result.cartridgeId(), "the board key: the cartridge id");
         assertEquals(env.seed, result.seed());
         assertEquals(MatchResult.Outcome.WIN, result.outcome());
         assertEquals(host.lastResult().orElseThrow().finalHash(), result.finalHash());

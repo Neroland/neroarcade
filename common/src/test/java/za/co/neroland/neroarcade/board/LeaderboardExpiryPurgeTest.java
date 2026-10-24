@@ -30,7 +30,7 @@ class LeaderboardExpiryPurgeTest {
         int before = table.version();
         assertEquals(1, table.purgeExpired(now, NINETY_DAYS));
         assertTrue(table.version() != before, "a purge changes the version (viewers get a fresh page)");
-        LeaderboardTable.Board board = table.board(BoardFixtures.LINEAGE).orElseThrow();
+        LeaderboardTable.Board board = table.board(BoardFixtures.CARTRIDGE).orElseThrow();
         assertEquals(1, board.top().size());
         assertEquals(BoardFixtures.BOB, board.top().get(0).uuid());
         assertEquals(500, board.personalBest().get(BoardFixtures.ALICE), "personal bests are kept");
@@ -61,7 +61,7 @@ class LeaderboardExpiryPurgeTest {
         table.record(BoardFixtures.result(MatchResult.Outcome.WIN,
                 BoardFixtures.seat(BoardFixtures.ALICE, 0, 77, false)), 12L, 10, u -> "Alice");
         LeaderboardTable back = LeaderboardTable.load(table.save());
-        LeaderboardTable.Board board = back.board(BoardFixtures.LINEAGE).orElseThrow();
+        LeaderboardTable.Board board = back.board(BoardFixtures.CARTRIDGE).orElseThrow();
         assertEquals(77, board.top().get(0).score());
         assertEquals(12L, board.top().get(0).at());
         assertEquals("Alice", board.top().get(0).name());

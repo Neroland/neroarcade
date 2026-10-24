@@ -64,6 +64,15 @@ public record BusTopology(long busId, BlockPos busPos, List<BlockPos> cabinets, 
      *
      * @param claimedElsewhere true for a cabinet or marquee position another bus already holds
      */
+    /**
+     * The {@code multiplayer.enabled} kill switch (003 §13): off = an empty bus (every cabinet plays solo) and the
+     * world is never walked.
+     */
+    public static BusTopology discoverIf(boolean multiplayerEnabled, BlockPos hub,
+            java.util.function.Supplier<BusTopology> discover) {
+        return multiplayerEnabled ? discover.get() : empty(hub);
+    }
+
     public static BusTopology discover(BusWorld world, BlockPos hub, LongPredicate claimedElsewhere) {
         BlockPos origin = hub.immutable();
         List<BlockPos> cabinets = new ArrayList<>();
@@ -121,6 +130,36 @@ public record BusTopology(long busId, BlockPos busPos, List<BlockPos> cabinets, 
         cabinets.forEach(p -> out.add(p.asLong()));
         marquees.forEach(p -> out.add(p.asLong()));
         return out;
+    }
+
+    /**
+     * The same walk with the cabinet cap applied to {@code incumbents} first (review 003b F1): a cabinet placed
+     * nearer the hub than the bus's existing members joins only if there is room, and never pushes a member into
+     * {@link #overflow}. Both lists keep discovery order. Pure.
+     */
+    public BusTopology keeping(List<BlockPos> incumbents) {
+        if (overflow.isEmpty() || incumbents.isEmpty()) {
+            return this;
+        }
+        List<BlockPos> all = new ArrayList<>(cabinets);
+        all.addAll(overflow);
+        Set<BlockPos> chosen = new HashSet<>();
+        for (BlockPos p : all) {
+            if (chosen.size() < MAX_CABINETS && incumbents.contains(p)) {
+                chosen.add(p);
+            }
+        }
+        for (BlockPos p : all) {
+            if (chosen.size() < MAX_CABINETS) {
+                chosen.add(p);
+            }
+        }
+        List<BlockPos> in = new ArrayList<>();
+        List<BlockPos> out = new ArrayList<>();
+        for (BlockPos p : all) {
+            (chosen.contains(p) ? in : out).add(p);
+        }
+        return new BusTopology(busId, busPos, in, marquees, cables, out, conflicts);
     }
 
     /** The cabinet's index on this bus, or -1. */

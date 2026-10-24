@@ -45,7 +45,14 @@ public final class ExchangeTable {
     public enum PublishStatus {
         PUBLISHED,
         REPLACED,
-        FULL
+        FULL,
+        /** The author already holds {@code privacy.listingsPerAuthor} listings (review 003b F5). */
+        AUTHOR_FULL,
+        /**
+         * The id is already listed under another author and the publisher is not an operator: a cartridge forged with
+         * someone else's id cannot take over their listing (review 003b, Stage 8 note; carried to Stage 6).
+         */
+        NOT_OWNER
     }
 
     public record PublishResult(PublishStatus status, Optional<Listing> listing) {
@@ -75,9 +82,15 @@ public final class ExchangeTable {
     private static final String KEY_HEARTS = "hearts";
     private static final String KEY_AT = "at";
     private static final String KEY_OWNER = "owner";
+    private static final String KEY_DOWNLOADS_PENDING = "downloads_pending";
 
     private final List<Listing> listings = new ArrayList<>();
     private final Map<UUID, List<Draft>> drafts = new LinkedHashMap<>();
+    /**
+     * listingId → downloads since the last NeroLink daily digest (007 §4). An aggregate count per listing: nothing
+     * records who downloaded. Persisted with the listing row; reset by {@link #drainDownloads}.
+     */
+    private final Map<Integer, Integer> downloadsPending = new LinkedHashMap<>();
     private int nextListingId = 1;
     private int version;
 
@@ -91,9 +104,30 @@ public final class ExchangeTable {
      */
     public PublishResult publish(GameDef def, UUID authorUuid, Optional<String> credit, List<String> tags, long now,
             int cap) {
+        return publish(def, authorUuid, credit, tags, now, cap, 0);
+    }
+
+    /**
+     * @param authorCap most listings one author may hold ({@code privacy.listingsPerAuthor}); 0 = no per-author cap
+     *                  (an op publishing). Like the world cap, only a <i>new</i> listing is refused at it.
+     */
+    public PublishResult publish(GameDef def, UUID authorUuid, Optional<String> credit, List<String> tags, long now,
+            int cap, int authorCap) {
+        return publish(def, authorUuid, credit, tags, now, cap, authorCap, false);
+    }
+
+    /**
+     * @param op an operator may replace a listing of the same id whatever its author; anyone else only their own
+     *           ({@code old.authorUuid == author || op})
+     */
+    public PublishResult publish(GameDef def, UUID authorUuid, Optional<String> credit, List<String> tags, long now,
+            int cap, int authorCap, boolean op) {
         for (int i = 0; i < listings.size(); i++) {
             Listing old = listings.get(i);
             if (old.cartridgeId().equals(def.id())) {
+                if (!op && !old.authorUuid().equals(authorUuid)) {
+                    return new PublishResult(PublishStatus.NOT_OWNER, Optional.empty());
+                }
                 Listing replaced = new Listing(old.listingId(), def, authorUuid, credit, tags, old.plays(),
                         old.hearts(), old.publishedAt());
                 listings.set(i, replaced);
@@ -104,10 +138,40 @@ public final class ExchangeTable {
         if (listings.size() >= Math.max(1, cap)) {
             return new PublishResult(PublishStatus.FULL, Optional.empty());
         }
+        if (authorCap > 0 && listingCount(authorUuid) >= authorCap) {
+            return new PublishResult(PublishStatus.AUTHOR_FULL, Optional.empty());
+        }
         Listing fresh = new Listing(nextListingId++, def, authorUuid, credit, tags, 0, 0, now);
         listings.add(fresh);
         version++;
         return new PublishResult(PublishStatus.PUBLISHED, Optional.of(fresh));
+    }
+
+    /** Listings {@code author} holds (the per-author cap counts these). */
+    public int listingCount(UUID author) {
+        int n = 0;
+        for (Listing l : listings) {
+            if (l.authorUuid().equals(author)) {
+                n++;
+            }
+        }
+        return n;
+    }
+
+    /**
+     * Admin purge ({@code /neroarcade admin unpublish <player>}, review 003b F5): every listing {@code author}
+     * published goes. Downloads already made, drafts and other players' listings are untouched.
+     *
+     * @return listings removed
+     */
+    public int unpublishBy(UUID author) {
+        int before = listings.size();
+        listings.removeIf(l -> l.authorUuid().equals(author));
+        int removed = before - listings.size();
+        if (removed > 0) {
+            version++;
+        }
+        return removed;
     }
 
     /** Removes a listing (the caller checked author-or-op). Downloads already made are untouched. */
@@ -158,6 +222,11 @@ public final class ExchangeTable {
         return listings.size();
     }
 
+    /** Listings not held by {@code author} (the published count without the gallery's showcase, final review L1). */
+    public int sizeExcluding(UUID author) {
+        return listings.size() - listingCount(author);
+    }
+
     public int nextListingId() {
         return nextListingId;
     }
@@ -187,6 +256,36 @@ public final class ExchangeTable {
             }
         }
         return -1;
+    }
+
+    /** One download of a listing (for the author's daily digest). @return true if the listing exists */
+    public boolean countDownload(int listingId) {
+        if (listing(listingId).isEmpty()) {
+            return false;
+        }
+        downloadsPending.merge(listingId, 1, (a, b) -> saturatingInc(a));
+        return true;
+    }
+
+    /** Downloads pending on a listing since the last digest. */
+    public int downloadsPending(int listingId) {
+        return downloadsPending.getOrDefault(listingId, 0);
+    }
+
+    /**
+     * The digest: every still-listed listing with downloads pending, as listingId → count (in listing order), and
+     * every counter reset (counters of listings that are gone are dropped too).
+     */
+    public Map<Integer, Integer> drainDownloads() {
+        Map<Integer, Integer> out = new LinkedHashMap<>();
+        for (Listing l : listings) {
+            int n = downloadsPending.getOrDefault(l.listingId(), 0);
+            if (n > 0) {
+                out.put(l.listingId(), n);
+            }
+        }
+        downloadsPending.clear();
+        return out;
     }
 
     private static int saturatingInc(int value) {
@@ -398,6 +497,10 @@ public final class ExchangeTable {
             row.putInt(KEY_PLAYS, l.plays());
             row.putInt(KEY_HEARTS, l.hearts());
             row.putLong(KEY_AT, l.publishedAt());
+            int pending = downloadsPending.getOrDefault(l.listingId(), 0);
+            if (pending > 0) {
+                row.putInt(KEY_DOWNLOADS_PENDING, pending);
+            }
             rows.add(row);
         }
         root.put(KEY_LISTINGS, rows);
@@ -449,6 +552,10 @@ public final class ExchangeTable {
                         tags, Math.max(0, row.getIntOr(KEY_PLAYS, 0)), Math.max(0, row.getIntOr(KEY_HEARTS, 0)),
                         row.getLongOr(KEY_AT, 0L));
                 table.listings.add(l);
+                int pending = Math.max(0, row.getIntOr(KEY_DOWNLOADS_PENDING, 0));
+                if (pending > 0) {
+                    table.downloadsPending.put(l.listingId(), pending);
+                }
                 maxId = Math.max(maxId, l.listingId());
             } catch (RuntimeException malformed) {
                 NeroArcadeCommon.LOGGER.warn("[NeroArcade] skipping malformed exchange listing {} ({})", i,

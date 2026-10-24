@@ -15,8 +15,10 @@ import za.co.neroland.neroarcade.registry.ModItems;
 import za.co.neroland.neroarcade.registry.ModMenus;
 
 /**
- * The Arcade Exchange menu: the kiosk's one-slot download tray (a Blank Cartridge to download or fetch onto, or a
- * written cartridge to publish), then the player inventory. Listing pages travel as {@code ExchangePagePayload};
+ * The Arcade Exchange menu: a one-slot download tray of the viewer's own (a Blank Cartridge to download or fetch
+ * onto, or a written cartridge to publish), then the player inventory. The tray belongs to this menu, not to the
+ * kiosk: two players at one kiosk never share it, and whatever is in it goes back to the player when the menu
+ * closes, like the vanilla enchanting table (review 003b F6). Listing pages travel as {@code ExchangePagePayload};
  * actions as {@code ExchangeActionPayload}, accepted only while this menu is the sender's open menu. The viewer's
  * tab, page and last status live here, server side, for as long as the menu is open.
  *
@@ -40,12 +42,17 @@ public class ExchangeMenu extends AbstractContainerMenu {
 
     /** Client-side reconstruction (the {@code MenuType} factory). */
     public ExchangeMenu(int containerId, Inventory playerInventory) {
-        this(containerId, playerInventory, new SimpleContainer(1), null);
+        this(containerId, playerInventory, newTray(), null);
     }
 
-    /** Server side, bound to a kiosk. */
+    /** Server side, bound to a kiosk; the tray is this viewer's own. */
     public ExchangeMenu(int containerId, Inventory playerInventory, ArcadeExchangeBlockEntity kiosk) {
-        this(containerId, playerInventory, kiosk.tray(), kiosk);
+        this(containerId, playerInventory, newTray(), kiosk);
+    }
+
+    /** A fresh, per-menu one-slot tray. */
+    static SimpleContainer newTray() {
+        return new SimpleContainer(1);
     }
 
     private ExchangeMenu(int containerId, Inventory playerInventory, Container tray,
@@ -92,6 +99,15 @@ public class ExchangeMenu extends AbstractContainerMenu {
 
     void status(ExchangePages.Status value) {
         this.status = value == null ? ExchangePages.Status.NONE : value;
+    }
+
+    /** The tray's item goes back to the player (or drops at their feet), never into the kiosk. */
+    @Override
+    public void removed(Player player) {
+        super.removed(player);
+        if (kiosk != null) {
+            clearContainer(player, tray);
+        }
     }
 
     @Override

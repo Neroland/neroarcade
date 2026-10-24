@@ -1,0 +1,22 @@
+{
+  "title": "quest.neroarcade.insert_coin.first_victory.title",
+  "description": "quest.neroarcade.insert_coin.first_victory.desc",
+  "icon": "neroarcade:arcade_cabinet",
+  "prerequisites": [],
+  "objectives": [
+    {
+      "type": "neroquests:custom_event",
+      "channel": "neroarcade:match_won",
+      "direction": "rising",
+      "min_value": 1,
+      "audience": "world"
+    }
+  ],
+  "rewards": [
+    {
+      "type": "neroquests:xp",
+      "amount": 50
+    }
+  ],
+  "scope": "server"
+}

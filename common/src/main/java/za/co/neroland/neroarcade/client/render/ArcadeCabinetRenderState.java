@@ -11,4 +11,6 @@ public class ArcadeCabinetRenderState extends BlockEntityRenderState {
     /** Facing as quarter turns clockwise from north (the blockstate's y / 90). */
     public int quarterTurns;
     public @Nullable Identifier screen;
+    /** The marquee title (pixel font), or null past the text range. */
+    public @Nullable String marquee;
 }

@@ -21,23 +21,33 @@ import za.co.neroland.neroarcade.cabinet.BusMatchResult;
 import za.co.neroland.neroarcade.runtime.MatchResult;
 
 /**
- * The leaderboards themselves (003 §6.2), pure so the rules run in a plain JVM: one {@link Board} per lineage root
- * (copies of a cartridge pool onto one board), each a top list of at most {@code maxEntries} rows plus one personal
- * best per player.
+ * The leaderboards themselves (003 §6.2), pure so the rules run in a plain JVM: one {@link Board} per <b>cartridge
+ * id</b> (owner decision D-owner-1, 2026-10-23: duplicates and downloads keep the id and pool onto one board; a remix
+ * mints a new id and starts a fresh board, so trivialised rules never post onto the original's), each a top list of
+ * at most {@code maxEntries} rows plus one personal best per player.
+ *
+ * <p><b>Saved form:</b> each board is written under {@code "id"}. A save from before D-owner-1 wrote the lineage root
+ * under {@code "root"}; it is read as the board of that id — an original's lineage root <i>is</i> its id, so its
+ * board carries over and remixes simply start fresh. Nothing is migrated in place; the next save writes {@code "id"}.
  *
  * <p><b>What a row holds:</b> the player's UUID, the score, when (epoch seconds) and — <b>only if the player had
  * opted in to credit when the row was written</b> — their profile name as it was then. Nothing else: no seat, no
- * position, no cartridge author. A personal best is a UUID and a number.
+ * position, no cartridge author. A personal best is a UUID, a number and when that number was set (its retention
+ * clock: it restarts only when the best improves, so it is not a record of plays).
  *
  * <p><b>Rules:</b> an {@code ABANDONED} result writes nothing; a seat that dropped out (or scored 0) updates its
  * personal best only and never gets a top row; a player holds at most one top row per board (their best). Top rows
- * older than the retention are purged; personal bests stay until the player erases their data. The only write is
+ * older than the row retention are purged; personal bests set longer ago than the best retention are purged too
+ * (Stage 6 decision on review 003b P3). A best saved before Stage 6 has no time: the first sweep starts its clock
+ * instead of deleting it. The only write is
  * {@link #record}, which is package-private and reached only through {@link LeaderboardStore}.
  */
 public final class LeaderboardTable {
 
     private static final String KEY_BOARDS = "boards";
-    private static final String KEY_ROOT = "root";
+    /** Pre-D-owner-1 saves: the board key was the lineage root. Read only. */
+    private static final String KEY_LEGACY_ROOT = "root";
+    private static final String KEY_BOARD_ID = "id";
     private static final String KEY_TOP = "top";
     private static final String KEY_BESTS = "bests";
     private static final String KEY_UUID = "uuid";
@@ -53,16 +63,21 @@ public final class LeaderboardTable {
     }
 
     /** A read-only view of one board. {@code version} changes whenever the board does (marquee resend). */
-    public record Board(String lineageRoot, List<Entry> top, Map<UUID, Integer> personalBest, int version) {
+    public record Board(String cartridgeId, List<Entry> top, Map<UUID, Integer> personalBest, int version) {
         public Board {
             top = List.copyOf(top);
             personalBest = Collections.unmodifiableMap(new LinkedHashMap<>(personalBest));
         }
     }
 
+    /** A personal best saved before Stage 6: its time is unknown until the next sweep stamps it. */
+    static final long UNKNOWN_AT = -1L;
+
     private static final class MutableBoard {
         final List<Entry> top = new ArrayList<>();
         final Map<UUID, Integer> bests = new LinkedHashMap<>();
+        /** When each personal best was set (epoch seconds), same keys as {@link #bests}. */
+        final Map<UUID, Long> bestAt = new LinkedHashMap<>();
         int version;
     }
 
@@ -71,7 +86,7 @@ public final class LeaderboardTable {
 
     private final Map<String, MutableBoard> boards = new LinkedHashMap<>();
     /**
-     * Per lineage root: {wins, records} — world counts behind the {@code match_won} / {@code record_set} channels
+     * Per cartridge id: {wins, records} — world counts behind the {@code match_won} / {@code record_set} channels
      * (003 §9). Aggregate numbers only (no player), so they survive purges and erasure.
      */
     private final Map<String, int[]> tallies = new LinkedHashMap<>();
@@ -87,7 +102,8 @@ public final class LeaderboardTable {
         if (result == null || result.outcome() == MatchResult.Outcome.ABANDONED || result.seats().isEmpty()) {
             return RecordOutcome.NONE;
         }
-        MutableBoard board = boards.computeIfAbsent(result.lineageRoot(), k -> new MutableBoard());
+        MutableBoard board = boards.computeIfAbsent(result.cartridgeId(), k -> new MutableBoard());
+        Map<UUID, Integer> ranksBefore = ranks(board.top, RECORD_WINDOW);
         int topBefore = board.top.isEmpty() ? Integer.MIN_VALUE : board.top.get(0).score();
         int cap = Math.max(1, maxEntries);
         int newBest = 0;
@@ -100,6 +116,7 @@ public final class LeaderboardTable {
             Integer before = board.bests.get(seat.uuid());
             if (before == null || seat.score() > before) {
                 board.bests.put(seat.uuid(), seat.score());
+                board.bestAt.put(seat.uuid(), nowEpoch);
                 newBest |= 1 << seat.seat();
                 changed = true;
             }
@@ -130,23 +147,66 @@ public final class LeaderboardTable {
         if (changed) {
             touch(board);
         } else if (board.top.isEmpty() && board.bests.isEmpty()) {
-            boards.remove(result.lineageRoot());
+            boards.remove(result.cartridgeId());
         }
         int wins = 0;
         int records = 0;
         if (isWin(result)) {
-            int[] t = tallies.computeIfAbsent(result.lineageRoot(), k -> new int[2]);
+            int[] t = tallies.computeIfAbsent(result.cartridgeId(), k -> new int[2]);
             t[0] = t[0] == Integer.MAX_VALUE ? t[0] : t[0] + 1;
             wins = t[0];
             version++;
         }
         if (!board.top.isEmpty() && board.top.get(0).at() == nowEpoch && board.top.get(0).score() > topBefore) {
-            int[] t = tallies.computeIfAbsent(result.lineageRoot(), k -> new int[2]);
+            int[] t = tallies.computeIfAbsent(result.cartridgeId(), k -> new int[2]);
             t[1] = t[1] == Integer.MAX_VALUE ? t[1] : t[1] + 1;
             records = t[1];
             version++;
         }
-        return new RecordOutcome(newBest, entered, wins, records);
+        return new RecordOutcome(newBest, entered, wins, records,
+                displaced(ranksBefore, ranks(board.top, RECORD_WINDOW)));
+    }
+
+    /** The top rows a {@code RECORD_BEATEN} event watches (007 §4): the first ten ranks. */
+    public static final int RECORD_WINDOW = 10;
+
+    /** Displayed ranks of the first {@code window} rows: 1-based, ties share a rank. Pure. */
+    static Map<UUID, Integer> ranks(List<Entry> top, int window) {
+        Map<UUID, Integer> out = new LinkedHashMap<>();
+        int rank = 0;
+        int lastScore = Integer.MIN_VALUE;
+        for (int i = 0; i < top.size() && i < window; i++) {
+            Entry e = top.get(i);
+            if (i == 0 || e.score() != lastScore) {
+                rank = i + 1;
+                lastScore = e.score();
+            }
+            out.put(e.uuid(), rank);
+        }
+        return out;
+    }
+
+    /** Every player whose rank worsened or who left the window, in their old rank order. Pure. */
+    static List<RecordOutcome.Displaced> displaced(Map<UUID, Integer> before, Map<UUID, Integer> after) {
+        List<RecordOutcome.Displaced> out = new ArrayList<>();
+        for (Map.Entry<UUID, Integer> e : before.entrySet()) {
+            Integer now = after.get(e.getKey());
+            if (now == null || now > e.getValue()) {
+                out.add(new RecordOutcome.Displaced(e.getKey(), now));
+            }
+        }
+        return out;
+    }
+
+    /** Every board on which {@code player} holds a personal best (the NeroLink {@code library} section). */
+    public List<Board> boardsWithBest(UUID player) {
+        List<Board> out = new ArrayList<>();
+        boards.forEach((id, b) -> {
+            if (b.bests.containsKey(player)) {
+                out.add(new Board(id, b.top, b.bests, b.version));
+            }
+        });
+        return out;
     }
 
     /** A win for the {@code match_won} tally: outcome WIN and a human seat that stayed ranked first. */
@@ -163,8 +223,8 @@ public final class LeaderboardTable {
     }
 
     /** The board's {wins, records} tally (0, 0 when none). */
-    public int[] tally(String lineageRoot) {
-        int[] t = tallies.get(lineageRoot);
+    public int[] tally(String cartridgeId) {
+        int[] t = tallies.get(cartridgeId);
         return t == null ? new int[2] : t.clone();
     }
 
@@ -182,10 +242,10 @@ public final class LeaderboardTable {
         version++;
     }
 
-    /** A board by lineage root. */
-    public Optional<Board> board(String lineageRoot) {
-        MutableBoard b = boards.get(lineageRoot);
-        return b == null ? Optional.empty() : Optional.of(new Board(lineageRoot, b.top, b.bests, b.version));
+    /** A board by cartridge id. */
+    public Optional<Board> board(String cartridgeId) {
+        MutableBoard b = boards.get(cartridgeId);
+        return b == null ? Optional.empty() : Optional.of(new Board(cartridgeId, b.top, b.bests, b.version));
     }
 
     public int boardCount() {
@@ -204,7 +264,20 @@ public final class LeaderboardTable {
      * @return rows removed
      */
     public int purgeExpired(long nowEpoch, long retentionSeconds) {
+        return purgeExpired(nowEpoch, retentionSeconds, Long.MAX_VALUE);
+    }
+
+    /**
+     * Removes top rows written before {@code nowEpoch - retentionSeconds} and personal bests set before
+     * {@code nowEpoch - bestRetentionSeconds} (a best with an unknown time is stamped {@code nowEpoch} instead);
+     * boards left with no rows and no bests are dropped.
+     *
+     * @return rows and bests removed
+     */
+    public int purgeExpired(long nowEpoch, long retentionSeconds, long bestRetentionSeconds) {
         long cutoff = nowEpoch - Math.max(0, retentionSeconds);
+        long bestCutoff = bestRetentionSeconds == Long.MAX_VALUE ? Long.MIN_VALUE
+                : nowEpoch - Math.max(0, bestRetentionSeconds);
         int removed = 0;
         Iterator<Map.Entry<String, MutableBoard>> it = boards.entrySet().iterator();
         while (it.hasNext()) {
@@ -212,6 +285,21 @@ public final class LeaderboardTable {
             int before = b.top.size();
             b.top.removeIf(e -> e.at() < cutoff);
             int gone = before - b.top.size();
+            for (Map.Entry<UUID, Long> at : b.bestAt.entrySet()) {
+                if (at.getValue() == UNKNOWN_AT) {
+                    at.setValue(nowEpoch);
+                    version++;
+                }
+            }
+            Iterator<Map.Entry<UUID, Long>> bests = b.bestAt.entrySet().iterator();
+            while (bests.hasNext()) {
+                Map.Entry<UUID, Long> at = bests.next();
+                if (at.getValue() < bestCutoff) {
+                    b.bests.remove(at.getKey());
+                    bests.remove();
+                    gone++;
+                }
+            }
             if (gone > 0) {
                 removed += gone;
                 touch(b);
@@ -248,6 +336,7 @@ public final class LeaderboardTable {
             MutableBoard b = it.next().getValue();
             boolean gone = b.top.removeIf(e -> e.uuid().equals(player));
             gone |= b.bests.remove(player) != null;
+            b.bestAt.remove(player);
             if (gone) {
                 touch(b);
                 changed = true;
@@ -262,10 +351,16 @@ public final class LeaderboardTable {
         return changed;
     }
 
+    /** When {@code player}'s personal best on {@code cartridgeId} was set (epoch seconds; -1 unknown), if any. */
+    public Optional<Long> bestSetAt(String cartridgeId, UUID player) {
+        MutableBoard b = boards.get(cartridgeId);
+        return b == null ? Optional.empty() : Optional.ofNullable(b.bestAt.get(player));
+    }
+
     /** Conformance probe: does anything here still mention {@code player}? */
     public boolean holds(UUID player) {
         for (MutableBoard b : boards.values()) {
-            if (b.bests.containsKey(player) || rowOf(b, player) != null) {
+            if (b.bests.containsKey(player) || b.bestAt.containsKey(player) || rowOf(b, player) != null) {
                 return true;
             }
         }
@@ -277,9 +372,9 @@ public final class LeaderboardTable {
     public CompoundTag save() {
         CompoundTag root = new CompoundTag();
         ListTag list = new ListTag();
-        boards.forEach((lineage, b) -> {
+        boards.forEach((id, b) -> {
             CompoundTag board = new CompoundTag();
-            board.putString(KEY_ROOT, lineage);
+            board.putString(KEY_BOARD_ID, id);
             ListTag top = new ListTag();
             for (Entry e : b.top) {
                 CompoundTag row = new CompoundTag();
@@ -297,6 +392,10 @@ public final class LeaderboardTable {
                 CompoundTag row = new CompoundTag();
                 row.putString(KEY_UUID, uuid.toString());
                 row.putInt(KEY_SCORE, score);
+                long at = b.bestAt.getOrDefault(uuid, UNKNOWN_AT);
+                if (at != UNKNOWN_AT) {
+                    row.putLong(KEY_AT, at);
+                }
                 bests.add(row);
             });
             board.put(KEY_BESTS, bests);
@@ -304,9 +403,9 @@ public final class LeaderboardTable {
         });
         root.put(KEY_BOARDS, list);
         ListTag tallyList = new ListTag();
-        tallies.forEach((lineage, t) -> {
+        tallies.forEach((id, t) -> {
             CompoundTag row = new CompoundTag();
-            row.putString(KEY_ROOT, lineage);
+            row.putString(KEY_BOARD_ID, id);
             row.putInt(KEY_WINS, t[0]);
             row.putInt(KEY_RECORDS, t[1]);
             tallyList.add(row);
@@ -315,12 +414,18 @@ public final class LeaderboardTable {
         return root;
     }
 
+    /** The board key of a saved row: {@code "id"}, else a pre-D-owner-1 {@code "root"} (read as that id). */
+    private static Optional<String> boardKey(CompoundTag row) {
+        Optional<String> id = row.getString(KEY_BOARD_ID).filter(s -> !s.isEmpty());
+        return id.isPresent() ? id : row.getString(KEY_LEGACY_ROOT).filter(s -> !s.isEmpty());
+    }
+
     public static LeaderboardTable load(CompoundTag root) {
         LeaderboardTable table = new LeaderboardTable();
         ListTag tallyList = root.getList(KEY_TALLIES).orElseGet(ListTag::new);
         for (int i = 0; i < tallyList.size(); i++) {
-            tallyList.getCompound(i).ifPresent(row -> row.getString(KEY_ROOT).ifPresent(lineage -> table.tallies.put(
-                    lineage, new int[] {Math.max(0, row.getIntOr(KEY_WINS, 0)), Math.max(0, row.getIntOr(KEY_RECORDS, 0))})));
+            tallyList.getCompound(i).ifPresent(row -> boardKey(row).ifPresent(id -> table.tallies.put(
+                    id, new int[] {Math.max(0, row.getIntOr(KEY_WINS, 0)), Math.max(0, row.getIntOr(KEY_RECORDS, 0))})));
         }
         Optional<ListTag> list = root.getList(KEY_BOARDS);
         if (list.isEmpty()) {
@@ -332,7 +437,7 @@ public final class LeaderboardTable {
                 continue;
             }
             try {
-                String lineage = board.get().getString(KEY_ROOT).orElseThrow();
+                String id = boardKey(board.get()).orElseThrow();
                 MutableBoard b = new MutableBoard();
                 ListTag top = board.get().getList(KEY_TOP).orElseGet(ListTag::new);
                 for (int r = 0; r < top.size(); r++) {
@@ -345,10 +450,11 @@ public final class LeaderboardTable {
                 ListTag bests = board.get().getList(KEY_BESTS).orElseGet(ListTag::new);
                 for (int r = 0; r < bests.size(); r++) {
                     CompoundTag row = bests.getCompound(r).orElseThrow();
-                    b.bests.put(UUID.fromString(row.getString(KEY_UUID).orElseThrow()),
-                            row.getInt(KEY_SCORE).orElseThrow());
+                    UUID who = UUID.fromString(row.getString(KEY_UUID).orElseThrow());
+                    b.bests.put(who, row.getInt(KEY_SCORE).orElseThrow());
+                    b.bestAt.put(who, row.getLong(KEY_AT).orElse(UNKNOWN_AT));
                 }
-                table.boards.put(lineage, b);
+                table.boards.put(id, b);
             } catch (RuntimeException malformed) {
                 NeroArcadeCommon.LOGGER.warn("[NeroArcade] skipping malformed leaderboard {} ({})", i,
                         malformed.getClass().getSimpleName());

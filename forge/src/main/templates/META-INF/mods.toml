@@ -37,3 +37,4 @@ mandatory = true
 versionRange = "${nerolandcore_version_range}"
 ordering = "AFTER"
 side = "BOTH"
+${neroeconomy_dep}

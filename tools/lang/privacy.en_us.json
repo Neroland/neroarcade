@@ -1,0 +1,7 @@
+{
+  "neroarcade.bench.credit_hint": "Your name is not saved with your games or scores. To show it, run /neroarcade privacy credit on (you can turn it off again any time).",
+  "neroarcade.command.export.cooldown": "You asked for an export a moment ago. Try again in %s seconds.",
+  "neroarcade.command.export.done": "Your NeroArcade data was written to %s in the world folder. Ask the server operator for the file; it is deleted after %s days.",
+  "neroarcade.command.export.failed": "Your data could not be written. Ask the server operator to check the server log.",
+  "neroarcade.exchange.deny.replace_not_yours": "A game with this id is already listed by someone else. Only an admin can replace it."
+}

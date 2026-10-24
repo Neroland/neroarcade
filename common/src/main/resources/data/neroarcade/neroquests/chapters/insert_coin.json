@@ -1,0 +1,57 @@
+{
+  "title": "chapter.neroarcade.insert_coin.title",
+  "icon": "neroarcade:arcade_cabinet",
+  "allow_server_scope": true,
+  "quests": [
+    {
+      "quest": "neroarcade:insert_coin/workbench",
+      "x": 0,
+      "y": 0
+    },
+    {
+      "quest": "neroarcade:insert_coin/first_cartridge",
+      "x": 2,
+      "y": 0
+    },
+    {
+      "quest": "neroarcade:insert_coin/copy_that",
+      "x": 4,
+      "y": -1
+    },
+    {
+      "quest": "neroarcade:insert_coin/on_the_exchange",
+      "x": 4,
+      "y": 1
+    },
+    {
+      "quest": "neroarcade:insert_coin/linked_up",
+      "x": 6,
+      "y": -1
+    },
+    {
+      "quest": "neroarcade:insert_coin/head_to_head",
+      "x": 8,
+      "y": -1
+    },
+    {
+      "quest": "neroarcade:insert_coin/grand_opening",
+      "x": 0,
+      "y": 3
+    },
+    {
+      "quest": "neroarcade:insert_coin/busy_arcade",
+      "x": 2,
+      "y": 3
+    },
+    {
+      "quest": "neroarcade:insert_coin/first_victory",
+      "x": 4,
+      "y": 3
+    },
+    {
+      "quest": "neroarcade:insert_coin/high_score",
+      "x": 6,
+      "y": 3
+    }
+  ]
+}

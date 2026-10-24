@@ -24,6 +24,12 @@ import za.co.neroland.neroarcade.client.ArcadeClientConfig;
 import za.co.neroland.neroarcade.client.board.ClientBoards;
 import za.co.neroland.neroarcade.client.match.ClientMatch;
 import za.co.neroland.neroarcade.client.match.ClientMatches;
+import za.co.neroland.neroarcade.bench.GameBenchBlockEntity;
+import za.co.neroland.neroarcade.client.bench.BenchPreview;
+import za.co.neroland.neroarcade.client.screen.AttractPlayer;
+import za.co.neroland.neroarcade.exchange.ArcadeExchangeBlockEntity;
+import za.co.neroland.neroarcade.exchange.KioskBoard;
+import za.co.neroland.neroarcade.client.screen.EntityPositions;
 import za.co.neroland.neroarcade.client.screen.ScreenRenderer;
 import za.co.neroland.neroarcade.client.screen.ScreenStatus;
 import za.co.neroland.neroarcade.client.screen.SpriteMap;
@@ -115,6 +121,12 @@ public final class CabinetScreens {
     /** Takes (or keeps) {@code key}'s texture slot and redraws it once per client tick; null = no slot free. */
     private static @Nullable Identifier draw(long key, long now, ThemePalettes.Theme theme,
             java.util.function.Consumer<ScreenRenderer> painter) {
+        return draw(key, now, theme, painter, 1);
+    }
+
+    /** As above, repainting at most every {@code every} ticks once the texture holds this screen. */
+    private static @Nullable Identifier draw(long key, long now, ThemePalettes.Theme theme,
+            java.util.function.Consumer<ScreenRenderer> painter, int every) {
         int slot = LRU.acquire(key, now);
         if (slot < 0) {
             return null;
@@ -125,7 +137,8 @@ public final class CabinetScreens {
                     "dynamic/cabinet_screen_" + slot));
             TEXTURES[slot] = texture;
         }
-        if (DRAWN_AT[slot] != now || DRAWN_FOR[slot] != key || !texture.ready()) {
+        boolean due = DRAWN_AT[slot] != now && (every <= 1 || Math.floorMod(now, every) == 0);
+        if (due || DRAWN_FOR[slot] != key || !texture.ready()) {
             DRAWN_AT[slot] = now;
             DRAWN_FOR[slot] = key;
             ScreenRenderer r = renderer(theme);
@@ -133,6 +146,61 @@ public final class CabinetScreens {
             texture.upload(r, theme, ArcadeClientConfig.scanlines());
         }
         return texture.ready() ? texture.id() : null;
+    }
+
+    // --- the bench holo-table preview (004 §4.2) and the Exchange listing screen (004 §4.5) -------------
+
+    /** Salts that keep the bench preview and kiosk screens apart from a cabinet at the same position. */
+    private static final long BENCH_KEY = 0x0BE7_0000_0000_0000L;
+    private static final long KIOSK_KEY = 0x0C51_0000_0000_0000L;
+    /** The holo preview repaints at 8 Hz (every third client tick, rounded). */
+    public static final int BENCH_REPAINT_TICKS = 3;
+    private static final Map<Long, Holo> HOLOS = new HashMap<>();
+
+    /** One bench's floating preview: the synced draft, its headless demo and when it was last drawn. */
+    private static final class Holo {
+        final GameDef def;
+        final BenchPreview preview = new BenchPreview();
+        long lastUsed;
+
+        Holo(GameDef def) {
+            this.def = def;
+            preview.setGame(resolve(def));
+        }
+    }
+
+    /** The bench holo-table's preview texture while a player edits, or null (no draft, no slot free). */
+    public static @Nullable Identifier prepareBench(GameBenchBlockEntity bench, long now) {
+        GameDef def = bench.clientPreview();
+        if (def == null) {
+            return null;
+        }
+        long key = bench.getBlockPos().asLong();
+        Holo holo = HOLOS.get(key);
+        if (holo == null || !holo.def.equals(def)) {
+            holo = new Holo(def);
+            HOLOS.put(key, holo);
+        }
+        holo.lastUsed = now;
+        MatchState state = holo.preview.state();
+        if (state == null) {
+            return null;
+        }
+        SpriteMap map = holo.preview.spriteMap();
+        return draw(key ^ BENCH_KEY, now, map.theme(),
+                r -> r.drawMatch(state, map, EntityPositions.AUTHORITATIVE, (int) now), BENCH_REPAINT_TICKS);
+    }
+
+    /** The kiosk's listing screen texture (titles and hearts, rolling), or null when no slot is free. */
+    public static @Nullable Identifier prepareKiosk(ArcadeExchangeBlockEntity kiosk, long now) {
+        // the rows are built inside the painter, which runs at most every tenth tick — not every frame
+        return draw(kiosk.getBlockPos().asLong() ^ KIOSK_KEY, now, ThemePalettes.Theme.NEON_VOID, r -> {
+            List<ClientBoards.Line> rows = new java.util.ArrayList<>();
+            for (KioskBoard.Line line : kiosk.clientBoard()) {
+                rows.add(new ClientBoards.Line(line.title(), Integer.toString(line.hearts())));
+            }
+            r.drawListings(rows, (int) now);
+        }, 10);
     }
 
     // --- marquee (003 §5, 004 §4.6) --------------------------------------------------------------------
@@ -168,8 +236,12 @@ public final class CabinetScreens {
             return prepare(hostBe, now);
         }
         GameCache game = cache(hostBe);
-        String lineage = game.info().def().map(GameDef::lineageRoot).orElse("");
-        List<ClientBoards.Line> rows = ClientBoards.lines(ClientBoards.get(lineage));
+        AttractPlayer demo = replayOf(game);
+        if (demo != null && demo.showsMatch()) {
+            return prepare(hostBe, now); // an idle host playing its attract replay: the marquee shows it mid-match
+        }
+        String boardKey = game.info().def().map(GameDef::id).orElse(""); // boards are per cartridge id
+        List<ClientBoards.Line> rows = ClientBoards.lines(ClientBoards.get(boardKey));
         return draw(marquee.getBlockPos().asLong(), now, game.map().theme(),
                 r -> r.drawBoard("TOP 10", rows, (int) now));
     }
@@ -178,7 +250,7 @@ public final class CabinetScreens {
     public static @Nullable Identifier prepareStrip(MarqueeScreenBlockEntity marquee, long now) {
         ClientMatch match = marqueeMatch(marquee);
         if (match == null || match.latest() == null) {
-            return null;
+            return prepareDemoStrip(marquee, now);
         }
         MatchState state = match.latest();
         ResolvedGame game = match.game();
@@ -190,6 +262,29 @@ public final class CabinetScreens {
         }
         ThemePalettes.Theme theme = match.spriteMap().theme();
         return draw(marquee.getBlockPos().asLong() ^ STRIP_KEY, now, theme,
+                r -> r.drawScoreStrip(mode, timer, scores, -1));
+    }
+
+    /** The score strip of the host's attract replay while it shows the match, else null. */
+    private static @Nullable Identifier prepareDemoStrip(MarqueeScreenBlockEntity marquee, long now) {
+        BlockPos host = marquee.clientDisplayOf();
+        if (host == null || marquee.getLevel() == null || !marquee.getLevel().isLoaded(host)
+                || !(marquee.getLevel().getBlockEntity(host) instanceof ArcadeCabinetBlockEntity hostBe)) {
+            return null;
+        }
+        GameCache game = cache(hostBe);
+        AttractPlayer demo = replayOf(game);
+        if (demo == null || !demo.showsMatch()) {
+            return null;
+        }
+        MatchState state = demo.state();
+        String timer = state.timerTicks() <= 0 ? "" : clock(state.timerTicks());
+        int[] scores = new int[Math.min(4, state.seatCount())];
+        for (int s = 0; s < scores.length; s++) {
+            scores[s] = state.score(s);
+        }
+        String mode = modeWord(game.game());
+        return draw(marquee.getBlockPos().asLong() ^ STRIP_KEY, now, game.map().theme(),
                 r -> r.drawScoreStrip(mode, timer, scores, -1));
     }
 
@@ -262,17 +357,47 @@ public final class CabinetScreens {
                 if (match != null && match.latest() != null) {
                     drawMatch(r, match, ticks);
                 } else {
-                    r.drawAttract(game.info().title(), game.arena(), game.map(), ticks, scores(game));
+                    drawAttract(r, game, ticks);
                 }
             }
-            default -> r.drawAttract(game.info().title(), game.arena(), game.map(), ticks, scores(game));
+            default -> drawAttract(r, game, ticks);
         }
+    }
+
+    /**
+     * The attract loop: the cartridge's shipped attract replay when it has one (the gallery's cartridges and every
+     * copy of them, 008b Q8), else the title card, a pawn walking a square on the game's own arena and the scores.
+     */
+    private static void drawAttract(ScreenRenderer r, GameCache game, int ticks) {
+        AttractPlayer player = replayOf(game);
+        if (player == null) {
+            r.drawAttract(game.info().title(), game.arena(), game.map(), ticks, scores(game));
+            return;
+        }
+        switch (player.phase()) {
+            case TITLE -> r.drawAttract(game.info().title(), null, game.map(), player.ticksInPhase(), scores(game));
+            case PLAY -> r.drawMatch(player.state(), game.map(), EntityPositions.AUTHORITATIVE, ticks);
+            case HOLD -> {
+                r.drawMatch(player.state(), game.map(), EntityPositions.AUTHORITATIVE, ticks);
+                r.drawBanner("GAME OVER", "", 15);
+            }
+            case SCORES -> r.drawAttract(game.info().title(), null, game.map(),
+                    ScreenRenderer.ATTRACT_TICKS - AttractPlayer.SCORES_TICKS + player.ticksInPhase(), scores(game));
+        }
+    }
+
+    /** The running shipped replay of a cabinet's readable cartridge, or null. */
+    private static @Nullable AttractPlayer replayOf(GameCache game) {
+        if (game.game() == null) {
+            return null;
+        }
+        return AttractReplays.player(game.info().def().map(GameDef::id).orElse(""), ClientMatches.now());
     }
 
     /** The host cartridge's board rows, if this client has been sent them. */
     private static List<ClientBoards.Line> scores(GameCache game) {
-        String lineage = game.info().def().map(GameDef::lineageRoot).orElse("");
-        return ClientBoards.lines(ClientBoards.get(lineage));
+        String boardKey = game.info().def().map(GameDef::id).orElse(""); // boards are per cartridge id
+        return ClientBoards.lines(ClientBoards.get(boardKey));
     }
 
     /**
@@ -406,6 +531,11 @@ public final class CabinetScreens {
 
     /** One client tick: free the slots of screens nobody drew for {@link TextureLru#IDLE_TICKS}. */
     public static void tick(long now) {
+        AttractReplays.tick(now);
+        HOLOS.values().removeIf(h -> now - h.lastUsed > TextureLru.IDLE_TICKS);
+        for (Holo holo : HOLOS.values()) {
+            holo.preview.advance(1);
+        }
         LRU.releaseIdle(now, TextureLru.IDLE_TICKS, slot -> {
             if (TEXTURES[slot] != null) {
                 TEXTURES[slot].invalidate();
@@ -435,6 +565,9 @@ public final class CabinetScreens {
         }
         GAMES.clear();
         LAST_HOST.clear();
+        AttractReplays.clear();
+        DuplicatorRenderer.clear();
+        HOLOS.clear();
         renderer = null;
     }
 }

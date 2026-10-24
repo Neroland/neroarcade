@@ -33,7 +33,10 @@ import za.co.neroland.neroarcade.client.match.ClientMatches;
  * range ({@code screenRenderRange}, or this computer's shorter {@code client.screenRenderRange}) of the screen's
  * centre, and only when the camera is in front of the screen; NeoForge also frustum-tests
  * {@link #getRenderBoundingBox} (both halves). A cabinet without a texture slot submits nothing and the static
- * model's ink face shows; an asleep cabinet holding a readable cartridge still draws its client-local attract loop. CLIENT-ONLY.
+ * model's ink face shows; an asleep cabinet holding a readable cartridge still draws its client-local attract loop.
+ * Within {@link RenderPlan#TEXT_RANGE} blocks it also writes the marquee title (the cartridge title, upper case, at
+ * most twelve characters, or {@code NEROARCADE}) in the pixel font on the marquee glow strip, one quad per glyph.
+ * Every frame is counted in {@link ArcadeBerStats}. CLIENT-ONLY.
  */
 public class ArcadeCabinetRenderer implements BlockEntityRenderer<ArcadeCabinetBlockEntity, ArcadeCabinetRenderState> {
 
@@ -42,6 +45,11 @@ public class ArcadeCabinetRenderer implements BlockEntityRenderer<ArcadeCabinetB
     private static final float TILT = (float) Math.toRadians(22.5);
     /** Proud of the ink face along its normal, in model pixels. */
     private static final float LIFT = 0.05f;
+    private static final RenderType FONT_TYPE = RenderTypes.entityTranslucentEmissive(ArcadeQuads.FONT);
+    /** The marquee glow strip on the upper half: x 2..14, y 13..15, front at z = -0.5 (model px). */
+    private static final float MARQUEE_Z = -0.6f;
+    private static final float MARQUEE_CY = 16f + 14f;
+    private static final float MARQUEE_W = 11f;
     private static final RenderType[] TYPES = new RenderType[TextureLru.DEFAULT_CAP + 1];
     private static final Identifier[] TYPE_IDS = new Identifier[TextureLru.DEFAULT_CAP + 1];
 
@@ -76,33 +84,62 @@ public class ArcadeCabinetRenderer implements BlockEntityRenderer<ArcadeCabinetB
         double dy = cameraPos.y - cy;
         double dz = cameraPos.z - cz;
         if (dx * dx + dy * dy + dz * dz > range * range) {
+            ArcadeBerStats.culled();
             return false;
         }
         Direction facing = state.getValue(ArcadeBlockProperties.FACING);
         // In front of the screen: the camera is on the facing side of the cabinet's front plane.
-        return dx * facing.getStepX() + dz * facing.getStepZ() > -0.25;
+        boolean front = dx * facing.getStepX() + dz * facing.getStepZ() > -0.25;
+        if (!front) {
+            ArcadeBerStats.culled();
+        }
+        return front;
     }
 
     @Override
     public void extractRenderState(ArcadeCabinetBlockEntity be, ArcadeCabinetRenderState s, float partialTick,
             Vec3 cameraPos, ModelFeatureRenderer.CrumblingOverlay breakProgress) {
         BlockEntityRenderer.super.extractRenderState(be, s, partialTick, cameraPos, breakProgress);
+        ArcadeBerStats.frame(be.getLevel() == null ? 0L : be.getLevel().getGameTime(), partialTick);
+        long t0 = ArcadeBerStats.start();
         BlockState state = be.getBlockState();
         Direction facing = state.hasProperty(ArcadeBlockProperties.FACING) ? state.getValue(ArcadeBlockProperties.FACING)
                 : Direction.NORTH;
         s.quarterTurns = quarterTurns(facing);
         s.screen = CabinetScreens.prepare(be, ClientMatches.now());
+        BlockPos pos = be.getBlockPos();
+        boolean near = RenderPlan.inRange(cameraPos.x - pos.getX() - 0.5, cameraPos.y - pos.getY() - 1.875,
+                cameraPos.z - pos.getZ() - 0.5, Math.min(RenderPlan.TEXT_RANGE, getViewDistance()));
+        s.marquee = near ? RenderPlan.marqueeText(CabinetScreens.shownCabinet(be).clientInfo().title()) : null;
+        if (s.screen == null && s.marquee == null) {
+            ArcadeBerStats.culled();
+        }
+        ArcadeBerStats.stop(t0);
     }
 
     @Override
     public void submit(ArcadeCabinetRenderState s, PoseStack poseStack, SubmitNodeCollector collector,
             CameraRenderState camera) {
         Identifier screen = s.screen;
-        if (screen == null) {
+        String marquee = s.marquee;
+        if (screen == null && marquee == null) {
             return;
         }
+        long t0 = ArcadeBerStats.start();
+        ArcadeBerStats.submitted();
         int q = s.quarterTurns;
-        collector.order(1).submitCustomGeometry(poseStack, renderType(screen), (pose, c) -> screenQuad(c, pose, q));
+        if (screen != null) {
+            collector.order(1).submitCustomGeometry(poseStack, renderType(screen), (pose, c) -> screenQuad(c, pose, q));
+            ArcadeBerStats.vertices(RenderPlan.QUAD_2SIDED);
+        }
+        if (marquee != null) {
+            float h = Math.min(2f, MARQUEE_W * 7f / Math.max(1, 6 * marquee.length() - 1));
+            collector.order(2).submitCustomGeometry(poseStack, FONT_TYPE, (pose, c) -> ArcadeQuads.text(c, pose, q,
+                    MARQUEE_Z, 8f, MARQUEE_CY + h / 2f, h, marquee, ArcadeQuads.opaque(ArcadeColours.TEXT_LIGHT),
+                    ArcadeColours.FULL_BRIGHT));
+            ArcadeBerStats.vertices(RenderPlan.glyphQuads(marquee) * RenderPlan.QUAD);
+        }
+        ArcadeBerStats.stop(t0);
     }
 
     static RenderType renderType(Identifier id) {
@@ -134,9 +171,15 @@ public class ArcadeCabinetRenderer implements BlockEntityRenderer<ArcadeCabinetB
      * 22.5° about x at [8, 18, 1], lifted along its normal, then turned to the cabinet's facing. Double-sided.
      */
     static void screenQuad(VertexConsumer c, PoseStack.Pose pose, int q) {
+        screenQuad(c, pose, q, 1f);
+    }
+
+    /** As above for a screen element whose front and tilt origin sit at {@code originZ} (the Exchange: 2). */
+    static void screenQuad(VertexConsumer c, PoseStack.Pose pose, int q, float originZ) {
         // viewer's top-left, top-right, bottom-right, bottom-left (a north face is seen with +x on the left)
         float[][] corners = {
-            corner(13f, 12f, q), corner(3f, 12f, q), corner(3f, 2f, q), corner(13f, 2f, q)
+            corner(13f, 12f, q, originZ), corner(3f, 12f, q, originZ), corner(3f, 2f, q, originZ),
+            corner(13f, 2f, q, originZ)
         };
         float[] uv = {0f, 0f, 1f, 0f, 1f, 1f, 0f, 1f};
         float cos = (float) Math.cos(TILT);
@@ -151,13 +194,13 @@ public class ArcadeCabinetRenderer implements BlockEntityRenderer<ArcadeCabinetB
     }
 
     /** One authored corner (model px on the upper half) → block units in the lower block's space. */
-    private static float[] corner(float x, float y, int q) {
+    private static float[] corner(float x, float y, int q, float originZ) {
         float cos = (float) Math.cos(TILT);
         float sin = (float) Math.sin(TILT);
         float dy = y - 2f;
         float dz = -LIFT;
         float ry = 2f + dy * cos - dz * sin;
-        float rz = 1f + dy * sin + dz * cos;
+        float rz = originZ + dy * sin + dz * cos;
         float[] turned = turn(x, rz, q);
         return new float[] {turned[0] / 16f, (ry + 16f) / 16f, turned[1] / 16f};
     }

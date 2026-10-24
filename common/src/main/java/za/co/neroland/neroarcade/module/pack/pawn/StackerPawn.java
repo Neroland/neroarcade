@@ -305,10 +305,14 @@ public final class StackerPawn implements PawnModule {
             int[] segs = pieceSegments(s, seat);
             int[] dxs = offsetsX(s, segs);
             int[] dys = offsetsY(s, segs);
+            // a hard drop falls at most one full board height: on a board that wraps top to bottom an empty column
+            // has no floor, and an unbounded drop never ends (CombinationFuzzTest, final review H1) — a piece that
+            // has gone a whole lap without touching anything locks where it is
+            int fallen = 0;
             while (true) {
                 int px = s.get(id, Entities.X) >> MatchState.FP_SHIFT;
                 int py = s.get(id, Entities.Y) >> MatchState.FP_SHIFT;
-                if (collides(s, px, py + 1, dxs, dys)) {
+                if (collides(s, px, py + 1, dxs, dys) || ++fallen > s.height()) {
                     land(ctx, seat, id, segs, px, py, dxs, dys);
                     break;
                 }

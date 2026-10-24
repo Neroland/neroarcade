@@ -1,0 +1,90 @@
+{
+  "game_def": {
+    "schema": 1,
+    "id": "i4a43g3qrw4jmxkr",
+    "title": "Float Lane",
+    "author_credit": "Gallery",
+    "lineage": [],
+    "seed": 1012,
+    "slots": {
+      "arena": [
+        {
+          "id": "neroarcade:arena/strip_9",
+          "props": {
+            "length": 32,
+            "period": 8,
+            "scroll": "up"
+          }
+        }
+      ],
+      "pawn": [
+        {
+          "id": "neroarcade:pawn/runner",
+          "props": {
+            "jump": 3
+          }
+        }
+      ],
+      "rule": [
+        {
+          "id": "neroarcade:rule/survive_time",
+          "props": {
+            "lives": 2
+          }
+        }
+      ],
+      "hazard": [
+        {
+          "id": "neroarcade:hazard/falling_blocks",
+          "props": {
+            "rate": 6,
+            "speed": 3
+          }
+        }
+      ],
+      "pickup": [
+        {
+          "id": "neroarcade:pickup/shield"
+        }
+      ],
+      "control": [
+        {
+          "id": "neroarcade:control/two_way"
+        }
+      ],
+      "pace": [
+        {
+          "id": "neroarcade:pace/ramp",
+          "props": {
+            "every_seconds": 15
+          }
+        }
+      ],
+      "modifier": [
+        {
+          "id": "neroarcade:modifier/low_gravity"
+        }
+      ],
+      "multiplayer": [
+        {
+          "id": "neroarcade:multiplayer/solo"
+        }
+      ],
+      "theme": [
+        {
+          "id": "neroarcade:theme/terminal_green"
+        }
+      ]
+    },
+    "created_at": 1761177611,
+    "revision": 1
+  },
+  "seed": 1012,
+  "seats": 1,
+  "input_log": [
+    [106, 0, 8],
+    [480, 0, 16]
+  ],
+  "final_hash": 4451548872207688510,
+  "final_tick": 685
+}

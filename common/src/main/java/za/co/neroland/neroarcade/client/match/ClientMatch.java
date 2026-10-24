@@ -48,6 +48,7 @@ public final class ClientMatch {
     private @Nullable HudLegendPayload legend;
     private long legendSince;
     private long phaseSince;
+    private long phaseArrival;
     private @Nullable MatchState previous;
     private @Nullable MatchState latest;
     private long previousArrival;
@@ -109,6 +110,11 @@ public final class ClientMatch {
         return phaseSince;
     }
 
+    /** Client tick the latest phase packet arrived (the lobby's "starting in N s" counts down from it). */
+    public long phaseArrival() {
+        return phaseArrival;
+    }
+
     public @Nullable MatchState latest() {
         return latest;
     }
@@ -147,6 +153,7 @@ public final class ClientMatch {
         }
         int seatBefore = mySeat();
         phase = payload;
+        phaseArrival = now;
         if (before != payload.phase()) {
             phaseSince = now;
             events.phaseChanged(this, before, payload.phase());

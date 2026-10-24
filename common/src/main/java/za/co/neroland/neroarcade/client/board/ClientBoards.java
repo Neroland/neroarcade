@@ -31,18 +31,18 @@ public final class ClientBoards {
     }
 
     public static void accept(BoardPagePayload page) {
-        if (page == null || page.lineageRoot().isEmpty()) {
+        if (page == null || page.cartridgeId().isEmpty()) {
             return;
         }
-        BOARDS.remove(page.lineageRoot());
-        BOARDS.put(page.lineageRoot(), page);
+        BOARDS.remove(page.cartridgeId());
+        BOARDS.put(page.cartridgeId(), page);
         while (BOARDS.size() > CAP) {
             BOARDS.remove(BOARDS.keySet().iterator().next());
         }
     }
 
-    public static @Nullable BoardPagePayload get(String lineageRoot) {
-        return lineageRoot == null ? null : BOARDS.get(lineageRoot);
+    public static @Nullable BoardPagePayload get(String cartridgeId) {
+        return cartridgeId == null ? null : BOARDS.get(cartridgeId);
     }
 
     /**

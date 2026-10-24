@@ -57,14 +57,18 @@ public final class Exchange {
         @Override
         public void erase(MinecraftServer server, UUID player) {
             HEARTS.forget(player);
-            if (server != null) {
-                ExchangeStore.get(server).eraseListings(player);
+            ExchangeStore store = ExchangeStore.ACCESS.resolve(server);
+            if (store != null) {
+                store.eraseListings(player);
             }
         }
 
         @Override
         public void backupNow(MinecraftServer server) {
-            ExchangeStore.get(server).backup(server);
+            ExchangeStore store = ExchangeStore.ACCESS.resolve(server);
+            if (store != null) {
+                store.backup(server);
+            }
         }
     };
 
@@ -77,14 +81,18 @@ public final class Exchange {
 
         @Override
         public void erase(MinecraftServer server, UUID player) {
-            if (server != null) {
-                ExchangeStore.get(server).eraseDrafts(player);
+            ExchangeStore store = ExchangeStore.ACCESS.resolve(server);
+            if (store != null) {
+                store.eraseDrafts(player);
             }
         }
 
         @Override
         public void backupNow(MinecraftServer server) {
-            ExchangeStore.get(server).backup(server);
+            ExchangeStore store = ExchangeStore.ACCESS.resolve(server);
+            if (store != null) {
+                store.backup(server);
+            }
         }
     };
 
@@ -190,17 +198,19 @@ public final class Exchange {
             reply(player, menu, ExchangePages.Status.deny(refused.get()));
             return;
         }
-        Optional<String> title = TitleRules.clean(def.title());
-        if (title.isEmpty() || !title.get().equals(def.title())) {
-            reply(player, menu, ExchangePages.Status.deny("neroarcade.exchange.deny.title_invalid",
+        if (ExchangeRules.title(def.title()).isPresent()) {
+            reply(player, menu, ExchangePages.Status.deny(ExchangeRules.TITLE_INVALID,
                     Integer.toString(TitleRules.MAX_LENGTH)));
             return;
         }
         reply(player, menu, ExchangePages.Status.pending("neroarcade.exchange.status.checking"));
         MinecraftServer server = player.level().getServer();
-        BenchActions.whenFiltered(player.getTextFilter().processStreamMessage(title.get()), server, filtered -> {
-            ExchangePages.Status status = filtered.isFiltered()
-                    ? ExchangePages.Status.deny("neroarcade.exchange.deny.title_blocked")
+        BenchActions.whenFiltered(player.getTextFilter().processStreamMessage(def.title()), server, filtered -> {
+            if (!completes(!player.hasDisconnected(), player.containerMenu == menu)) {
+                return; // the kiosk was closed (or the player left) before the filter answered: nothing is listed
+            }
+            Optional<String> blocked = ExchangeRules.filter(filtered);
+            ExchangePages.Status status = blocked.isPresent() ? ExchangePages.Status.deny(blocked.get())
                     : completePublish(server, player, menu, def, game);
             reply(player, menu, status);
         });
@@ -215,21 +225,43 @@ public final class Exchange {
         Optional<String> credit = !Tombstones.isTombstone(author) && CreditOptIn.isOn(server, author)
                 ? def.authorCredit() : Optional.empty();
         ExchangeStore store = ExchangeStore.get(server);
-        ExchangeTable.PublishResult result = store.publish(server, def, author, credit, GenreTags.of(game), now());
+        boolean op = isOp(player);
+        int authorCap = op ? 0 : NeroArcadeConfig.LISTINGS_PER_AUTHOR.get();
+        ExchangeTable.PublishResult result = store.publish(server, def, author, credit, GenreTags.of(game), now(),
+                authorCap, op);
         switch (result.status()) {
+            case NOT_OWNER -> {
+                return ExchangePages.Status.deny(ExchangeRules.REPLACE_NOT_YOURS);
+            }
             case FULL -> {
                 return ExchangePages.Status.deny("neroarcade.exchange.deny.full",
                         Integer.toString(NeroArcadeConfig.EXCHANGE_MAX_LISTINGS.get()));
             }
-            case PUBLISHED -> ArcadeMilestones.cartridgePublished(store.size());
+            case AUTHOR_FULL -> {
+                return ExchangePages.Status.deny("neroarcade.exchange.deny.author_full",
+                        Integer.toString(authorCap));
+            }
+            case PUBLISHED -> ArcadeMilestones.cartridgePublished(store.publishedCount()); // gallery excluded (L1)
             default -> {
             }
         }
-        ArcadeMilestones.firstPublished(server, author);
+        // the gate opens for whoever pressed PUBLISH — an op listing someone else's game earns it, the absent author
+        // is not handed it (review 003b F11)
+        ArcadeMilestones.firstPublished(server, gateFor(player.getUUID()));
         playAt(menu, "exchange.publish");
         menu.view(ExchangePagePayload.TAB_LISTINGS, menu.page());
         return ExchangePages.Status.ok(result.status() == ExchangeTable.PublishStatus.REPLACED
                 ? "neroarcade.exchange.ok.replaced" : "neroarcade.exchange.ok.published", def.title());
+    }
+
+    /** An asynchronous publish completes only while the publisher is online with this kiosk open. Pure. */
+    static boolean completes(boolean online, boolean menuStillOpen) {
+        return online && menuStillOpen;
+    }
+
+    /** Whose {@code first_published} gate a publish opens: the publisher's (review 003b F11). Pure. */
+    static UUID gateFor(UUID publisher) {
+        return publisher;
     }
 
     /** UNPUBLISH: the listing's author or an op. Copies already downloaded stay where they are. */
@@ -280,6 +312,8 @@ public final class Exchange {
             return ExchangePages.Status.deny("neroarcade.exchange.deny.payment");
         }
         putInTray(player, menu, tray, copy);
+        // an aggregate per-listing count for the author's NeroLink daily digest (007 §4); never who
+        ExchangeStore.get(server).countDownload(listingId);
         playAt(menu, "cabinet.insert");
         return ExchangePages.Status.ok("neroarcade.exchange.ok.downloaded", listing.get().title());
     }

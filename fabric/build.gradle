@@ -59,6 +59,16 @@ publishing {
 sourceSets.main.java.srcDir rootProject.ext.commonJava
 sourceSets.main.resources.srcDir rootProject.ext.commonResources
 
+// --- NeroEconomy (optional coin-op bridge) --------------------------------------------------------------------
+// compileOnly behind compat/economy: one bridge class imports it, found through META-INF/services after isModLoaded.
+// `neroeconomy_compat=false` (gradle.properties or -P) drops the dependency, excludes the bridge class and its services
+// line, and leaves the optional manifest entry out, so the mod builds with no NeroEconomy artifact at all.
+def economyOn = (rootProject.findProperty('neroeconomy_compat') ?: 'true').toString().trim() == 'true'
+if (!economyOn) {
+    sourceSets.main.java.exclude 'za/co/neroland/neroarcade/compat/economy/bridge/NeroEconomyCoinOp.java'
+    sourceSets.main.resources.exclude 'META-INF/services/za.co.neroland.neroarcade.compat.economy.CoinOpSeam'
+}
+
 dependencies {
     minecraft "com.mojang:minecraft:${mc}"
     // NOTE: no `mappings` — de-obfuscated 26.x needs none (Fabric Loom 1.17+).
@@ -72,6 +82,15 @@ dependencies {
     // remap and `modImplementation` isn't available. Core ships as its own mod and loads BEFORE
     // NeroArcade (see fabric.mod.json depends).
     implementation "za.co.neroland.nerolandcore:nerolandcore-fabric-${mc}:${nerolandcoreVersion}"
+
+    // NeroEconomy - OPTIONAL (see the compat block above). compileOnly: never bundled, never a hard requirement.
+    if (economyOn) {
+        compileOnly "za.co.neroland.neroeconomy:neroeconomy-fabric-${mc}:${rootProject.neroeconomy_version}"
+        // Dev clients load NeroEconomy only with -PwithNeroEconomy; the default run proves it stays optional.
+        if (project.hasProperty('withNeroEconomy')) {
+            runtimeOnly "za.co.neroland.neroeconomy:neroeconomy-fabric-${mc}:${rootProject.neroeconomy_version}"
+        }
+    }
 
     // Sentry SDK (telemetry/NeroArcadeTelemetry): compile against it + embed it as a jar-in-jar so the
     // shipped Fabric jar carries it. Counterpart to the NeoForge JarJar bundling.
@@ -115,6 +134,8 @@ def generateModMetadata = tasks.register('generateModMetadata', ProcessResources
         minecraft_version    : mc,
         minecraft_version_ceiling: mcCeiling,
         nerolandcore_version : nerolandcoreVersion,
+        // The optional NeroEconomy suggestion (floor = the compiled version), or "" when neroeconomy_compat=false.
+        neroeconomy_suggest : economyOn ? ",\n  \"suggests\": {\n    \"neroeconomy\": \">=${rootProject.neroeconomy_version}\"\n  }" : "",
     ]
     inputs.properties(props)
     expand(props)
@@ -122,6 +143,42 @@ def generateModMetadata = tasks.register('generateModMetadata', ProcessResources
     into layout.buildDirectory.dir('generated/sources/modMetadata')
 }
 sourceSets.main.resources.srcDir generateModMetadata
+
+// Bundle the public wiki/*.md pages (plus a generated index.json) under assets/neroarcade/wiki so the
+// NeroLink module's wiki section can serve them (WIKI CONTRACT v1).
+def generateWikiResources = tasks.register('generateWikiResources', Copy) {
+    def wikiSrcDir = file("${rootProject.projectDir}/wiki")
+    from(wikiSrcDir) {
+        include '*.md'
+        into 'assets/neroarcade/wiki'
+    }
+    into layout.buildDirectory.dir('generated/sources/wiki')
+    doLast {
+        def outDir = layout.buildDirectory.dir('generated/sources/wiki/assets/neroarcade/wiki').get().asFile
+        outDir.mkdirs()
+        def entries = []
+        wikiSrcDir.listFiles()?.findAll { it.isFile() && it.name.endsWith('.md') }?.sort { it.name }?.each { f ->
+            def slug = f.name.substring(0, f.name.length() - 3)
+            def title = slug.replace('-', ' ')
+            for (String line : f.readLines('UTF-8')) {
+                def t = line.trim()
+                if (t.startsWith('# ')) { title = t.substring(2).trim(); break }
+                if (!t.isEmpty()) break
+            }
+            entries << [slug: slug, title: title]
+        }
+        def sb = new StringBuilder('{\n  "pages": [\n')
+        entries.eachWithIndex { e, i ->
+            sb.append('    {"slug": ').append(groovy.json.JsonOutput.toJson(e.slug))
+              .append(', "title": ').append(groovy.json.JsonOutput.toJson(e.title)).append('}')
+              .append(i < entries.size() - 1 ? ',' : '').append('\n')
+        }
+        sb.append('  ]\n}\n')
+        new File(outDir, 'index.json').write(sb.toString(), 'UTF-8')
+    }
+}
+sourceSets.main.resources.srcDir generateWikiResources
+eclipse.synchronizationTasks generateWikiResources
 eclipse.synchronizationTasks generateModMetadata
 
 loom {

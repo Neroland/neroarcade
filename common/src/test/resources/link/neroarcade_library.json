@@ -1,0 +1,45 @@
+{
+  "ok": true,
+  "data": {
+    "asOf": 1792000000000,
+    "creditOptIn": false,
+    "actions": { "export_cartridge": true, "import_cartridge": true },
+    "limits": { "draftsMax": 8, "draftsUsed": 2, "importPerHour": 10 },
+    "cartridges": [
+      {
+        "id": "s3rp3ntch4s3dr4f",
+        "lineageRoot": "s3rp3ntch4s3dr4f",
+        "title": "Serpent Chase",
+        "genreTags": ["serpent", "grid", "score", "solo"],
+        "revision": 1,
+        "state": "draft",
+        "authored": true,
+        "plays": 0,
+        "hearts": 0
+      },
+      {
+        "id": "k7m2p9qa3f8d1z6b",
+        "lineageRoot": "k7m2p9qa3f8d1z6b",
+        "title": "Neon Dodge",
+        "genreTags": ["run", "strip", "survive", "solo", "neon"],
+        "revision": 3,
+        "state": "published",
+        "authored": true,
+        "plays": 1284,
+        "hearts": 17,
+        "best": { "score": 9120, "rank": 6, "at": 1791990000 }
+      },
+      {
+        "id": "orb2tru7n2v4x6za",
+        "lineageRoot": "orb2tru7n2v4x6za",
+        "title": "Orbit Run",
+        "genreTags": ["run", "ring", "escape", "versus", "void"],
+        "revision": 2,
+        "state": "best_only",
+        "authored": false,
+        "best": { "score": 2019, "at": 1791980000 }
+      }
+    ],
+    "nextCursor": null
+  }
+}

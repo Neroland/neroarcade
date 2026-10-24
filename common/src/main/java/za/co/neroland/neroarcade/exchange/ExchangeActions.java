@@ -69,7 +69,7 @@ public final class ExchangeActions {
     }
 
     /** Fixed one-second window per player; true while under {@link #ACTIONS_PER_SECOND}. */
-    static boolean withinRate(UUID player, long nowMillis) {
+    public static boolean withinRate(UUID player, long nowMillis) {
         long[] window = WINDOWS.computeIfAbsent(player, p -> new long[] {nowMillis, 0});
         if (nowMillis - window[0] >= 1000L || nowMillis < window[0]) {
             window[0] = nowMillis;
@@ -84,6 +84,11 @@ public final class ExchangeActions {
 
     public static void forget(UUID player) {
         WINDOWS.remove(player);
+    }
+
+    /** Erasure-conformance probe: is a rate window held for {@code player}? */
+    public static boolean holdsWindow(UUID player) {
+        return WINDOWS.containsKey(player);
     }
 
     public static void clear() {

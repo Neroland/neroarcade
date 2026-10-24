@@ -11,12 +11,12 @@ import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.resources.Identifier;
 
 /**
- * Server → client: one cartridge's leaderboard for the marquee's idle loop and the cabinet attract screen (003
+ * Server → client: one cartridge's leaderboard (keyed by cartridge id: copies and downloads share it, a remix has its own) for the marquee's idle loop and the cabinet attract screen (003
  * §5, §11). Rows carry a rank, a score and a name <b>only for players who opted in to credit</b> — otherwise the
  * name is empty and the client shows "Anonymous". Never a UUID. {@code myBest} is the recipient's own personal best
  * on this board, or -1.
  */
-public record BoardPagePayload(String lineageRoot, List<Row> rows, int myBest) implements CustomPacketPayload {
+public record BoardPagePayload(String cartridgeId, List<Row> rows, int myBest) implements CustomPacketPayload {
 
     /** Rows per page: the configurable board cap's ceiling. */
     public static final int MAX_ROWS = 25;
@@ -37,12 +37,12 @@ public record BoardPagePayload(String lineageRoot, List<Row> rows, int myBest) i
             BoardPagePayload::write, BoardPagePayload::read);
 
     public BoardPagePayload {
-        lineageRoot = lineageRoot == null ? "" : lineageRoot;
+        cartridgeId = cartridgeId == null ? "" : cartridgeId;
         rows = List.copyOf(rows.size() > MAX_ROWS ? rows.subList(0, MAX_ROWS) : rows);
     }
 
     private static void write(ByteBuf buf, BoardPagePayload p) {
-        ByteBufCodecs.stringUtf8(64).encode(buf, p.lineageRoot);
+        ByteBufCodecs.stringUtf8(64).encode(buf, p.cartridgeId);
         buf.writeByte(p.rows.size());
         for (Row row : p.rows) {
             buf.writeByte(row.rank());

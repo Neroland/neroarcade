@@ -87,7 +87,23 @@ public final class LevelHostEnv implements HostEnv {
     }
 
     @Override
+    public void message(UUID player, String langKey) {
+        ServerPlayer target = level.getServer().getPlayerList().getPlayer(player);
+        if (target != null) {
+            target.sendSystemMessage(net.minecraft.network.chat.Component.translatable(langKey));
+        }
+    }
+
+    @Override
     public boolean powered() {
         return powered.getAsBoolean();
+    }
+
+    /** The holder at {@code at} (loaded, this level) drops its seat; nothing happens for an unloaded block. */
+    @Override
+    public void unseat(BlockPos at, DropReason why) {
+        if (at != null && level.isLoaded(at) && level.getBlockEntity(at) instanceof SeatHolder holder) {
+            holder.dropSeat(why);
+        }
     }
 }

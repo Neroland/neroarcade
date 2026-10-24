@@ -53,7 +53,8 @@ public class ModuleChipItem extends Item {
                     .withStyle(ChatFormatting.DARK_GRAY));
         }
         if (module.type().stacks()) {
-            tooltip.accept(Component.translatable("item.neroarcade.module_chip.stacks").withStyle(ChatFormatting.DARK_GRAY));
+            tooltip.accept(Component.translatable("item.neroarcade.module_chip.stacks",
+                    Component.translatable(module.type().langKey())).withStyle(ChatFormatting.DARK_GRAY));
         }
     }
 

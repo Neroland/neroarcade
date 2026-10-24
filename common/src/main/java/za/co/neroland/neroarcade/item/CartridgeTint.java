@@ -39,6 +39,7 @@ public final class CartridgeTint {
     public static int ofTheme(Identifier themeModule) {
         String path = themeModule.getPath();
         String name = path.startsWith("theme/") ? path.substring("theme/".length()) : path;
-        return SIGNATURE.getOrDefault(name, GREY);
+        // Core's palette first (a pack may recolour a theme's finish), the built-in signature as the fallback
+        return za.co.neroland.neroarcade.compat.Seams.palette().signature(name, SIGNATURE.getOrDefault(name, GREY));
     }
 }

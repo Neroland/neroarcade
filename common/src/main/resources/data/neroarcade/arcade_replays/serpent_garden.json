@@ -1,0 +1,99 @@
+{
+  "game_def": {
+    "schema": 1,
+    "id": "id3etuw57vdflrmz",
+    "title": "Serpent Garden",
+    "author_credit": "Gallery",
+    "lineage": [],
+    "seed": 1002,
+    "slots": {
+      "arena": [
+        {
+          "id": "neroarcade:arena/grid_16"
+        }
+      ],
+      "pawn": [
+        {
+          "id": "neroarcade:pawn/serpent",
+          "props": {
+            "speed": 2
+          }
+        }
+      ],
+      "rule": [
+        {
+          "id": "neroarcade:rule/score_target",
+          "props": {
+            "lives": 1
+          }
+        }
+      ],
+      "pickup": [
+        {
+          "id": "neroarcade:pickup/score_orb"
+        }
+      ],
+      "control": [
+        {
+          "id": "neroarcade:control/four_way"
+        }
+      ],
+      "pace": [
+        {
+          "id": "neroarcade:pace/steady"
+        }
+      ],
+      "modifier": [
+        {
+          "id": "neroarcade:modifier/wrap_around"
+        }
+      ],
+      "multiplayer": [
+        {
+          "id": "neroarcade:multiplayer/solo"
+        }
+      ],
+      "theme": [
+        {
+          "id": "neroarcade:theme/terminal_green"
+        }
+      ]
+    },
+    "created_at": 1761177601,
+    "revision": 1
+  },
+  "seed": 1002,
+  "seats": 1,
+  "input_log": [
+    [60, 0, 1],
+    [66, 0, 8],
+    [75, 0, 1],
+    [78, 0, 4],
+    [363, 0, 1],
+    [366, 0, 8],
+    [396, 0, 2],
+    [399, 0, 8],
+    [408, 0, 1],
+    [414, 0, 4],
+    [417, 0, 2],
+    [660, 0, 4],
+    [678, 0, 2],
+    [681, 0, 8],
+    [702, 0, 1],
+    [969, 0, 8],
+    [972, 0, 1],
+    [993, 0, 8],
+    [1260, 0, 1],
+    [1269, 0, 4],
+    [1272, 0, 2],
+    [1284, 0, 4],
+    [1290, 0, 1],
+    [1302, 0, 8],
+    [1305, 0, 1],
+    [1308, 0, 8],
+    [1314, 0, 2],
+    [1326, 0, 8]
+  ],
+  "final_hash": 8236078856323157206,
+  "final_tick": 1332
+}

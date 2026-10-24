@@ -81,6 +81,7 @@ public class ArcadeCabinetBlockEntity extends BlockEntity implements SeatHolder 
     private int busSeatIndex = -1;
     private @Nullable BlockPos displayOf;
     private int busCabinets = 1;
+    private int busPresent = 1;
     private List<BlockPos> busScreens = List.of();
     private long insertedAt = Long.MAX_VALUE;
     private boolean firstTick = true;
@@ -152,6 +153,12 @@ public class ArcadeCabinetBlockEntity extends BlockEntity implements SeatHolder 
         if (level instanceof ServerLevel serverLevel) {
             SeatRegistry.SERVER.release(leaving.playerUuid, seatKey(serverLevel));
             ServerPlayer player = serverLevel.getServer().getPlayerList().getPlayer(leaving.playerUuid);
+            if (player != null && match == null) {
+                // the host went silently (chunk unload, dissolve order): release the HUD (review 003b F8)
+                za.co.neroland.neroarcade.platform.Services.NETWORK.sendToPlayer(player,
+                        za.co.neroland.neroarcade.network.MatchPhasePayload.released(
+                                displayOf != null ? displayOf : worldPosition));
+            }
             if (player != null && why != DropReason.ESC) {
                 player.sendOverlayMessage(Component.translatable(why.langKey()));
             }
@@ -172,6 +179,11 @@ public class ArcadeCabinetBlockEntity extends BlockEntity implements SeatHolder 
         return busSeatIndex;
     }
 
+    /** A bus host: the cabinets on its bus that can seat a player (host + nodes); 1 otherwise. */
+    public int busCabinets() {
+        return busCabinets;
+    }
+
     /** A node: the host it mirrors (same dimension); null otherwise. */
     public @Nullable BlockPos displayOf() {
         return displayOf;
@@ -180,6 +192,12 @@ public class ArcadeCabinetBlockEntity extends BlockEntity implements SeatHolder 
     /** Runtime-only insertion time for host election (first inserted wins). */
     public long insertedAt() {
         return insertedAt;
+    }
+
+    /** This cabinet's own match (host or solo) counts down or plays. */
+    public boolean ownMatchRunning() {
+        MatchHost current = host;
+        return current != null && current.phase().running();
     }
 
     /** The bus host's block entity for a node, or null when it is not loaded / gone. Resolved on every call. */
@@ -195,11 +213,13 @@ public class ArcadeCabinetBlockEntity extends BlockEntity implements SeatHolder 
      * The hub's assignment after a discovery (003 §3.2). A node whose host, index or role changed loses its seat;
      * a host or solo cabinet that stops hosting ends its match (ABANDONED) and frees its awake slot.
      *
-     * @param cabinets bus cabinets that can seat a player (host + nodes)
+     * @param cabinets seat slots on the bus: the highest bus seat index + 1 (indexes are sticky, so a seated node
+     *                 may sit above a gap)
+     * @param present  bus cabinets that can seat a player (host + nodes)
      * @param screens  the bus's other nodes and marquees (the host's viewer group)
      */
     public void assignBus(long newBusId, BusRole newRole, int index, @Nullable BlockPos hostPos, int cabinets,
-            List<BlockPos> screens) {
+            int present, List<BlockPos> screens) {
         BlockPos newDisplay = newRole == BusRole.NODE && hostPos != null ? hostPos.immutable() : null;
         boolean changed = busId != newBusId || role != newRole || busSeatIndex != index
                 || !Objects.equals(displayOf, newDisplay);
@@ -224,14 +244,16 @@ public class ArcadeCabinetBlockEntity extends BlockEntity implements SeatHolder 
         }
         if (role == BusRole.HOST) {
             busCabinets = Math.max(1, cabinets);
+            busPresent = Math.max(1, present);
             busScreens = List.copyOf(screens);
             MatchHost current = host;
             ResolvedGame game = game();
             if (current != null && game != null) {
-                current.setBusSeats(MatchHost.busSeatsFor(game, busCabinets));
+                current.setBusSeats(MatchHost.busSeatsFor(game, busCabinets), busPresent);
             }
         } else {
             busCabinets = 1;
+            busPresent = 1;
             busScreens = List.of();
         }
     }
@@ -255,9 +277,10 @@ public class ArcadeCabinetBlockEntity extends BlockEntity implements SeatHolder 
         busSeatIndex = -1;
         displayOf = null;
         busCabinets = 1;
+        busPresent = 1;
         busScreens = List.of();
         if (host != null) {
-            host.setBusSeats(1);
+            host.setBusSeats(1, 1);
         }
         sync();
     }
@@ -326,6 +349,26 @@ public class ArcadeCabinetBlockEntity extends BlockEntity implements SeatHolder 
         sync();
     }
 
+    /**
+     * The creative gallery: puts {@code cartridge} into this empty cabinet as if a player had inserted it.
+     *
+     * @return false when the cabinet already holds one or this is not the server
+     */
+    public boolean showcaseInsert(ItemStack cartridge) {
+        if (!this.cartridge.isEmpty() || level == null || level.isClientSide() || cartridge.isEmpty()) {
+            return false;
+        }
+        insert(cartridge);
+        return true;
+    }
+
+    /** The creative gallery's clear: the cartridge goes away without dropping (it was never a player's). */
+    public void showcaseDiscard() {
+        if (!cartridge.isEmpty()) {
+            takeCartridge();
+        }
+    }
+
     /** Takes the cartridge out, ending any match and dropping the seat. */
     ItemStack takeCartridge() {
         ItemStack out = cartridge;
@@ -361,14 +404,21 @@ public class ArcadeCabinetBlockEntity extends BlockEntity implements SeatHolder 
         /** This cabinet's bus seat is beyond what the game seats. */
         NO_SEAT_HERE,
         /** A hot-seat game is played at the host cabinet only. */
-        HOT_SEAT_HOST
+        HOT_SEAT_HOST,
+        /** Coin-op refused the charge; nothing was bound. */
+        UNPAID
+    }
+
+    SeatResult seat(ServerPlayer player) {
+        return seat(player, () -> true);
     }
 
     /**
      * Wakes the bus host if needed (or queues it at the awake cap) and binds {@code player} to this cabinet's bus
-     * seat. The caller has checked the registry and power.
+     * seat. The caller has checked the registry and power. {@code pay} (coin-op) runs after every other check and
+     * immediately before the bind; false refuses with nothing bound (review 003b F10).
      */
-    SeatResult seat(ServerPlayer player) {
+    SeatResult seat(ServerPlayer player, java.util.function.BooleanSupplier pay) {
         ServerLevel serverLevel = (ServerLevel) level;
         if (seat != null) {
             return SeatResult.TAKEN;
@@ -413,12 +463,10 @@ public class ArcadeCabinetBlockEntity extends BlockEntity implements SeatHolder 
             return SeatResult.NO_SEAT_HERE;
         }
         Seat candidate = new Seat(index, player.getUUID(), serverLevel.getGameTime(), worldPosition);
-        if (!SeatRegistry.SERVER.claim(player.getUUID(), seatKey(serverLevel))) {
-            return SeatResult.TAKEN;
-        }
-        if (!current.bind(index, candidate)) {
-            SeatRegistry.SERVER.release(player.getUUID(), seatKey(serverLevel));
-            return current.phase().running() ? SeatResult.IN_PROGRESS : SeatResult.TAKEN;
+        SeatResult bound = SeatTake.payThenBind(SeatRegistry.SERVER, seatKey(serverLevel), current, index, candidate,
+                pay);
+        if (bound != SeatResult.SEATED) {
+            return bound;
         }
         seat = candidate;
         hostBe.sleep.reset();
@@ -439,15 +487,22 @@ public class ArcadeCabinetBlockEntity extends BlockEntity implements SeatHolder 
         env = new LevelHostEnv(serverLevel, worldPosition, ArcadeCabinetBlockEntity::powerAvailable,
                 () -> busScreens);
         int seats = role == BusRole.HOST ? MatchHost.busSeatsFor(game, busCabinets) : 1;
-        host = new MatchHost(env, worldPosition, game, Boards.writer(serverLevel.getServer()), seats);
+        host = new MatchHost(env, worldPosition, game, Boards.writer(serverLevel.getServer()), seats)
+                .listener(za.co.neroland.neroarcade.progression.ArcadeMatchEnds.listener(serverLevel));
+        if (role == BusRole.HOST) {
+            host.setBusSeats(seats, busPresent);
+        }
         lastPhase = host.phase();
         sleep.reset();
         return true;
     }
 
-    /** Stage 2 has no energy buffer: with {@code cabinetsNeedPower} on, a cabinet has no power (002 §11). */
+    /**
+     * 0.1.0 has no energy buffer, so a cabinet is always powered; the NO POWER state (pause, abandon, status strip)
+     * is kept for a later release (002 §11, final review M2).
+     */
     static boolean powerAvailable() {
-        return !NeroArcadeConfig.CABINETS_NEED_POWER.get();
+        return true;
     }
 
     public SeatRegistry.SeatKey seatKey(ServerLevel serverLevel) {
@@ -488,7 +543,15 @@ public class ArcadeCabinetBlockEntity extends BlockEntity implements SeatHolder 
         }
         MatchHost current = host;
         if (current != null) {
-            current.tick();
+            try {
+                current.tick();
+            } catch (RuntimeException e) {
+                // the host guards its own runtime step; anything that still escapes shuts this host down so it
+                // cannot fault again next tick — the next use starts a fresh one (final review H1)
+                current.escapedFault(e);
+                sleepNow(DropReason.FAULT);
+                return;
+            }
             onPhase(serverLevel, current);
             boolean nearby = env != null && !env.viewers().isEmpty();
             if (sleep.tick(current.hasSeat(), nearby, Budgets.sleepAfterTicks())) {
@@ -666,6 +729,8 @@ public class ArcadeCabinetBlockEntity extends BlockEntity implements SeatHolder 
         cartridge = input.read(KEY_CARTRIDGE, ItemStack.CODEC).orElse(ItemStack.EMPTY);
         busId = input.getLongOr(KEY_BUS, 0L);
         readability = null;
+        // a loaded cartridge predates every live insert: it keeps the bus after a restart (review 003b F1)
+        insertedAt = cartridge.isEmpty() ? Long.MAX_VALUE : Long.MIN_VALUE;
         // The update tag's client view (absent in saved data, so a server load always reads EMPTY).
         Optional<String> title = input.getString(CabinetClientInfo.KEY_TITLE);
         clientInfo = title.isEmpty() ? CabinetClientInfo.EMPTY

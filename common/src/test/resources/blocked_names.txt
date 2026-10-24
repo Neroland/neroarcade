@@ -1,20 +1,21 @@
 # Commercial game names that must never appear in a module name, description or lang value.
-# One lowercase name per line; matched case-insensitively as a substring. Test-only; not published.
-tetris
-pac-man
-pacman
-pong
-space invaders
-asteroids
-galaga
-frogger
-donkey kong
-arkanoid
-breakout
-centipede
-dig dug
-q*bert
-bomberman
-lemmings
-minesweeper
-flappy
+# One Java regex per line, matched case-insensitively anywhere in the text (Matcher.find). The repository is
+# public, so each name is written with a one-character class (the trick the wiki guard uses): this file never
+# spells a name out, while the pattern still matches the real string. Test-only; not published in the jar.
+tetri[s]
+pac-?ma[n]
+pon[g]
+space invader[s]
+asteroid[s]
+galag[a]
+frogge[r]
+donkey kon[g]
+arkanoi[d]
+breakou[t]
+centiped[e]
+dig du[g]
+q\*ber[t]
+bomberma[n]
+lemming[s]
+minesweepe[r]
+flapp[y]

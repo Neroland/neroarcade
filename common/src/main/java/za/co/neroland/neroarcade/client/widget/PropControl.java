@@ -16,9 +16,11 @@ import za.co.neroland.neroarcade.module.PropertySpec;
 /**
  * One chip property as a control — never a text box (004 §8): INT is a slider over the spec's range (6-px
  * {@code #0b0f1a} trough, fill in the slot colour, value on the right; click or drag, mouse wheel steps by one),
- * BOOL a toggle (on/off), ENUM a cycle button (left click next, right click previous). A change is committed
- * (sent to the server as {@code SET_PROP}) on release, toggle or cycle; the control shows the pending value until
- * the server's next draft arrives. CLIENT-ONLY.
+ * BOOL a toggle (on/off), ENUM a cycle button (left click next, right click previous). A slider commits (sends
+ * {@code SET_PROP}) while it is dragged, at most {@value #DRAG_COMMIT_HZ} times a second, and once more on release;
+ * the wheel steps by {@link #wheelStep} (a sixtieth of the range, at least one: Seconds steps by ten). Toggles
+ * and cycles commit on click. The control shows the pending value until the server's next draft arrives; an
+ * inactive control's tooltip says why (005a P4). CLIENT-ONLY.
  */
 public class PropControl extends AbstractWidget {
 
@@ -34,6 +36,11 @@ public class PropControl extends AbstractWidget {
     private final Commit commit;
     private int value;
     private boolean dragging;
+    private int lastCommitted = Integer.MIN_VALUE;
+    private long lastCommitAt;
+
+    /** Most slider commits per second while dragging (the server's edit rate cap is 20/s). */
+    public static final int DRAG_COMMIT_HZ = za.co.neroland.neroarcade.client.bench.BenchModel.DRAG_COMMIT_HZ;
 
     public PropControl(int x, int y, int width, int height, ArcadeModule owner, PropertySpec spec, int value,
             int colour, Commit commit) {
@@ -43,8 +50,27 @@ public class PropControl extends AbstractWidget {
         this.value = value;
         this.colour = colour;
         this.commit = commit;
-        setTooltip(Tooltip.create(Component.translatable("neroarcade.bench.help.prop." + spec.kind().name()
-                .toLowerCase(java.util.Locale.ROOT), Component.translatable(spec.langKey(owner)))));
+        setTooltip(Tooltip.create(spec.kind() == za.co.neroland.neroarcade.module.PropertyKind.INT
+                ? Component.translatable("neroarcade.bench.help.prop.int", Component.translatable(spec.langKey(owner)),
+                        wheelStep(spec.max() - spec.min()))
+                : Component.translatable("neroarcade.bench.help.prop." + spec.kind().name()
+                        .toLowerCase(java.util.Locale.ROOT), Component.translatable(spec.langKey(owner)))));
+    }
+
+    /** The mouse-wheel step for a range of {@code span} (see {@link za.co.neroland.neroarcade.client.bench.BenchModel#wheelStep}). */
+    public static int wheelStep(int span) {
+        return za.co.neroland.neroarcade.client.bench.BenchModel.wheelStep(span);
+    }
+
+    /** Inactive (a test play is running): the tooltip says why instead of how. */
+    public void disableWith(Component why) {
+        this.active = false;
+        setTooltip(Tooltip.create(why));
+    }
+
+    /** True while the player is dragging this slider (the screen must not rebuild it then). */
+    public boolean isDragging() {
+        return dragging;
     }
 
     public PropertySpec spec() {
@@ -91,6 +117,10 @@ public class PropControl extends AbstractWidget {
     protected void onDrag(MouseButtonEvent event, double dx, double dy) {
         if (dragging) {
             value = valueAt(event.x());
+            long now = System.currentTimeMillis();
+            if (value != lastCommitted && now - lastCommitAt >= 1000L / DRAG_COMMIT_HZ) {
+                send(now);
+            }
         }
     }
 
@@ -98,8 +128,17 @@ public class PropControl extends AbstractWidget {
     public void onRelease(MouseButtonEvent event) {
         if (dragging) {
             dragging = false;
-            commit.commit(spec, value);
+            if (value != lastCommitted) {
+                send(System.currentTimeMillis());
+            }
+            lastCommitted = Integer.MIN_VALUE;
         }
+    }
+
+    private void send(long now) {
+        lastCommitted = value;
+        lastCommitAt = now;
+        commit.commit(spec, value);
     }
 
     @Override
@@ -108,7 +147,8 @@ public class PropControl extends AbstractWidget {
                 || scrollY == 0) {
             return false;
         }
-        int next = Math.max(spec.min(), Math.min(spec.max(), value + (scrollY > 0 ? 1 : -1)));
+        int step = wheelStep(spec.max() - spec.min());
+        int next = Math.max(spec.min(), Math.min(spec.max(), value + (scrollY > 0 ? step : -step)));
         if (next != value) {
             value = next;
             commit.commit(spec, value);

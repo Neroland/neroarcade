@@ -43,9 +43,9 @@ class NoNameWithoutOptInTest {
     @Test
     void optInOffMeansNoNameAnywhere() {
         LeaderboardTable table = played(new CreditTable());
-        LeaderboardTable.Board board = table.board(BoardFixtures.LINEAGE).orElseThrow();
+        LeaderboardTable.Board board = table.board(BoardFixtures.CARTRIDGE).orElseThrow();
         board.top().forEach(e -> assertNull(e.name()));
-        BoardPagePayload page = Boards.page(BoardFixtures.LINEAGE, table.board(BoardFixtures.LINEAGE),
+        BoardPagePayload page = Boards.page(BoardFixtures.CARTRIDGE, table.board(BoardFixtures.CARTRIDGE),
                 BoardFixtures.ALICE, 10);
         page.rows().forEach(r -> assertEquals("", r.name()));
         assertEquals(400, page.myBest());
@@ -57,7 +57,7 @@ class NoNameWithoutOptInTest {
         credit.set(BoardFixtures.ALICE, true);
         credit.set(BoardFixtures.BOB, true);
         LeaderboardTable table = played(credit);
-        BoardPagePayload page = Boards.page(BoardFixtures.LINEAGE, table.board(BoardFixtures.LINEAGE), null, 10);
+        BoardPagePayload page = Boards.page(BoardFixtures.CARTRIDGE, table.board(BoardFixtures.CARTRIDGE), null, 10);
         assertEquals("Alice", page.rows().get(0).name());
         assertEquals("Bob_the_very_lon", page.rows().get(1).name());
         assertEquals(-1, page.myBest());
@@ -68,11 +68,11 @@ class NoNameWithoutOptInTest {
         CreditTable credit = new CreditTable();
         credit.set(BoardFixtures.ALICE, true);
         LeaderboardTable table = played(credit);
-        assertEquals("Alice", table.board(BoardFixtures.LINEAGE).orElseThrow().top().get(0).name());
+        assertEquals("Alice", table.board(BoardFixtures.CARTRIDGE).orElseThrow().top().get(0).name());
         assertTrue(credit.set(BoardFixtures.ALICE, false));
         assertFalse(credit.holds(BoardFixtures.ALICE), "off is never stored");
         assertTrue(table.stripNames(BoardFixtures.ALICE));
-        assertNull(table.board(BoardFixtures.LINEAGE).orElseThrow().top().get(0).name());
+        assertNull(table.board(BoardFixtures.CARTRIDGE).orElseThrow().top().get(0).name());
     }
 
     @Test
@@ -80,7 +80,7 @@ class NoNameWithoutOptInTest {
         CreditTable credit = new CreditTable();
         LeaderboardTable table = played(credit);
         credit.set(BoardFixtures.ALICE, true);
-        assertNull(table.board(BoardFixtures.LINEAGE).orElseThrow().top().get(0).name());
+        assertNull(table.board(BoardFixtures.CARTRIDGE).orElseThrow().top().get(0).name());
     }
 
     @Test

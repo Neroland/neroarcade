@@ -47,11 +47,17 @@ public record ExchangePagePayload(int tab, int page, int pageCount, int total, L
     public static final int MAX_CREDIT = 16;
     public static final int MAX_TAGS = 6;
     public static final int SLOTS = 10;
+    /** The longest {@code slotChips} entry (chip ids joined by {@code ,}). */
+    public static final int MAX_SLOT_CHIPS = 160;
     private static final int MAX_ARGS = 4;
 
-    /** One listing (or draft) line. {@code slotColours} is ten {@code 0xRRGGBB} values in slot order. */
+    /**
+     * One listing (or draft) line. {@code slotColours} is ten {@code 0xRRGGBB} values in slot order;
+     * {@code slotChips} is ten strings in slot order, each the chip ids in that slot joined by {@code ,}
+     * ({@code ""} = empty slot, the game uses the default) — so the pane can name every slot, never colour alone.
+     */
     public record Row(int id, String title, String credit, List<String> tags, int plays, int hearts,
-            int[] slotColours, int flags, int ageDays) {
+            int[] slotColours, List<String> slotChips, int flags, int ageDays) {
         public Row {
             title = cut(title, MAX_TITLE);
             credit = cut(credit, MAX_CREDIT);
@@ -61,6 +67,18 @@ public record ExchangePagePayload(int tab, int page, int pageCount, int total, L
                 System.arraycopy(slotColours, 0, colours, 0, Math.min(SLOTS, slotColours.length));
             }
             slotColours = colours;
+            List<String> chips = new ArrayList<>(SLOTS);
+            for (int i = 0; i < SLOTS; i++) {
+                String s = slotChips != null && i < slotChips.size() ? slotChips.get(i) : "";
+                chips.add(cut(s, MAX_SLOT_CHIPS));
+            }
+            slotChips = List.copyOf(chips);
+        }
+
+        /** The chip ids in slot {@code index} (empty = the slot is empty). */
+        public List<String> chipsIn(int index) {
+            String s = index >= 0 && index < SLOTS ? slotChips.get(index) : "";
+            return s.isEmpty() ? List.of() : List.of(s.split(","));
         }
 
         @Override
@@ -102,6 +120,7 @@ public record ExchangePagePayload(int tab, int page, int pageCount, int total, L
 
     private static final StreamCodec<ByteBuf, String> TEXT = ByteBufCodecs.stringUtf8(MAX_TITLE * 4);
     private static final StreamCodec<ByteBuf, String> WORD = ByteBufCodecs.stringUtf8(64);
+    private static final StreamCodec<ByteBuf, String> CHIPS = ByteBufCodecs.stringUtf8(MAX_SLOT_CHIPS);
 
     private static void write(ByteBuf buf, ExchangePagePayload p) {
         buf.writeByte(p.tab);
@@ -121,6 +140,9 @@ public record ExchangePagePayload(int tab, int page, int pageCount, int total, L
             ByteBufCodecs.VAR_INT.encode(buf, r.hearts());
             for (int c : r.slotColours()) {
                 buf.writeMedium(c & 0xFFFFFF);
+            }
+            for (String chips : r.slotChips()) {
+                CHIPS.encode(buf, chips);
             }
             buf.writeByte(r.flags());
             ByteBufCodecs.VAR_INT.encode(buf, r.ageDays());
@@ -158,9 +180,13 @@ public record ExchangePagePayload(int tab, int page, int pageCount, int total, L
             for (int s = 0; s < SLOTS; s++) {
                 colours[s] = buf.readUnsignedMedium();
             }
+            List<String> chips = new ArrayList<>(SLOTS);
+            for (int s = 0; s < SLOTS; s++) {
+                chips.add(CHIPS.decode(buf));
+            }
             int flags = buf.readUnsignedByte();
             int age = ByteBufCodecs.VAR_INT.decode(buf);
-            rows.add(new Row(id, title, credit, tags, plays, hearts, colours, flags, age));
+            rows.add(new Row(id, title, credit, tags, plays, hearts, colours, chips, flags, age));
         }
         int flags = buf.readUnsignedByte();
         String statusKey = WORD.decode(buf);

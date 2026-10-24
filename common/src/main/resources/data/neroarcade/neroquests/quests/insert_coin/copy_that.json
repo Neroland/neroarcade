@@ -1,0 +1,22 @@
+{
+  "title": "quest.neroarcade.insert_coin.copy_that.title",
+  "description": "quest.neroarcade.insert_coin.copy_that.desc",
+  "icon": "neroarcade:cartridge_duplicator",
+  "prerequisites": [
+    "neroarcade:insert_coin/first_cartridge"
+  ],
+  "objectives": [
+    {
+      "type": "neroquests:craft_item",
+      "item": "neroarcade:cartridge_duplicator",
+      "count": 1
+    }
+  ],
+  "rewards": [
+    {
+      "type": "neroquests:xp",
+      "amount": 60
+    }
+  ],
+  "scope": "player"
+}

@@ -80,7 +80,7 @@ class SavePlanTest {
         assertEquals(MINTED, def.id(), "never a second cartridge with the same id");
         assertEquals(1, def.revision());
         assertEquals(List.of(ORIGINAL), def.lineage());
-        assertEquals(ORIGINAL, def.lineageRoot(), "same lineage root: same leaderboard, distinct id");
+        assertEquals(ORIGINAL, def.lineageRoot(), "same lineage root, distinct id: a fresh leaderboard (boards are per id)");
         assertEquals(Optional.of(ALICE), def.authorUuid());
         CartridgeValidator.validate(def);
     }

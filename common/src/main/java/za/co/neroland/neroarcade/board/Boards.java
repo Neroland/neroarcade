@@ -37,14 +37,18 @@ public final class Boards {
 
         @Override
         public void erase(MinecraftServer server, UUID player) {
-            if (server != null) {
-                LeaderboardStore.get(server).erase(player);
+            LeaderboardStore store = LeaderboardStore.ACCESS.resolve(server);
+            if (store != null) {
+                store.erase(player);
             }
         }
 
         @Override
         public void backupNow(MinecraftServer server) {
-            LeaderboardStore.get(server).backup(server);
+            LeaderboardStore store = LeaderboardStore.ACCESS.resolve(server);
+            if (store != null) {
+                store.backup(server);
+            }
         }
     };
 
@@ -57,14 +61,18 @@ public final class Boards {
 
         @Override
         public void erase(MinecraftServer server, UUID player) {
-            if (server != null) {
-                CreditOptIn.get(server).erase(player);
+            CreditOptIn store = CreditOptIn.ACCESS.resolve(server);
+            if (store != null) {
+                store.erase(player);
             }
         }
 
         @Override
         public void backupNow(MinecraftServer server) {
-            CreditOptIn.get(server).backup(server);
+            CreditOptIn store = CreditOptIn.ACCESS.resolve(server);
+            if (store != null) {
+                store.backup(server);
+            }
         }
     };
 
@@ -139,7 +147,7 @@ public final class Boards {
      * A board as the client may see it: ranks, scores and opted-in names only (empty = "Anonymous"), plus the
      * viewer's own personal best. Pure.
      */
-    public static BoardPagePayload page(String lineageRoot, Optional<LeaderboardTable.Board> board, UUID viewer,
+    public static BoardPagePayload page(String cartridgeId, Optional<LeaderboardTable.Board> board, UUID viewer,
             int rows) {
         List<BoardPagePayload.Row> out = new ArrayList<>();
         int myBest = -1;
@@ -159,6 +167,6 @@ public final class Boards {
                 myBest = board.get().personalBest().getOrDefault(viewer, -1);
             }
         }
-        return new BoardPagePayload(lineageRoot, out, myBest);
+        return new BoardPagePayload(cartridgeId, out, myBest);
     }
 }

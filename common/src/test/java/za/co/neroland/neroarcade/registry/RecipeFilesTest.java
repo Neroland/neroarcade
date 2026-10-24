@@ -72,6 +72,13 @@ class RecipeFilesTest {
         assertTrue(files.size() >= 30, "found " + files.size());
         Set<String> problems = new TreeSet<>();
         for (Path file : files) {
+            String where = file.toString().replace('\\', '/');
+            if (where.contains("/neroquests/") || where.contains("/neroland_gates/")) {
+                continue; // quest, gate and channel ids, checked by progression.QuestPackTest
+            }
+            if (where.contains("/arcade_replays/") || where.contains("/advancement/recipes/")) {
+                continue; // cartridges (ShippedReplaysTest) and recipe unlocks (HighlightAndUnlockTest)
+            }
             JsonElement json = JsonParser.parseString(TestFiles.read(file));
             walk(json, null, file.getFileName().toString(), problems);
         }

@@ -1,0 +1,33 @@
+{
+  "replace": false,
+  "values": [
+    {
+      "id": "neroarcade:arcade_cabinet",
+      "required": false
+    },
+    {
+      "id": "neroarcade:game_bench",
+      "required": false
+    },
+    {
+      "id": "neroarcade:cartridge_duplicator",
+      "required": false
+    },
+    {
+      "id": "neroarcade:arcade_exchange",
+      "required": false
+    },
+    {
+      "id": "neroarcade:marquee_screen",
+      "required": false
+    },
+    {
+      "id": "neroarcade:link_bus",
+      "required": false
+    },
+    {
+      "id": "neroarcade:link_cable",
+      "required": false
+    }
+  ]
+}

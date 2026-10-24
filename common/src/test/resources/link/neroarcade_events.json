@@ -1,0 +1,57 @@
+{
+  "ok": true,
+  "data": {
+    "asOf": 1792000000000,
+    "events": [
+      {
+        "topic": "events",
+        "at": 1791999900000,
+        "payload": {
+          "type": "MATCH_RESULT",
+          "at": 1791999900000,
+          "lineageRoot": "k7m2p9qa3f8d1z6b",
+          "title": "Neon Dodge",
+          "label": "Overworld · Linked hall (3 cabinets)",
+          "score": 8650,
+          "rank": 2,
+          "seats": 3,
+          "outcome": "FINISHED",
+          "newBest": false,
+          "enteredTop": false
+        }
+      },
+      {
+        "topic": "events",
+        "at": 1791999000000,
+        "payload": {
+          "type": "RECORD_BEATEN",
+          "at": 1791999000000,
+          "lineageRoot": "k7m2p9qa3f8d1z6b",
+          "title": "Neon Dodge",
+          "newRank": 7,
+          "_notify": {
+            "title": "Record beaten",
+            "body": "Your record on Neon Dodge was beaten — now #7",
+            "deepLink": "nerolink://server/{server}/arcade/k7m2p9qa3f8d1z6b"
+          }
+        }
+      },
+      {
+        "topic": "events",
+        "at": 1791990000000,
+        "payload": {
+          "type": "CARTRIDGE_DOWNLOADED",
+          "at": 1791990000000,
+          "lineageRoot": "k7m2p9qa3f8d1z6b",
+          "title": "Neon Dodge",
+          "count": 4,
+          "_notify": {
+            "title": "Cartridge downloaded",
+            "body": "Neon Dodge was downloaded 4 times today",
+            "deepLink": "nerolink://server/{server}/arcade/k7m2p9qa3f8d1z6b"
+          }
+        }
+      }
+    ]
+  }
+}

@@ -20,6 +20,14 @@ public final class ArcadeColours {
     public static final int DENY = 0xFF5C5C;
     public static final int OK = 0x58E07A;
 
+    // --- glow value steps (004 A6): one lighter step on emissive layers, one darker non-emissive cyan ---
+    /** Neon hot: marquee shimmer hot pixel, neon strip centre line, exchange header. */
+    public static final int NEON_HOT = 0xFF78C4;
+    /** Cyan hot: the link cable's pulse hot pixel. */
+    public static final int CYAN_HOT = 0xC8FAFF;
+    /** Cyan dim (not emissive): the cable sheath's static stripe, the duplicator platter ticks. */
+    public static final int CYAN_DIM = 0x18A0BE;
+
     /** Packed light for emissive BER quads (sky 15, block 15). */
     public static final int FULL_BRIGHT = 0x00F000F0;
 

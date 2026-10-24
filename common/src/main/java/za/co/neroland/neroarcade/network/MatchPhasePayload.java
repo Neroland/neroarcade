@@ -23,7 +23,8 @@ import za.co.neroland.neroarcade.runtime.Budgets;
  * @param ranks            per seat, 1-based (RESULTS only; zeros otherwise)
  * @param scores           per seat (RESULTS only; zeros otherwise)
  * @param newBestMask      bit s = seat s set a personal best (RESULTS only)
- * @param ticksLeftInPhase COUNTDOWN ticks left, RESULTS ticks left, else 0
+ * @param ticksLeftInPhase COUNTDOWN ticks left, RESULTS ticks left, LOBBY ticks until a short-handed start (0 when
+ *                         the lobby is not waiting), else 0
  * @param paused           PLAYING but frozen for lack of power
  * @param outcome          {@code MatchResult.Outcome} ordinal in RESULTS, -1 otherwise
  * @param seatAt           the block the recipient sits at (a bus node or the host) — where its input and leave
@@ -56,6 +57,15 @@ public record MatchPhasePayload(BlockPos host, int matchId, BusPhase phase, int 
     @Override
     public int[] scores() {
         return scores.clone();
+    }
+
+    /**
+     * "You are no longer seated at {@code host}'s match": IDLE, {@code mySeat = -1}. Sent by a cabinet that drops a
+     * seat when its host is already gone (unloaded, dissolved) and so cannot send the phase itself (review 003b F8).
+     */
+    public static MatchPhasePayload released(BlockPos host) {
+        return new MatchPhasePayload(host, 0, BusPhase.IDLE, 1, 0, 0, -1, new int[0], new int[0], 0, 0, false, -1,
+                host);
     }
 
     /** The same packet addressed to another recipient (seated at the host, or a spectator). */

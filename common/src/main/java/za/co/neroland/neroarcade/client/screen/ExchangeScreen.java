@@ -7,6 +7,7 @@ import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
 import net.minecraft.client.input.MouseButtonEvent;
 import net.minecraft.network.chat.Component;
+import net.minecraft.network.chat.MutableComponent;
 import net.minecraft.util.FormattedCharSequence;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.inventory.Slot;
@@ -16,7 +17,9 @@ import org.jetbrains.annotations.Nullable;
 
 import za.co.neroland.neroarcade.client.ArcadeColours;
 import za.co.neroland.neroarcade.client.exchange.ClientExchange;
+import za.co.neroland.neroarcade.client.exchange.ExchangeSlotTips;
 import za.co.neroland.neroarcade.client.widget.ArcadeButton;
+import za.co.neroland.neroarcade.client.widget.SlotGlyph;
 import za.co.neroland.neroarcade.exchange.ExchangeMenu;
 import za.co.neroland.neroarcade.exchange.GenreTags;
 import za.co.neroland.neroarcade.module.ArcadeModule;
@@ -61,7 +64,6 @@ public class ExchangeScreen extends AbstractContainerScreen<ExchangeMenu> {
     private static final int PANE_L = 212;
     private static final int PANE_R = 316;
     private static final int TROUGH_T = 222;
-    private static final int TOOLTIP_WIDTH = 200;
 
     private final List<ArcadeButton> buttons = new ArrayList<>();
     private @Nullable ArcadeButton gamesTab;
@@ -202,7 +204,7 @@ public class ExchangeScreen extends AbstractContainerScreen<ExchangeMenu> {
                 ? Component.translatable("neroarcade.exchange.deny.need_blank") : null);
         set(heart, !enabled ? off : row == null ? noRow
                 : row.has(ExchangePagePayload.ROW_HEARTED) ? Component.translatable("neroarcade.exchange.deny.already_hearted")
-                : row.has(ExchangePagePayload.ROW_MINE) && !p.moderator()
+                : row.has(ExchangePagePayload.ROW_MINE) && p != null && !p.moderator()
                         ? Component.translatable("neroarcade.exchange.deny.own_heart") : null);
         set(unpublish, !enabled ? off : row == null ? noRow : !row.has(ExchangePagePayload.ROW_MINE)
                 ? Component.translatable("neroarcade.exchange.deny.unpublish_not_yours") : null);
@@ -280,7 +282,7 @@ public class ExchangeScreen extends AbstractContainerScreen<ExchangeMenu> {
         section(g, x + LIST_L, y + LIST_T - 2, x + LIST_R, y + LIST_B, Component.translatable(drafts()
                 ? "neroarcade.exchange.tab.drafts" : "neroarcade.exchange.tab.games"));
         drawRows(g, p, mouseX, mouseY);
-        drawPane(g, p);
+        drawPane(g, p, mouseX, mouseY);
         if (p != null) {
             g.centeredText(font, Component.translatable("neroarcade.exchange.page", p.page() + 1, p.pageCount()),
                     x + (LIST_L + LIST_R) / 2, y + LIST_B + 7, ArcadeColours.SUBTLE);
@@ -343,9 +345,13 @@ public class ExchangeScreen extends AbstractContainerScreen<ExchangeMenu> {
             fitted(g, Component.literal(row.title()), x + LIST_L + 9, ry + (h - 8) / 2, LIST_R - LIST_L - 17 - rw,
                     titleColour);
         }
+        // an unreadable row says why before Download is pressed
+        if (hover >= 0 && p.rows().get(hover).has(ExchangePagePayload.ROW_UNREADABLE)) {
+            tooltip(g, List.of(Component.translatable("neroarcade.exchange.deny.unreadable")), mouseX, mouseY);
+        }
     }
 
-    private void drawPane(GuiGraphicsExtractor g, @Nullable ExchangePagePayload p) {
+    private void drawPane(GuiGraphicsExtractor g, @Nullable ExchangePagePayload p, int mouseX, int mouseY) {
         int x = leftPos;
         int y = topPos;
         ExchangePagePayload.Row row = selectedRow();
@@ -380,17 +386,66 @@ public class ExchangeScreen extends AbstractContainerScreen<ExchangeMenu> {
             tx += tw + 2;
         }
         py += 13;
-        // the ten slots, 5x2, in slot colours (grey = empty, uses the default)
-        int[] colours = row.slotColours();
-        for (int i = 0; i < colours.length; i++) {
-            int sx = px + (i % 5) * 10;
-            int sy = py + (i / 5) * 10;
-            g.fill(sx, sy, sx + 8, sy + 8, ArcadeColours.opaque(colours[i]));
+        // the ten slots, 5x2: a dark 10x10 cell with the slot's glyph in its colour (grey = empty, uses the
+        // default); hovering a cell names the slot and its chips — never colour alone (004 §2, §8)
+        ModuleType[] types = ModuleType.values();
+        int hovered = -1;
+        for (int i = 0; i < ExchangePagePayload.SLOTS && i < types.length; i++) {
+            int sx = px + (i % 5) * SLOT_STEP;
+            int sy = py + (i / 5) * SLOT_STEP;
+            g.fill(sx, sy, sx + SLOT_CELL, sy + SLOT_CELL, ArcadeColours.SLOT_FRAME);
+            int glyph = ExchangeSlotTips.filled(row, i) ? ArcadeColours.opaque(types[i].colour)
+                    : ArcadeColours.opaque(ArcadeColours.TRIM);
+            SlotGlyph.draw(g, sx + (SLOT_CELL - SlotGlyph.CELLS) / 2, sy + (SLOT_CELL - SlotGlyph.CELLS) / 2,
+                    types[i], glyph, 1);
+            if (mouseX >= sx && mouseX < sx + SLOT_CELL && mouseY >= sy && mouseY < sy + SLOT_CELL) {
+                hovered = i;
+            }
         }
-        if (!drafts()) {
-            g.text(font, Component.translatable("neroarcade.exchange.row.counts", row.hearts(), row.plays()),
-                    px + 54, py + 5, ArcadeColours.SUBTLE, false);
+        // hearts and plays under the grid, unless two lines of genre words pushed it into the buttons
+        int countsY = py + 26;
+        if (!drafts() && countsY + 9 <= y + COUNTS_LIMIT) {
+            fitted(g, Component.translatable("neroarcade.exchange.row.counts", row.hearts(), row.plays()), px,
+                    countsY, pw, ArcadeColours.SUBTLE);
         }
+        if (hovered >= 0) {
+            tooltip(g, slotTooltip(row, hovered), mouseX, mouseY);
+        }
+    }
+
+    /** A hover tooltip, each line wrapped at {@link #TOOLTIP_WIDTH} (styles kept). */
+    private void tooltip(GuiGraphicsExtractor g, List<Component> lines, int mx, int my) {
+        List<FormattedCharSequence> out = new ArrayList<>();
+        for (Component line : lines) {
+            out.addAll(font.split(line, TOOLTIP_WIDTH));
+        }
+        g.setTooltipForNextFrame(font, out, mx, my);
+    }
+
+    private static final int TOOLTIP_WIDTH = 200;
+
+    /** A slot cell's 10x10 size and its grid step. */
+    private static final int SLOT_CELL = 10;
+    private static final int SLOT_STEP = 12;
+    /** The pane's buttons start at y 112; the counts line must end above them. */
+    private static final int COUNTS_LIMIT = 111;
+
+    /** Line 1 the slot word in its colour; line 2 its chips' names, or "Empty — the game uses the default". */
+    private static List<Component> slotTooltip(ExchangePagePayload.Row row, int index) {
+        ModuleType type = ModuleType.values()[index];
+        List<Component> lines = new ArrayList<>(2);
+        lines.add(Component.translatable(ExchangeSlotTips.slotKey(index)).withColor(type.colour));
+        boolean empty = row.chipsIn(index).isEmpty();
+        MutableComponent names = Component.empty();
+        List<String> keys = ExchangeSlotTips.chipKeys(row, index);
+        for (int i = 0; i < keys.size(); i++) {
+            if (i > 0) {
+                names.append(Component.literal(" + "));
+            }
+            names.append(Component.translatable(keys.get(i)));
+        }
+        lines.add(names.withColor(empty ? ArcadeColours.TEXT_SUBTLE : ArcadeColours.TEXT_LIGHT));
+        return lines;
     }
 
     /** A tag word's colour: the slot of the chip that carries it (looked up in the chip registry), else grey. */
@@ -463,10 +518,5 @@ public class ExchangeScreen extends AbstractContainerScreen<ExchangeMenu> {
         for (int i = 0; i < lines.size() && i < maxLines; i++) {
             g.text(font, lines.get(i), x, y + i * 10, colour, false);
         }
-    }
-
-    /** Unused hook kept for parity with the bench's tooltip width. */
-    static int tooltipWidth() {
-        return TOOLTIP_WIDTH;
     }
 }

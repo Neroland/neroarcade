@@ -1,0 +1,25 @@
+{
+  "title": "quest.neroarcade.insert_coin.first_cartridge.title",
+  "description": "quest.neroarcade.insert_coin.first_cartridge.desc",
+  "icon": "neroarcade:cartridge",
+  "prerequisites": [
+    "neroarcade:insert_coin/workbench"
+  ],
+  "objectives": [
+    {
+      "type": "neroquests:gate_open",
+      "gate": "neroarcade:first_cartridge"
+    }
+  ],
+  "rewards": [
+    {
+      "type": "neroquests:xp",
+      "amount": 60
+    },
+    {
+      "type": "neroquests:mod_hook",
+      "gate": "neroarcade:hook/blank_cartridges"
+    }
+  ],
+  "scope": "player"
+}

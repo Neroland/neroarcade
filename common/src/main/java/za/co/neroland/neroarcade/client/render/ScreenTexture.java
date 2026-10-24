@@ -55,6 +55,7 @@ public final class ScreenTexture {
         }
         current.upload();
         uploads++;
+        ArcadeBerStats.upload();
         lastChecksum = checksum;
         lastTheme = theme;
         lastScanlines = scanlines;

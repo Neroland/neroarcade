@@ -149,8 +149,11 @@ class BudgetTest {
         assertEquals(100, NeroArcadeConfig.SLEEP_AFTER_TICKS.defaultValue());
         assertEquals(32, NeroArcadeConfig.SCREEN_RENDER_RANGE.defaultValue());
         assertEquals(600, NeroArcadeConfig.MAX_MATCH_SECONDS.defaultValue());
-        assertEquals(false, NeroArcadeConfig.CABINETS_NEED_POWER.defaultValue());
-        assertEquals(2, NeroArcadeConfig.CABINET_POWER_PER_TICK.defaultValue());
+        // final review M2: 0.1.0 has no energy input, so no key may switch the NO POWER state on
+        for (var value : NeroArcadeConfig.SCHEMA.values()) {
+            assertTrue(!value.key().equals("cabinetsNeedPower") && !value.key().equals("cabinetPowerPerTick"),
+                    value.key());
+        }
         for (var value : NeroArcadeConfig.SCHEMA.values()) {
             if (value.key().equals("telemetryEnabled") || value.key().startsWith("client.")) {
                 // this computer's choice only: never forced by a server (privacy opt-out, screen look)

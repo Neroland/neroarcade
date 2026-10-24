@@ -75,7 +75,8 @@ public final class ArcadeHud {
         }
         switch (phase.phase()) {
             case COUNTDOWN -> drawCountdown(g, font, phase.ticksLeftInPhase(), width, height);
-            case LOBBY -> drawLobby(g, font, phase, width, height);
+            case LOBBY -> drawLobby(g, font, phase, lobbyStartsInSeconds(phase.ticksLeftInPhase(),
+                    now - match.phaseArrival()), width, height);
             case RESULTS -> drawResults(g, font, phase, match.mySeat(), width, height);
             case PLAYING -> {
                 if (phase.paused()) {
@@ -273,13 +274,28 @@ public final class ArcadeHud {
         g.fill(x + 1, y + 1, x + w - 1, y + h - 1, ArcadeColours.PANEL);
     }
 
-    private static void drawLobby(GuiGraphicsExtractor g, Font font, MatchPhasePayload phase, int width, int height) {
+    /**
+     * Whole seconds until a short-handed lobby starts (rounded up, at least 1), or 0 when it is not waiting.
+     * {@code ticksLeft} is the phase packet's value; {@code elapsed} the client ticks since it arrived. Pure.
+     */
+    public static int lobbyStartsInSeconds(int ticksLeft, long elapsed) {
+        if (ticksLeft <= 0) {
+            return 0;
+        }
+        long left = Math.max(0L, ticksLeft - Math.max(0L, elapsed));
+        return (int) Math.max(1L, (left + 19) / 20);
+    }
+
+    private static void drawLobby(GuiGraphicsExtractor g, Font font, MatchPhasePayload phase, int startsIn, int width,
+            int height) {
         int x = (width - PANEL_W) / 2;
         int y = height / 2 - PANEL_H - 10;
         panel(g, x, y, PANEL_W, PANEL_H);
         int seated = Integer.bitCount(phase.boundMask());
-        g.centeredText(font, Component.translatable("neroarcade.hud.waiting", seated, phase.seatCount()), width / 2,
-                y + 6, ArcadeColours.TITLE);
+        // 005a P5: a lone seat back in the lobby after a results timeout is asked, not told to wait
+        Component lobbyTitle = phase.seatCount() == 1 ? Component.translatable("neroarcade.hud.again")
+                : Component.translatable("neroarcade.hud.waiting", seated, phase.seatCount());
+        g.centeredText(font, lobbyTitle, width / 2, y + 6, ArcadeColours.TITLE);
         for (int s = 0; s < phase.seatCount() && s < 4; s++) {
             int ry = y + 20 + s * 11;
             boolean bound = (phase.boundMask() & (1 << s)) != 0;
@@ -296,6 +312,11 @@ public final class ArcadeHud {
         g.centeredText(font, Component.translatable("neroarcade.hud.press_start",
                 ArcadeKeys.BUTTON_A.getTranslatedKeyMessage()), width / 2, y + PANEL_H - 12,
                 ArcadeColours.SUBTLE);
+        if (startsIn > 0) {
+            // final review M1: fewer players than seats, everyone present ready — the game starts without the rest
+            g.centeredText(font, Component.translatable("neroarcade.hud.starting_in", startsIn), width / 2,
+                    y + PANEL_H + 4, ArcadeColours.OK_TEXT);
+        }
     }
 
     private static void drawResults(GuiGraphicsExtractor g, Font font, MatchPhasePayload phase, int mySeat, int width,

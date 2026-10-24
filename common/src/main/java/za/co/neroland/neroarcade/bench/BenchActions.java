@@ -67,8 +67,8 @@ public final class BenchActions {
         }
     }
 
-    /** Fixed one-second window per player; true while under {@link #EDITS_PER_SECOND}. */
-    static boolean withinRate(UUID player, long gameTime) {
+    /** Fixed one-second window per player; true while under {@link #EDITS_PER_SECOND}. Public for the erasure test. */
+    public static boolean withinRate(UUID player, long gameTime) {
         long[] window = WINDOWS.computeIfAbsent(player, p -> new long[] {gameTime, 0});
         if (gameTime - window[0] >= 20 || gameTime < window[0]) {
             window[0] = gameTime;
@@ -81,9 +81,14 @@ public final class BenchActions {
         return true;
     }
 
-    /** Forgets a player's rate window (logout). */
+    /** Forgets a player's rate window (logout, erasure). */
     public static void forget(UUID player) {
         WINDOWS.remove(player);
+    }
+
+    /** Erasure-conformance probe: is a rate window held for {@code player}? */
+    public static boolean holdsWindow(UUID player) {
+        return WINDOWS.containsKey(player);
     }
 
     public static void clear() {

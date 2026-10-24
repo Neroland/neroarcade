@@ -1,5 +1,6 @@
 package za.co.neroland.neroarcade.server;
 
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -13,6 +14,8 @@ import za.co.neroland.neroarcade.cabinet.AwakeCabinets;
 import za.co.neroland.neroarcade.cabinet.DropReason;
 import za.co.neroland.neroarcade.cabinet.SeatHolder;
 import za.co.neroland.neroarcade.cabinet.SeatRegistry;
+import za.co.neroland.neroarcade.data.NeroArcadeData;
+import za.co.neroland.neroarcade.exchange.ExchangeActions;
 
 /**
  * Server-side wiring of the runtime-only registries: a player's seat is released when they log out, and every
@@ -20,10 +23,47 @@ import za.co.neroland.neroarcade.cabinet.SeatRegistry;
  */
 public final class ArcadeServer {
 
+    /**
+     * Erasure, seats (review 003b P1, compliance review F1): an erased player who is seated is unseated (ERASED),
+     * and the running match forgets their identity, so it can never write them back onto a board or raise a link
+     * event for them. A cabinet in an unloaded chunk is skipped by {@link #unseat}: it has already dropped the seat
+     * when it fell asleep (SLEEP), so only the registry needs to forget the player (F6). The Exchange's and the
+     * Game Bench's per-player rate windows are forgotten. Seats and windows are memory only, so there is no backup
+     * to refresh. Conformance probes:
+     * {@code SeatRegistry.SERVER.isSeated}, {@code ExchangeActions.holdsWindow}, {@code BenchActions.holdsWindow}.
+     */
+    public static final NeroArcadeData.StoreEraser SEATS_ERASER = new NeroArcadeData.StoreEraser() {
+        @Override
+        public String name() {
+            return "seats";
+        }
+
+        @Override
+        public void erase(MinecraftServer server, UUID player) {
+            if (server != null) {
+                unseat(server, player, DropReason.ERASED);
+            }
+            SeatRegistry.SERVER.forget(player);
+            ExchangeActions.forget(player);
+            BenchActions.forget(player);
+        }
+
+        @Override
+        public void backupNow(MinecraftServer server) {
+            // memory only: nothing at rest
+        }
+    };
+
     private ArcadeServer() {
     }
 
+    /** The stores this class registers for erasure (conformance tests). */
+    public static List<NeroArcadeData.StoreEraser> erasers() {
+        return List.of(SEATS_ERASER);
+    }
+
     public static void init() {
+        NeroArcadeData.addStore(SEATS_ERASER);
         ServerHooks.onPlayerLeave(player -> {
             unseat(player.level().getServer(), player.getUUID(), DropReason.LOGOUT);
             BenchActions.forget(player.getUUID());

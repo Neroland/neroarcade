@@ -8,9 +8,10 @@ import za.co.neroland.neroarcade.item.CartridgeTint;
 /**
  * What a client knows about a cabinet's cartridge, from the block entity's update tag — and nothing more: the
  * title for the attract card, the theme tint, whether this server can run it (and if not, the validator's code
- * for the "UNREADABLE HERE" screen), and the game definition <b>without its author UUID</b> so the screen can draw
- * the right sprites and the seated player's pawn can be predicted. The author's opted-in credit string, if any,
- * is the only builder attribution that leaves the server.
+ * for the "UNREADABLE HERE" screen), and the game definition <b>without its author UUID and without its credit</b>
+ * so the screen can draw the right sprites and the seated player's pawn can be predicted. The update tag reaches
+ * every client in range and no client draws a credit there, so none is sent (compliance review F3); the credit is
+ * shown only on the item tooltip, the bench screen, the Exchange page and {@code /neroarcade cartridge inspect}.
  *
  * @param errorCode a {@code ValidationError.Code} name, or "" when readable / no cartridge
  */
@@ -32,12 +33,12 @@ public record CabinetClientInfo(boolean hasCartridge, String title, int tint, bo
         def = def == null ? Optional.empty() : def.map(CabinetClientInfo::anonymous);
     }
 
-    /** The definition with the author UUID removed (credit and everything the screen needs kept). */
+    /** The definition with the author UUID and the credit removed (everything the screen needs kept). */
     public static GameDef anonymous(GameDef def) {
-        if (def.authorUuid().isEmpty()) {
+        if (def.authorUuid().isEmpty() && def.authorCredit().isEmpty()) {
             return def;
         }
-        return new GameDef(def.schemaVersion(), def.id(), def.title(), Optional.empty(), def.authorCredit(),
+        return new GameDef(def.schemaVersion(), def.id(), def.title(), Optional.empty(), Optional.empty(),
                 def.lineage(), def.seed(), def.slots(), def.createdAt(), def.revision());
     }
 }

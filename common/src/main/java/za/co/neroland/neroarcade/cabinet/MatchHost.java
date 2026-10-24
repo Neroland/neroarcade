@@ -32,8 +32,14 @@ import za.co.neroland.neroarcade.runtime.net.SnapshotPayload;
  * <p>Owns the {@link ArcadeRuntime}, the seat table (index = bus seat = the cabinet's index on the bus) and the
  * phase machine {@code IDLE → LOBBY → COUNTDOWN → PLAYING → RESULTS → (LOBBY | IDLE)}. On a one-seat bus the use
  * that binds the seat <i>is</i> the start; with more seats every bound seat presses READY (START) and the match
- * counts down once the MULTIPLAYER chip's minimum is bound and ready. A {@code versus}-style chip that can field a
- * runtime opponent starts with one ready human after {@link #OPPONENT_WAIT_TICKS} in the lobby.
+ * counts down once the MULTIPLAYER chip's minimum is bound and ready. When fewer seats than that minimum are bound
+ * and every bound seat is ready, the lobby waits {@link #LOBBY_WAIT_TICKS} and then starts with the seats present
+ * (one human on a {@code versus}-style chip gets the runtime opponent; one human on a co-op chip plays solo).
+ *
+ * <p><b>Runtime faults.</b> A module hook that throws while the match starts or steps never leaves this class: the
+ * match ends {@code ABANDONED} with no board write, the seated players get a plain message, the log line names only
+ * the exception class and the chip ids, and the runtime is discarded so nothing steps it again. A new match needs a
+ * fresh START press (final review H1).
  *
  * <p><b>Runtime seats.</b> At COUNTDOWN the bound bus seats are packed in ascending order into runtime seats
  * 0..n-1 (two players at cabinets 0 and 2 play as P1 and P2). Phase packets carry the recipient's runtime seat from
@@ -49,15 +55,21 @@ public final class MatchHost {
 
     /** How long the results strip stays up (003 §4). */
     public static final int RESULTS_TICKS = 200;
-    /** A lobby with one ready human and a free cabinet waits this long for a second human (003 §4). */
-    public static final int OPPONENT_WAIT_TICKS = 200;
+    /**
+     * A lobby whose bound seats are all ready but fewer than {@link #minimumSeats()} waits this long for more
+     * players, then starts with the seats present (003 §4, final review M1).
+     */
+    public static final int LOBBY_WAIT_TICKS = 200;
+    /** The original name of {@link #LOBBY_WAIT_TICKS} (one human waiting for an opponent); same value. */
+    public static final int OPPONENT_WAIT_TICKS = LOBBY_WAIT_TICKS;
+    /** What a seated player reads when the runtime faults (final review H1). */
+    public static final String RUNTIME_FAILED_KEY = "neroarcade.cabinet.msg.runtime_failed";
 
     private final HostEnv env;
     private final BlockPos hostPos;
     private final ResolvedGame game;
     private final BoardWriter writer;
     private final boolean hotSeat;
-    private final boolean runtimeOpponent;
     private final Seat[] seats = new Seat[Budgets.MAX_SEATS];
     private final int[] lastButtons = new int[Budgets.MAX_SEATS];
     /** Who played each runtime seat this match (null: nobody, the opponent, or a hot-seat match). */
@@ -66,14 +78,24 @@ public final class MatchHost {
     private final int[] busToRuntime = new int[Budgets.MAX_SEATS];
     private int[] runtimeToBus = new int[0];
 
+    /** A newcomer forces a keyframe at most this often (review 003b L1); 002 §8 still keyframes every keyframeTicks. */
+    static final int KEYFRAME_MIN_GAP = 10;
+
     private int seatCount;
     private int pendingSeatCount = -1;
+    /** Cabinets on the bus that can seat a player (indexes are sticky, so this can be below {@link #seatCount}). */
+    private int presentSeats = Budgets.MAX_SEATS;
+    private int pendingPresent = -1;
+    private int lastKeyframeReset = Integer.MIN_VALUE / 2;
+    private int unpoweredTicks;
+    private boolean keyframeOwed;
     private BusPhase phase = BusPhase.IDLE;
     private int matchId;
     private @Nullable ArcadeRuntime runtime;
     private long seed;
     private int phaseTicks;
     private int lobbyWait;
+    private int faults;
     private boolean finished;
     private boolean paused;
     private int newBestMask;
@@ -95,7 +117,6 @@ public final class MatchHost {
         this.game = game;
         this.writer = writer == null ? BoardWriter.NONE : writer;
         this.hotSeat = HotSeat.is(game);
-        this.runtimeOpponent = game.multiplayer().runtimeOpponent(game.multiplayerProps());
         this.seatCount = clampSeats(busSeats);
         Arrays.fill(busToRuntime, -1);
     }
@@ -189,7 +210,7 @@ public final class MatchHost {
 
     /** Seats needed to leave LOBBY: the MULTIPLAYER chip's seat count, capped by the bus (hot-seat: 1). */
     public int minimumSeats() {
-        return hotSeat ? 1 : Math.max(1, Math.min(game.seats(), seatCount));
+        return hotSeat ? 1 : Math.max(1, Math.min(game.seats(), Math.min(seatCount, presentSeats)));
     }
 
     // --- bus size -------------------------------------------------------------------------------
@@ -199,27 +220,52 @@ public final class MatchHost {
      * unbound), otherwise when the match ends.
      */
     public void setBusSeats(int busSeats) {
+        setBusSeats(busSeats, Budgets.MAX_SEATS);
+    }
+
+    /**
+     * @param busSeats seat slots (the highest bus seat index + 1, capped by the game)
+     * @param present  cabinets that can actually seat a player; caps {@link #minimumSeats()} when a seated node
+     *                 keeps its index above a gap (review 003b F1)
+     */
+    public void setBusSeats(int busSeats, int present) {
         int n = clampSeats(busSeats);
+        int p = Math.max(1, present);
         if (phase.running()) {
             pendingSeatCount = n;
+            pendingPresent = p;
             return;
         }
+        presentSeats = p;
         applySeatCount(n);
     }
 
+    /**
+     * Seats beyond the new count are unbound here, and the holder they sit at is told through
+     * {@link HostEnv#unseat} so its seat field and registry claim go too (review 003b F7).
+     */
     private void applySeatCount(int n) {
         pendingSeatCount = -1;
+        if (pendingPresent > 0) {
+            presentSeats = pendingPresent;
+            pendingPresent = -1;
+        }
         if (n == seatCount) {
             return;
         }
+        List<Seat> leavers = new ArrayList<>();
         for (int s = n; s < seatCount; s++) {
             if (seats[s] != null) {
-                Seat leaving = seats[s];
+                leavers.add(seats[s]);
                 seats[s] = null;
-                env.send(leaving.playerUuid, phasePayload().forSeat(-1, hostPos));
             }
         }
         seatCount = n;
+        for (Seat leaving : leavers) {
+            env.send(leaving.playerUuid, phasePayload().forSeat(-1, hostPos));
+            // the seat is already gone here, so the holder's own unbind is a no-op
+            env.unseat(leaving.at == null ? hostPos : leaving.at, DropReason.HOST_GONE);
+        }
         if (phase == BusPhase.LOBBY && !hasSeat()) {
             phase = BusPhase.IDLE;
         }
@@ -280,6 +326,7 @@ public final class MatchHost {
             }
             case COUNTDOWN -> {
                 if (!hotSeat) {
+                    forgetMatchSeat(index, why);
                     dropRuntimeSeat(index);
                     if (boundCount() < minimumSeats()) {
                         abortToLobby();
@@ -289,6 +336,7 @@ public final class MatchHost {
             case PLAYING -> {
                 if (!hotSeat) {
                     // the walk-out: the rule decides the game consequence; no human left = ABANDONED
+                    forgetMatchSeat(index, why);
                     dropRuntimeSeat(index);
                     if (!hasSeat()) {
                         end(MatchResult.Outcome.ABANDONED);
@@ -301,6 +349,22 @@ public final class MatchHost {
             }
         }
         broadcastPhase();
+    }
+
+    /**
+     * An erased (or operator-kicked) player leaves no trace on the match result (compliance review F1): their
+     * identity is forgotten before the seat drops, so {@link #toBusResult} skips them and neither the board nor a
+     * link event ever sees the UUID. Walk-outs ({@code ESC}, {@code RANGE}, {@code LOGOUT}, ...) keep 003 §4.4's
+     * "best but no top row".
+     */
+    private void forgetMatchSeat(int busSeat, DropReason why) {
+        if (why != DropReason.ERASED && why != DropReason.ADMIN) {
+            return;
+        }
+        int r = runtimeSeatOf(busSeat);
+        if (r >= 0 && r < matchSeats.length) {
+            matchSeats[r] = null;
+        }
     }
 
     private void dropRuntimeSeat(int busSeat) {
@@ -364,7 +428,7 @@ public final class MatchHost {
         ticks++;
         startEdges();
         switch (phase) {
-            case LOBBY -> opponentWait();
+            case LOBBY -> lobbyWait();
             case COUNTDOWN, PLAYING -> stepRuntime();
             case RESULTS -> {
                 if (--phaseTicks <= 0) {
@@ -418,16 +482,30 @@ public final class MatchHost {
         return seatCount == 1;
     }
 
-    private void opponentWait() {
-        boolean waiting = runtimeOpponent && !hotSeat && seatCount > 1 && boundCount() == 1 && allBoundReady();
-        if (!waiting) {
+    /**
+     * True while the lobby counts towards a short-handed start: a multi-seat bus, at least one seat bound, fewer
+     * than {@link #minimumSeats()} bound, and every bound seat ready.
+     */
+    private boolean lobbyWaiting() {
+        int bound = boundCount();
+        return phase == BusPhase.LOBBY && !hotSeat && seatCount > 1 && bound >= 1 && bound < minimumSeats()
+                && allBoundReady();
+    }
+
+    private void lobbyWait() {
+        if (!lobbyWaiting()) {
             lobbyWait = 0;
             return;
         }
-        if (++lobbyWait >= OPPONENT_WAIT_TICKS) {
+        if (++lobbyWait >= LOBBY_WAIT_TICKS) {
             startCountdown();
             broadcastPhase();
         }
+    }
+
+    /** Ticks until a short-handed lobby starts, or 0 when it is not waiting (the HUD's "starting in N s"). */
+    public int lobbyStartsInTicks() {
+        return lobbyWaiting() ? Math.max(1, LOBBY_WAIT_TICKS - lobbyWait) : 0;
     }
 
     private void stepRuntime() {
@@ -442,8 +520,12 @@ public final class MatchHost {
             broadcastPhase();
         }
         if (!powered) {
+            if (++unpoweredTicks >= Budgets.sleepAfterTicks()) {
+                powerTimeout();
+            }
             return;
         }
+        unpoweredTicks = 0;
         int n = rt.state().seatCount();
         SeatInput[] row = new SeatInput[Math.min(n, Budgets.MAX_SEATS)];
         for (int r = 0; r < row.length; r++) {
@@ -455,19 +537,112 @@ public final class MatchHost {
             }
             row[r] = s == null ? SeatInput.NONE : s.latched;
         }
-        rt.step(row);
+        Optional<MatchResult> result;
+        try {
+            rt.step(row);
+            result = rt.result();
+        } catch (RuntimeException e) {
+            runtimeFault(e, "step");
+            return;
+        }
         if (phase == BusPhase.COUNTDOWN && rt.state().phase() == MatchPhase.PLAYING) {
             phase = BusPhase.PLAYING;
             broadcastPhase();
         }
-        Optional<MatchResult> result = rt.result();
         if (result.isPresent()) {
             finish(result.get());
         }
     }
 
+    /**
+     * A fault escaped {@link #tick()} outside the runtime step (the caller's guard): the same handling as a step
+     * fault. Never throws.
+     */
+    public void escapedFault(RuntimeException e) {
+        try {
+            runtimeFault(e, "tick");
+        } catch (RuntimeException again) {
+            runtime = null;
+            stream = null;
+        }
+    }
+
+    /**
+     * The runtime threw (final review H1). The match ends ABANDONED (no board write, no listener), seated players
+     * are told, and the runtime is discarded so the next tick cannot fault on it again. Logs the exception class and
+     * chip ids only; telemetry gets the throwable with fixed labels (no title, UUID or score).
+     */
+    private void runtimeFault(RuntimeException e, String operation) {
+        za.co.neroland.neroarcade.NeroArcadeCommon.LOGGER.warn(
+                "[NeroArcade] runtime {} failed ({}) — match abandoned; chips {}", operation, e.getClass().getName(),
+                chipIds());
+        za.co.neroland.neroarcade.telemetry.NeroArcadeTelemetry.captureHandledException(e, "runtime", operation);
+        for (int s = 0; s < seatCount; s++) {
+            if (seats[s] != null) {
+                env.message(seats[s].playerUuid, RUNTIME_FAILED_KEY);
+            }
+        }
+        ArcadeRuntime rt = runtime;
+        int[] scores = new int[Math.max(1, runtimeToBus.length)];
+        int tick = 0;
+        long hash = 0L;
+        if (rt != null) {
+            try {
+                scores = scoresOf(rt);
+                tick = rt.state().tick();
+                hash = rt.state().stateHash();
+            } catch (RuntimeException ignored) {
+                // the state itself is suspect: an empty result is enough for an abandoned match
+            }
+        }
+        lastResult = new MatchResult(MatchResult.Outcome.ABANDONED, 0, scores, tick, hash);
+        finished = true;
+        newBestMask = 0;
+        paused = false;
+        lobbyWait = 0;
+        runtime = null;
+        stream = null;
+        faults++;
+        phase = BusPhase.RESULTS;
+        phaseTicks = RESULTS_TICKS;
+        broadcastPhase();
+    }
+
+    /** Runtime faults on this host so far (tests, diagnostics). */
+    public int faults() {
+        return faults;
+    }
+
+    /** The cartridge's chip ids in slot order, for a fault log line (never a title, author or player). */
+    private String chipIds() {
+        List<String> ids = new ArrayList<>();
+        for (za.co.neroland.neroarcade.module.ModuleType type : za.co.neroland.neroarcade.module.ModuleType.values()) {
+            for (za.co.neroland.neroarcade.module.SlotEntry entry : game.def().slot(type)) {
+                ids.add(entry.id().toString());
+            }
+        }
+        return ids.toString();
+    }
+
+    /**
+     * No power for {@code sleepAfterTicks}: the match ends ABANDONED (no board write) and every seat drops with
+     * {@link DropReason#POWER} (003 §2.3, review 003b F9).
+     */
+    private void powerTimeout() {
+        unpoweredTicks = 0;
+        end(MatchResult.Outcome.ABANDONED);
+        for (int s = 0; s < seatCount; s++) {
+            Seat leaving = seats[s];
+            if (leaving != null) {
+                unbind(s, DropReason.POWER);
+                env.unseat(leaving.at == null ? hostPos : leaving.at, DropReason.POWER);
+            }
+        }
+    }
+
     private void startCountdown() {
         matchId++;
+        unpoweredTicks = 0;
         finished = false;
         lastResult = null;
         paused = false;
@@ -497,11 +672,18 @@ public final class MatchHost {
             runtimeSeats = Math.max(1, runtimeToBus.length);
         }
         seed = game.def().seed().orElseGet(env::newSeed);
-        ArcadeRuntime rt = new ArcadeRuntime(game, ArcadeRuntime.newState(game, runtimeSeats), null);
-        rt.start(seed);
-        runtime = rt;
-        stream = new SnapshotCodec.Stream(Budgets.keyframeTicks(), Budgets.snapshotMaxBytes());
+        runtime = null;
+        stream = null;
         phase = BusPhase.COUNTDOWN;
+        try {
+            ArcadeRuntime rt = new ArcadeRuntime(game, ArcadeRuntime.newState(game, runtimeSeats), null);
+            rt.start(seed);
+            runtime = rt;
+        } catch (RuntimeException e) {
+            runtimeFault(e, "start");
+            return;
+        }
+        stream = new SnapshotCodec.Stream(Budgets.keyframeTicks(), Budgets.snapshotMaxBytes());
     }
 
     /** The only leaderboard write path; once per match; never for an abandoned or hot-seat result. */
@@ -623,7 +805,14 @@ public final class MatchHost {
             return;
         }
         if (newcomer) {
-            stream.reset(); // a new viewer must start from a keyframe (002 §8)
+            keyframeOwed = true;
+        }
+        if (keyframeOwed && ticks - lastKeyframeReset >= KEYFRAME_MIN_GAP) {
+            // a new viewer must start from a keyframe (002 §8) — at most one forced keyframe per KEYFRAME_MIN_GAP
+            // ticks, so a spectator oscillating across the render range cannot amplify the stream (review 003b L1)
+            stream.reset();
+            lastKeyframeReset = ticks;
+            keyframeOwed = false;
         }
         Optional<za.co.neroland.neroarcade.runtime.net.Snapshot> next = stream.next(runtime.state());
         if (next.isEmpty()) {
@@ -702,6 +891,7 @@ public final class MatchHost {
         int ticksLeft = switch (phase) {
             case COUNTDOWN -> runtime == null ? 0 : runtime.state().countdownTicks();
             case RESULTS -> Math.max(0, phaseTicks);
+            case LOBBY -> lobbyStartsInTicks();
             default -> 0;
         };
         return new MatchPhasePayload(hostPos, matchId, phase, seatCount, bound, ready, -1, ranks, scores, best,

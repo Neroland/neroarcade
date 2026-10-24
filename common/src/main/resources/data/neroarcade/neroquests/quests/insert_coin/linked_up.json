@@ -1,0 +1,22 @@
+{
+  "title": "quest.neroarcade.insert_coin.linked_up.title",
+  "description": "quest.neroarcade.insert_coin.linked_up.desc",
+  "icon": "neroarcade:link_bus",
+  "prerequisites": [
+    "neroarcade:insert_coin/first_cartridge"
+  ],
+  "objectives": [
+    {
+      "type": "neroquests:craft_item",
+      "item": "neroarcade:link_bus",
+      "count": 1
+    }
+  ],
+  "rewards": [
+    {
+      "type": "neroquests:xp",
+      "amount": 60
+    }
+  ],
+  "scope": "player"
+}

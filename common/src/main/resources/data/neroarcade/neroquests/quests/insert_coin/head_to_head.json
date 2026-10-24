@@ -1,0 +1,25 @@
+{
+  "title": "quest.neroarcade.insert_coin.head_to_head.title",
+  "description": "quest.neroarcade.insert_coin.head_to_head.desc",
+  "icon": "neroarcade:arcade_cabinet",
+  "prerequisites": [
+    "neroarcade:insert_coin/linked_up"
+  ],
+  "objectives": [
+    {
+      "type": "neroquests:gate_open",
+      "gate": "neroarcade:first_versus_win"
+    }
+  ],
+  "rewards": [
+    {
+      "type": "neroquests:xp",
+      "amount": 120
+    },
+    {
+      "type": "neroquests:currency",
+      "amount": 50
+    }
+  ],
+  "scope": "player"
+}

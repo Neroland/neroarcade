@@ -61,4 +61,18 @@ public final class BenchSlots {
     public static boolean isChipSlot(int index) {
         return index >= 0 && index < CHIP_SLOTS;
     }
+
+    /**
+     * One bit per {@link ModuleType} (by ordinal) whose rack row holds at least one chip, from {@code filled}
+     * (rack index → occupied). The bench's holo-rack lights the chips of these slots. Pure.
+     */
+    public static int rackMask(java.util.function.IntPredicate filled) {
+        int mask = 0;
+        for (int i = 0; i < CHIP_SLOTS; i++) {
+            if (filled.test(i)) {
+                mask |= 1 << TYPE_AT[i].ordinal();
+            }
+        }
+        return mask;
+    }
 }

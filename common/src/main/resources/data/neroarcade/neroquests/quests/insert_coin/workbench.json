@@ -1,0 +1,20 @@
+{
+  "title": "quest.neroarcade.insert_coin.workbench.title",
+  "description": "quest.neroarcade.insert_coin.workbench.desc",
+  "icon": "neroarcade:game_bench",
+  "prerequisites": [],
+  "objectives": [
+    {
+      "type": "neroquests:craft_item",
+      "item": "neroarcade:game_bench",
+      "count": 1
+    }
+  ],
+  "rewards": [
+    {
+      "type": "neroquests:xp",
+      "amount": 30
+    }
+  ],
+  "scope": "player"
+}

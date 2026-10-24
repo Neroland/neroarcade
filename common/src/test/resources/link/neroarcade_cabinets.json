@@ -1,0 +1,17 @@
+{
+  "ok": true,
+  "data": {
+    "asOf": 1792000000000,
+    "cabinets": [
+      {
+        "label": "Overworld · Linked hall (3 cabinets)",
+        "role": "host",
+        "seat": 0,
+        "phase": "PLAYING",
+        "multiplayer": "versus",
+        "seats": 3,
+        "cartridge": { "id": "k7m2p9qa3f8d1z6b", "lineageRoot": "k7m2p9qa3f8d1z6b", "title": "Neon Dodge" }
+      }
+    ]
+  }
+}

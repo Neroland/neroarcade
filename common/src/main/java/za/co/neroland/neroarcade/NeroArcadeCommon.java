@@ -4,11 +4,15 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import za.co.neroland.neroarcade.board.Boards;
+import za.co.neroland.neroarcade.compat.Seams;
 import za.co.neroland.neroarcade.config.NeroArcadeConfig;
 import za.co.neroland.neroarcade.data.NeroArcadeData;
+import za.co.neroland.neroarcade.exchange.Exchange;
+import za.co.neroland.neroarcade.link.NeroArcadeLinkModule;
 import za.co.neroland.neroarcade.module.pack.ArcadeModules;
 import za.co.neroland.neroarcade.network.ArcadeNetwork;
 import za.co.neroland.neroarcade.platform.Services;
+import za.co.neroland.neroarcade.progression.QuestHooks;
 import za.co.neroland.neroarcade.registry.ModBlockEntities;
 import za.co.neroland.neroarcade.registry.ModBlocks;
 import za.co.neroland.neroarcade.registry.ModCreativeTab;
@@ -77,8 +81,15 @@ public final class NeroArcadeCommon {
         //    bench's credit resolver and the hourly retention sweep).
         NeroArcadeData.init();
         Boards.init();
+        // Stage 4B: the Arcade Exchange (listings + drafts stores, credit stripping, the hourly drafts sweep).
+        Exchange.init();
+        // Stage 6: the loaded Game Benches' draft authors and the privacy-export files (+ their cooldown and the
+        //    export retention sweep).
+        za.co.neroland.neroarcade.privacy.ArcadePrivacy.init();
 
-        // 5. Compat detection (reserved) — resolved once here, never per interaction.
+        // 5. Compat detection — resolved once here, never per interaction (003 §10): the coin-op bridge
+        //    (NeroEconomy, through META-INF/services, only when it is loaded), the no-op seams, and Core's palette.
+        Seams.init(Services.PLATFORM::isModLoaded);
 
         // 6. Declare the payloads on NeroArcade's own neroarcade:main channel before any loader
         //    registers them: every loader entry point runs this method first, then wires its own
@@ -88,8 +99,10 @@ public final class NeroArcadeCommon {
         // 7. Server hooks: seats release on logout; runtime registries clear when the server stops. Quest-pack
         //    hooks and other Core progression listeners join this slot later.
         ArcadeServer.init();
+        QuestHooks.init();
 
-        // 8. Reserved: a NeroLink module, when one exists, goes LAST and swallows its own failures — a
-        //    broken companion integration must never take the mod down with it.
+        // 8. The NeroLink module (007) goes LAST and swallows its own failures (RuntimeException | LinkageError,
+        //    one warning) — a broken companion integration must never take the mod down with it.
+        NeroArcadeLinkModule.init();
     }
 }

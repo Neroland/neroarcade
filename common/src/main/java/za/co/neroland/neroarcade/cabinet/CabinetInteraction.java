@@ -19,9 +19,10 @@ import za.co.neroland.neroarcade.registry.ModSounds;
  * sound; nothing here throws.
  *
  * <ul>
- *   <li><b>Cartridge in hand</b> → insert it (one item) if the slot is empty.</li>
- *   <li><b>Sneak, empty hand</b> → eject: refused while a match counts down or plays; refused to anyone but the
- *       seated player (or an op) while someone is seated.</li>
+ *   <li><b>Cartridge in hand</b> → insert it (one item) if the slot is empty, nobody else is seated here, and
+ *       the cabinet is not a linked node (the host holds the bus's cartridge — review 003b F2).</li>
+ *   <li><b>Sneak, empty hand</b> → eject: refused while a match counts down or plays; while anyone is seated on
+ *       the bus, refused to anyone but a player seated on it (or an op — review 003b F3).</li>
  *   <li><b>Empty hand</b> → take the seat. Checks, in order: the bus role (no host / bus full / a second
  *       cartridge), a cartridge readable here (not on a bus node: it plays the host's), power, one seat per player
  *       server-wide, the seat free, no match running, an awake slot (the bus host's), a seat this game has. Solo
@@ -46,6 +47,10 @@ public final class CabinetInteraction {
         if (cabinet.hasCartridge()) {
             return deny(cabinet, player, "neroarcade.cabinet.msg.occupied");
         }
+        Refusal refused = insertRefusal(cabinet.heldSeat(), player.getUUID(), cabinet.role());
+        if (refused != null) {
+            return deny(cabinet, player, refused.key);
+        }
         cabinet.insert(stack);
         if (!player.getAbilities().instabuild) {
             stack.shrink(1);
@@ -69,9 +74,8 @@ public final class CabinetInteraction {
         if (host != null && host.phase().running()) {
             return deny(cabinet, player, "neroarcade.cabinet.msg.eject_in_progress");
         }
-        Seat seat = cabinet.heldSeat();
         boolean op = Commands.hasPermission(Commands.LEVEL_GAMEMASTERS).test(player.createCommandSourceStack());
-        if (seat != null && !seat.playerUuid.equals(player.getUUID()) && !op) {
+        if (!op && !mayEject(cabinet.heldSeat(), host, player.getUUID())) {
             return deny(cabinet, player, "neroarcade.cabinet.msg.eject_refused");
         }
         ItemStack out = cabinet.takeCartridge();
@@ -117,8 +121,13 @@ public final class CabinetInteraction {
             net.minecraft.core.BlockPos at = net.minecraft.core.BlockPos.of(elsewhere.get().pos());
             return deny(cabinet, player, "neroarcade.cabinet.msg.already_seated", at.getX(), at.getY(), at.getZ());
         }
-        return switch (cabinet.seat(player)) {
+        // coin-op (003 §10; economy.coinOp, off by default): charged inside seat() after every refusal check and
+        // immediately before the bind, so a refused charge leaves the match untouched — no start sound, no
+        // countdown — and nothing needs undoing (review 003b F10)
+        return switch (cabinet.seat(player, () -> za.co.neroland.neroarcade.compat.economy.CoinOp.chargeSeat(
+                level.getServer(), player.getUUID(), cabinet.getBlockPos()))) {
             case SEATED -> InteractionResult.SUCCESS;
+            case UNPAID -> deny(cabinet, player, "neroarcade.cabinet.msg.coin_op");
             case QUEUED -> deny(cabinet, player, "neroarcade.cabinet.status.busy", cabinet.queuePosition());
             case TAKEN -> deny(cabinet, player, "neroarcade.cabinet.msg.taken");
             case IN_PROGRESS -> deny(cabinet, player, "neroarcade.cabinet.msg.in_progress");
@@ -128,6 +137,59 @@ public final class CabinetInteraction {
             case NO_SEAT_HERE -> deny(cabinet, player, "neroarcade.cabinet.msg.no_seat_here");
             case HOT_SEAT_HOST -> deny(cabinet, player, "neroarcade.cabinet.msg.hot_seat_host");
         };
+    }
+
+    /** Why an insert is refused before the slot is touched (the slot itself is checked first). Pure. */
+    enum Refusal {
+        TAKEN("neroarcade.cabinet.msg.taken"),
+        LINKED("neroarcade.cabinet.msg.linked_insert");
+
+        final String key;
+
+        Refusal(String key) {
+            this.key = key;
+        }
+    }
+
+    /**
+     * An insert into a cabinet someone else sits at, or into a linked node or a full-bus cabinet, is refused: on a
+     * bus it would turn the node into a second cartridge and drop its player (review 003b F2). Pure.
+     */
+    static @org.jetbrains.annotations.Nullable Refusal insertRefusal(@org.jetbrains.annotations.Nullable Seat seat,
+            java.util.UUID player, BusRole role) {
+        if (seat != null && !seat.playerUuid.equals(player)) {
+            return Refusal.TAKEN;
+        }
+        if (role == BusRole.NODE || role == BusRole.FULL) {
+            return Refusal.LINKED;
+        }
+        return null;
+    }
+
+    /**
+     * Whether a non-op may eject: nobody is seated at this cabinet or on its bus, or the player holds one of those
+     * seats (003 §3.5 — "only the seated player, an op, or a break"; review 003b F3). Pure.
+     *
+     * @param here the seat at this cabinet
+     * @param bus  the match this cabinet shows (its own, or the bus host's), or null
+     */
+    static boolean mayEject(@org.jetbrains.annotations.Nullable Seat here,
+            @org.jetbrains.annotations.Nullable MatchHost bus, java.util.UUID player) {
+        boolean anyone = here != null;
+        if (Seat.heldBy(here, player)) {
+            return true;
+        }
+        if (bus != null) {
+            for (Seat s : bus.seats()) {
+                if (s != null) {
+                    anyone = true;
+                    if (s.playerUuid.equals(player)) {
+                        return true;
+                    }
+                }
+            }
+        }
+        return !anyone;
     }
 
     private static InteractionResult deny(ArcadeCabinetBlockEntity cabinet, ServerPlayer player, String key,

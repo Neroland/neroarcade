@@ -10,6 +10,8 @@ import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.entity.BlockEntity;
+import net.minecraft.world.level.block.entity.BlockEntityTicker;
+import net.minecraft.world.level.block.entity.BlockEntityType;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.StateDefinition;
 import net.minecraft.world.phys.BlockHitResult;
@@ -22,6 +24,7 @@ import za.co.neroland.neroarcade.exchange.ArcadeExchangeBlockEntity;
 import za.co.neroland.neroarcade.exchange.ExchangeActions;
 import za.co.neroland.neroarcade.exchange.ExchangeMenu;
 import za.co.neroland.neroarcade.menu.MenuOpener;
+import za.co.neroland.neroarcade.registry.ModBlockEntities;
 
 /**
  * The Arcade Exchange kiosk ({@code neroarcade:arcade_exchange}), 1x2: using either half opens "Find a game to
@@ -49,6 +52,16 @@ public class ArcadeExchangeBlock extends TwoHighBlock {
     @Override
     public @Nullable BlockEntity newBlockEntity(BlockPos pos, BlockState state) {
         return isLower(state) ? new ArcadeExchangeBlockEntity(pos, state) : null;
+    }
+
+    @Override
+    public <T extends BlockEntity> @Nullable BlockEntityTicker<T> getTicker(Level level, BlockState state,
+            BlockEntityType<T> type) {
+        if (level.isClientSide() || !isLower(state)) {
+            return null;
+        }
+        return createTickerHelper(type, ModBlockEntities.ARCADE_EXCHANGE.get(),
+                (lvl, pos, st, kiosk) -> kiosk.serverTick());
     }
 
     @Override

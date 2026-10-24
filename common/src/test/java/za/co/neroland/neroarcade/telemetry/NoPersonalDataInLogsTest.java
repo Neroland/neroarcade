@@ -16,14 +16,17 @@ import java.util.stream.Stream;
 import org.junit.jupiter.api.Test;
 
 /**
- * A cheap textual guard: no INFO or WARN log statement in the main sources passes an argument that looks
- * like a player id, a name, a share or an amount. The real review is done by reading the code; this
- * catches the obvious regression.
+ * A cheap textual guard: no INFO, WARN or ERROR log statement in the main sources passes an argument that looks
+ * like a player id, a name, a player, an author or credit, a share or an amount; and no telemetry call (handled
+ * exception tags, breadcrumbs) is handed one either. The real review is done by reading the code; this catches the
+ * obvious regression. Stage 6 widened it (error level, player/author/credit/profile words, telemetry calls).
  */
 class NoPersonalDataInLogsTest {
 
-    private static final Pattern CALL = Pattern.compile("LOGGER\\.(info|warn)\\(");
-    private static final Pattern FORBIDDEN = Pattern.compile("\\b(UUID|uuid|getUUID|getName|share|amount)\\b");
+    private static final Pattern CALL = Pattern.compile(
+            "LOGGER\\.(info|warn|error)\\(|NeroArcadeTelemetry\\.(captureHandledException|breadcrumb)\\(");
+    private static final Pattern FORBIDDEN = Pattern.compile("\\b(UUID|uuid|getUUID|getName|share|amount|player|"
+            + "players|getPlayer|getGameProfile|profile|author|authorUuid|authorCredit|credit|getDisplayName|subject)\\b");
 
     @Test
     void infoAndWarnLinesCarryNoPersonalData() throws IOException {

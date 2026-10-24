@@ -66,7 +66,7 @@
   "neroarcade.cartridge.error.bad_credit": "The builder credit is invalid.",
   "neroarcade.cartridge.error.unknown_slot": "Unknown slot: %s.",
   "neroarcade.cartridge.error.stack_overflow": "Too many %s chips (limit %s).",
-  "neroarcade.cartridge.error.unknown_module": "This cartridge uses a module this server does not have: %s.",
+  "neroarcade.cartridge.error.unknown_module": "This cartridge uses a module this server does not have (%s). Ask the server owner.",
   "neroarcade.cartridge.error.wrong_slot": "%s is not a %s chip.",
   "neroarcade.cartridge.error.bad_property": "Bad value for %s on %s.",
   "neroarcade.cartridge.error.over_budget": "This game exceeds this server's limits (%s).",

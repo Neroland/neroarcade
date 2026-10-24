@@ -37,10 +37,18 @@ import za.co.neroland.neroarcade.NeroArcadeCommon;
  *       bare {@code computeIfAbsent}.</li>
  * </ul>
  *
- * <p>The scaffold has no player-keyed store yet, so the composite walks an empty list. NeroArcade's record
- * gates, when it has any, live in Core's progression store and are erased by Core itself.
- * Erasers must tolerate a player they have never heard of (the retention sweep and Core's conformance
+ * <p>The stores (Stage 6 inventory; {@code PlayerKeyedStateInventoryTest} fails when a new {@code SavedData} or
+ * UUID-keyed field appears without an entry): {@code leaderboards}, {@code credit}, {@code exchange},
+ * {@code drafts}, {@code seats} (seats + per-player rate windows, memory only), {@code benches} (the author left in a
+ * loaded Game Bench's draft, best effort), {@code exports} (the export file and its cooldown) and {@code link} (the
+ * NeroLink module's transient state). NeroArcade's record gates live in Core's progression store and are erased by
+ * Core itself. Erasers must tolerate a player they have never heard of (the retention sweep and Core's conformance
  * harness both do that).
+ *
+ * <p>{@link StoreEraser#backupNow} is called after every erase, with or without a server: each store resolves its
+ * own target (none without a server in production) and routes the refresh through
+ * {@link za.co.neroland.neroarcade.privacy.BackupHook}, which does nothing without a live server. The tests use that
+ * to read what each refreshed backup holds.
  *
  * <p><b>Privacy:</b> nothing here logs a player name or UUID. A failing store is logged by its stable
  * store name and the exception class only.
@@ -59,7 +67,8 @@ public final class NeroArcadeData {
         /**
          * Refresh this store's last-known-good backup via {@code SavedDataRecovery.backupNow}, so the
          * erased rows cannot come back from a stale backup. Called right after
-         * {@link #erase(MinecraftServer, UUID)}, and only when a live server is present.
+         * {@link #erase(MinecraftServer, UUID)}; {@code server} may be null (Core's conformance harness), in which
+         * case a store with nothing to back up does nothing.
          */
         void backupNow(MinecraftServer server);
     }
@@ -134,9 +143,7 @@ public final class NeroArcadeData {
         for (StoreEraser store : STORES) {
             try {
                 store.erase(server, player);
-                if (server != null) {
-                    store.backupNow(server);
-                }
+                store.backupNow(server);
             } catch (RuntimeException | LinkageError e) {
                 failed++;
                 NeroArcadeCommon.LOGGER.warn(

@@ -83,16 +83,23 @@ public class MarqueeScreenRenderer implements BlockEntityRenderer<MarqueeScreenB
         double dy = cameraPos.y - cy;
         double dz = cameraPos.z - cz;
         if (dx * dx + dy * dy + dz * dz > range * range) {
+            ArcadeBerStats.culled();
             return false;
         }
         Direction facing = state.getValue(ArcadeBlockProperties.FACING);
-        return dx * facing.getStepX() + dz * facing.getStepZ() > -0.25;
+        boolean front = dx * facing.getStepX() + dz * facing.getStepZ() > -0.25;
+        if (!front) {
+            ArcadeBerStats.culled();
+        }
+        return front;
     }
 
     @Override
     public void extractRenderState(MarqueeScreenBlockEntity be, MarqueeRenderState s, float partialTick,
             Vec3 cameraPos, ModelFeatureRenderer.CrumblingOverlay breakProgress) {
         BlockEntityRenderer.super.extractRenderState(be, s, partialTick, cameraPos, breakProgress);
+        ArcadeBerStats.frame(be.getLevel() == null ? 0L : be.getLevel().getGameTime(), partialTick);
+        long t0 = ArcadeBerStats.start();
         BlockState state = be.getBlockState();
         Direction facing = state.hasProperty(ArcadeBlockProperties.FACING) ? state.getValue(ArcadeBlockProperties.FACING)
                 : Direction.NORTH;
@@ -102,6 +109,10 @@ public class MarqueeScreenRenderer implements BlockEntityRenderer<MarqueeScreenB
         s.main = CabinetScreens.prepareMarquee(be, now);
         s.strip = s.main == null ? null : CabinetScreens.prepareStrip(be, now);
         s.idle = s.main == null && be.clientDisplayOf() == null;
+        if (s.main == null && !s.idle) {
+            ArcadeBerStats.culled();
+        }
+        ArcadeBerStats.stop(t0);
     }
 
     @Override
@@ -112,6 +123,10 @@ public class MarqueeScreenRenderer implements BlockEntityRenderer<MarqueeScreenB
         float h = s.scale * 2f / 3f;
         float left = 0.5f + w / 2f; // the viewer's left edge (a north face is seen with +x on the left)
         float right = 0.5f - w / 2f;
+        if (s.idle || s.main != null) {
+            ArcadeBerStats.submitted();
+            ArcadeBerStats.vertices(s.strip != null ? RenderPlan.MARQUEE_MAX : RenderPlan.QUAD_2SIDED);
+        }
         if (s.idle) {
             collector.order(1).submitCustomGeometry(poseStack, ArcadeCabinetRenderer.renderType(IDLE),
                     (pose, c) -> quad(c, pose, q, left, right, BOTTOM, BOTTOM + h, 0f, 1f));

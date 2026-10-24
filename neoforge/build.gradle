@@ -67,6 +67,16 @@ repositories {
 sourceSets.main.java.srcDir rootProject.ext.commonJava
 sourceSets.main.resources.srcDir rootProject.ext.commonResources
 
+// --- NeroEconomy (optional coin-op bridge) --------------------------------------------------------------------
+// compileOnly behind compat/economy: one bridge class imports it, found through META-INF/services after isModLoaded.
+// `neroeconomy_compat=false` (gradle.properties or -P) drops the dependency, excludes the bridge class and its services
+// line, and leaves the optional manifest entry out, so the mod builds with no NeroEconomy artifact at all.
+def economyOn = (rootProject.findProperty('neroeconomy_compat') ?: 'true').toString().trim() == 'true'
+if (!economyOn) {
+    sourceSets.main.java.exclude 'za/co/neroland/neroarcade/compat/economy/bridge/NeroEconomyCoinOp.java'
+    sourceSets.main.resources.exclude 'META-INF/services/za.co.neroland.neroarcade.compat.economy.CoinOpSeam'
+}
+
 // Plain-JVM unit tests (JUnit 5, no game bootstrap). The shared tests live in
 // common/src/test/java but, since `common` is not a Gradle node, they are WIRED here, in the
 // neoforge nodes only: ModDevGradle exposes the modding classpath to extra source sets via
@@ -90,6 +100,15 @@ dependencies {
     // Neroland Core — REQUIRED shared foundation (config schema). Core ships as its own mod and
     // loads BEFORE NeroArcade (see neoforge.mods.toml, ordering = AFTER); it is never bundled.
     implementation "za.co.neroland.nerolandcore:nerolandcore-neoforge-${mc}:${nerolandcoreVersion}"
+
+    // NeroEconomy - OPTIONAL (see the compat block above). compileOnly: never bundled, never a hard requirement.
+    if (economyOn) {
+        compileOnly "za.co.neroland.neroeconomy:neroeconomy-neoforge-${mc}:${rootProject.neroeconomy_version}"
+        // Dev clients load NeroEconomy only with -PwithNeroEconomy; the default run proves it stays optional.
+        if (project.hasProperty('withNeroEconomy')) {
+            runtimeOnly "za.co.neroland.neroeconomy:neroeconomy-neoforge-${mc}:${rootProject.neroeconomy_version}"
+        }
+    }
 
     // Sentry SDK embedded via NeoForge JarJar so players need no extra download (JarJar dedupes if
     // another mod also ships Sentry). Adds it to the compile classpath AND the mod jar.
@@ -132,6 +151,8 @@ def generateModMetadata = tasks.register('generateModMetadata', ProcessResources
         // links against, which surfaces as a NoSuchMethodError deep in gameplay instead of a clean
         // "update Neroland Core" loader message.
         nerolandcore_version_range: "[${nerolandcoreVersion},2.0)",
+        // The optional NeroEconomy entry (floor = the compiled version), or "" when neroeconomy_compat=false.
+        neroeconomy_dep: economyOn ? "\n# NeroEconomy - OPTIONAL: coin-op play and paid downloads when present (economy.coinOp, off by default).\n[[dependencies.${rootProject.mod_id}]]\nmodId = \"neroeconomy\"\ntype = \"optional\"\nversionRange = \"[${rootProject.neroeconomy_version},)\"\nordering = \"AFTER\"\nside = \"BOTH\"\n" : "",
     ]
     inputs.properties(props)
     expand(props)
@@ -139,6 +160,41 @@ def generateModMetadata = tasks.register('generateModMetadata', ProcessResources
     into layout.buildDirectory.dir('generated/sources/modMetadata')
 }
 sourceSets.main.resources.srcDir generateModMetadata
+
+// Bundle the public wiki/*.md pages (plus a generated index.json) under assets/neroarcade/wiki so the
+// NeroLink module's wiki section can serve them (WIKI CONTRACT v1).
+def generateWikiResources = tasks.register('generateWikiResources', Copy) {
+    def wikiSrcDir = file("${rootProject.projectDir}/wiki")
+    from(wikiSrcDir) {
+        include '*.md'
+        into 'assets/neroarcade/wiki'
+    }
+    into layout.buildDirectory.dir('generated/sources/wiki')
+    doLast {
+        def outDir = layout.buildDirectory.dir('generated/sources/wiki/assets/neroarcade/wiki').get().asFile
+        outDir.mkdirs()
+        def entries = []
+        wikiSrcDir.listFiles()?.findAll { it.isFile() && it.name.endsWith('.md') }?.sort { it.name }?.each { f ->
+            def slug = f.name.substring(0, f.name.length() - 3)
+            def title = slug.replace('-', ' ')
+            for (String line : f.readLines('UTF-8')) {
+                def t = line.trim()
+                if (t.startsWith('# ')) { title = t.substring(2).trim(); break }
+                if (!t.isEmpty()) break
+            }
+            entries << [slug: slug, title: title]
+        }
+        def sb = new StringBuilder('{\n  "pages": [\n')
+        entries.eachWithIndex { e, i ->
+            sb.append('    {"slug": ').append(groovy.json.JsonOutput.toJson(e.slug))
+              .append(', "title": ').append(groovy.json.JsonOutput.toJson(e.title)).append('}')
+              .append(i < entries.size() - 1 ? ',' : '').append('\n')
+        }
+        sb.append('  ]\n}\n')
+        new File(outDir, 'index.json').write(sb.toString(), 'UTF-8')
+    }
+}
+sourceSets.main.resources.srcDir generateWikiResources
 
 neoForge {
     version = neoVersion

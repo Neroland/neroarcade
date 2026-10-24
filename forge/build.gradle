@@ -69,6 +69,16 @@ jarJar.register()
 sourceSets.main.java.srcDir rootProject.ext.commonJava
 sourceSets.main.resources.srcDir rootProject.ext.commonResources
 
+// --- NeroEconomy (optional coin-op bridge) --------------------------------------------------------------------
+// compileOnly behind compat/economy: one bridge class imports it, found through META-INF/services after isModLoaded.
+// `neroeconomy_compat=false` (gradle.properties or -P) drops the dependency, excludes the bridge class and its services
+// line, and leaves the optional manifest entry out, so the mod builds with no NeroEconomy artifact at all.
+def economyOn = (rootProject.findProperty('neroeconomy_compat') ?: 'true').toString().trim() == 'true'
+if (!economyOn) {
+    sourceSets.main.java.exclude 'za/co/neroland/neroarcade/compat/economy/bridge/NeroEconomyCoinOp.java'
+    sourceSets.main.resources.exclude 'META-INF/services/za.co.neroland.neroarcade.compat.economy.CoinOpSeam'
+}
+
 // Forge 26's ModLauncher builds a JPMS layer from the dev runtime classpath. If classes and
 // processed resources are separate entries, the mod's classes can be seen as module "main" while
 // mods.toml names the resources entry "neroarcade", producing split-package startup failures.
@@ -111,6 +121,11 @@ dependencies {
     // loads BEFORE NeroArcade (see mods.toml, ordering = AFTER); it is never bundled.
     implementation "za.co.neroland.nerolandcore:nerolandcore-forge-${mc}:${nerolandcoreVersion}"
 
+    // NeroEconomy - OPTIONAL (see the compat block above). compileOnly: never bundled, never a hard requirement.
+    if (economyOn) {
+        compileOnly "za.co.neroland.neroeconomy:neroeconomy-forge-${mc}:${rootProject.neroeconomy_version}"
+    }
+
     implementation 'io.sentry:sentry:8.60.0'
     jarJar(group: 'io.sentry', name: 'sentry', version: '8.45.0')
 
@@ -139,6 +154,8 @@ def generateModMetadata = tasks.register('generateModMetadata', ProcessResources
         minecraft_version_range   : "[${mc},${mcCeiling})",
         // Floor at the compiled Core version — see the NeoForge build script for the reasoning.
         nerolandcore_version_range: "[${nerolandcoreVersion},2.0)",
+        // The optional NeroEconomy entry (floor = the compiled version), or "" when neroeconomy_compat=false.
+        neroeconomy_dep: economyOn ? "\n# NeroEconomy - OPTIONAL: coin-op play and paid downloads when present (economy.coinOp, off by default).\n[[dependencies.${rootProject.mod_id}]]\nmodId = \"neroeconomy\"\nmandatory = false\nversionRange = \"[${rootProject.neroeconomy_version},)\"\nordering = \"AFTER\"\nside = \"BOTH\"\n" : "",
     ]
     inputs.properties(props)
     expand(props)
@@ -146,6 +163,41 @@ def generateModMetadata = tasks.register('generateModMetadata', ProcessResources
     into layout.buildDirectory.dir('generated/sources/modMetadata')
 }
 sourceSets.main.resources.srcDir generateModMetadata
+
+// Bundle the public wiki/*.md pages (plus a generated index.json) under assets/neroarcade/wiki so the
+// NeroLink module's wiki section can serve them (WIKI CONTRACT v1).
+def generateWikiResources = tasks.register('generateWikiResources', Copy) {
+    def wikiSrcDir = file("${rootProject.projectDir}/wiki")
+    from(wikiSrcDir) {
+        include '*.md'
+        into 'assets/neroarcade/wiki'
+    }
+    into layout.buildDirectory.dir('generated/sources/wiki')
+    doLast {
+        def outDir = layout.buildDirectory.dir('generated/sources/wiki/assets/neroarcade/wiki').get().asFile
+        outDir.mkdirs()
+        def entries = []
+        wikiSrcDir.listFiles()?.findAll { it.isFile() && it.name.endsWith('.md') }?.sort { it.name }?.each { f ->
+            def slug = f.name.substring(0, f.name.length() - 3)
+            def title = slug.replace('-', ' ')
+            for (String line : f.readLines('UTF-8')) {
+                def t = line.trim()
+                if (t.startsWith('# ')) { title = t.substring(2).trim(); break }
+                if (!t.isEmpty()) break
+            }
+            entries << [slug: slug, title: title]
+        }
+        def sb = new StringBuilder('{\n  "pages": [\n')
+        entries.eachWithIndex { e, i ->
+            sb.append('    {"slug": ').append(groovy.json.JsonOutput.toJson(e.slug))
+              .append(', "title": ').append(groovy.json.JsonOutput.toJson(e.title)).append('}')
+              .append(i < entries.size() - 1 ? ',' : '').append('\n')
+        }
+        sb.append('  ]\n}\n')
+        new File(outDir, 'index.json').write(sb.toString(), 'UTF-8')
+    }
+}
+sourceSets.main.resources.srcDir generateWikiResources
 
 // Pre-create run directories so VS Code debug-terminal cwd exists before first launch.
 def createForgeRunDirs = tasks.register('createForgeRunDirs') {

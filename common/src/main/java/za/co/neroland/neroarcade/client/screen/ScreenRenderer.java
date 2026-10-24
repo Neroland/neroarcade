@@ -399,6 +399,21 @@ public final class ScreenRenderer {
     }
 
     /**
+     * The Arcade Exchange kiosk's listing screen (004 §4.5): "TOP GAMES" and the listings rolling one row every
+     * 2 s (title left, heart count right), or "NO LISTINGS" when the Exchange is empty.
+     */
+    public void drawListings(List<ClientBoards.Line> rows, int ticks) {
+        if (rows == null || rows.isEmpty()) {
+            clear(BACKGROUND);
+            centred("TOP GAMES", 2, SIGNATURE, 1);
+            centred("NO", 26, TEXT_DIM, 1);
+            centred("LISTINGS", 35, TEXT_DIM, 1);
+            return;
+        }
+        drawBoard("TOP GAMES", rows, ticks);
+    }
+
+    /**
      * The marquee's score strip (004 §4.6) in the left half of the frame (32 x 64, mapped onto the right third of
      * the marquee): a mode word, the timer, then one line per seat ("1 120").
      */

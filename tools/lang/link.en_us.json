@@ -1,0 +1,12 @@
+{
+  "link.neroarcade.push.record.title": "Record beaten",
+  "link.neroarcade.push.record": "Your record on %s was beaten — now #%s",
+  "link.neroarcade.push.record.off": "Your record on %s was beaten — you are off the top 10",
+  "link.neroarcade.push.downloaded.title": "Cartridge downloaded",
+  "link.neroarcade.push.downloaded": "%s was downloaded %s times today",
+  "link.neroarcade.push.downloaded.one": "%s was downloaded once today",
+  "link.neroarcade.push.more": " (+%s more)",
+  "link.neroarcade.title.fallback": "a cartridge",
+  "link.neroarcade.label.solo": "%s · Solo cabinet",
+  "link.neroarcade.label.hall": "%s · Linked hall (%s cabinets)"
+}

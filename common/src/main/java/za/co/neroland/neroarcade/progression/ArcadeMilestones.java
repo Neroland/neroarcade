@@ -17,8 +17,8 @@ import za.co.neroland.neroarcade.privacy.Tombstones;
  *
  * <ul>
  *   <li><b>Threshold channels</b> (world facts, {@code "scope":"server"} quests only): {@link #MATCH_WON},
- *       {@link #CARTRIDGE_PUBLISHED}, {@link #RECORD_SET}. The scope is a <b>place or system</b> — a cartridge's lineage
- *       root, or {@code "exchange"} — <b>never a player</b>; the value is the world's running count and the threshold
+ *       {@link #CARTRIDGE_PUBLISHED}, {@link #RECORD_SET}. The scope is a <b>place or system</b> — a cartridge id (the
+ *       board's key), or {@code "exchange"} — <b>never a player</b>; the value is the world's running count and the threshold
  *       the highest rung at or below it.</li>
  *   <li><b>Player gates</b> (personal milestones, offline-safe): {@link #FIRST_CARTRIDGE}, {@link #FIRST_PUBLISHED},
  *       {@link #FIRST_VERSUS_WIN}, defined in {@code data/neroarcade/neroland_gates/}. Opening one twice is a no-op.</li>
@@ -102,9 +102,12 @@ public final class ArcadeMilestones {
 
     // --- channels ----------------------------------------------------------------------------------
 
-    /** A match on {@code lineageRoot}'s board was won; {@code wins} is that board's win count, this one included. */
-    public static boolean matchWon(String lineageRoot, long wins) {
-        return fire(MATCH_WON, lineageRoot, wins, WIN_RUNGS);
+    /**
+     * A match on cartridge {@code cartridgeId}'s board was won; {@code wins} is that board's win count, this one
+     * included.
+     */
+    public static boolean matchWon(String cartridgeId, long wins) {
+        return fire(MATCH_WON, cartridgeId, wins, WIN_RUNGS);
     }
 
     /** A new listing went up; {@code listings} is the Exchange's listing count now. */
@@ -112,9 +115,9 @@ public final class ArcadeMilestones {
         return fire(CARTRIDGE_PUBLISHED, EXCHANGE_SCOPE, listings, PUBLISHED_RUNGS);
     }
 
-    /** A new top score on {@code lineageRoot}'s board; {@code records} counts such records on it. */
-    public static boolean recordSet(String lineageRoot, long records) {
-        return fire(RECORD_SET, lineageRoot, records, RECORD_RUNGS);
+    /** A new top score on cartridge {@code cartridgeId}'s board; {@code records} counts such records on it. */
+    public static boolean recordSet(String cartridgeId, long records) {
+        return fire(RECORD_SET, cartridgeId, records, RECORD_RUNGS);
     }
 
     private static boolean fire(Identifier channel, String scope, long value, long[] rungs) {

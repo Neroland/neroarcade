@@ -9,6 +9,7 @@ import za.co.neroland.neroarcade.game.CartridgeValidator;
 import za.co.neroland.neroarcade.game.GameDef;
 import za.co.neroland.neroarcade.game.ValidationError;
 import za.co.neroland.neroarcade.module.ModuleType;
+import za.co.neroland.neroarcade.module.SlotEntry;
 import za.co.neroland.neroarcade.network.ExchangePagePayload;
 
 /**
@@ -66,7 +67,7 @@ public final class ExchangePages {
                 flags |= ExchangePagePayload.ROW_HEARTED;
             }
             rows.add(new ExchangePagePayload.Row(l.listingId(), l.title(), l.credit().orElse(""), l.genreTags(),
-                    l.plays(), l.hearts(), slotColours(l.gameDef()), flags, 0));
+                    l.plays(), l.hearts(), slotColours(l.gameDef()), slotChips(l.gameDef()), flags, 0));
         }
         return new ExchangePagePayload(ExchangePagePayload.TAB_LISTINGS, p, pageCount(browse.size(), size),
                 browse.size(), rows, flags(enabled, moderator), status.key(), status.args(), status.kind(), draftsUsed,
@@ -89,7 +90,7 @@ public final class ExchangePages {
             }
             int age = (int) Math.max(0, (nowEpoch - d.createdAt()) / 86_400L);
             rows.add(new ExchangePagePayload.Row(i, d.gameDef().title(), "", tags, 0, 0, slotColours(d.gameDef()),
-                    flags, age));
+                    slotChips(d.gameDef()), flags, age));
         }
         return new ExchangePagePayload(ExchangePagePayload.TAB_DRAFTS, p, pageCount(drafts.size(), size),
                 drafts.size(), rows, flags(enabled, moderator), status.key(), status.args(), status.kind(),
@@ -106,6 +107,34 @@ public final class ExchangePages {
         int[] out = new int[ExchangePagePayload.SLOTS];
         for (int i = 0; i < out.length && i < types.length; i++) {
             out[i] = def.slot(types[i]).isEmpty() ? EMPTY_SLOT : types[i].colour & 0xFFFFFF;
+        }
+        return out;
+    }
+
+    /**
+     * The ten slots' chip ids in {@link ModuleType} order: each slot's ids joined by {@code ,}, {@code ""} when the
+     * slot is empty. Whole ids only — an id that would push the entry past
+     * {@link ExchangePagePayload#MAX_SLOT_CHIPS} is left off rather than cut.
+     */
+    public static List<String> slotChips(GameDef def) {
+        ModuleType[] types = ModuleType.values();
+        List<String> out = new ArrayList<>(ExchangePagePayload.SLOTS);
+        for (int i = 0; i < ExchangePagePayload.SLOTS; i++) {
+            StringBuilder joined = new StringBuilder();
+            if (i < types.length) {
+                for (SlotEntry entry : def.slot(types[i])) {
+                    String id = entry.id().toString();
+                    int len = joined.length() + (joined.isEmpty() ? 0 : 1) + id.length();
+                    if (len > ExchangePagePayload.MAX_SLOT_CHIPS) {
+                        break;
+                    }
+                    if (!joined.isEmpty()) {
+                        joined.append(',');
+                    }
+                    joined.append(id);
+                }
+            }
+            out.add(joined.toString());
         }
         return out;
     }

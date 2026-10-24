@@ -3,7 +3,13 @@ package za.co.neroland.neroarcade.bench;
 import java.util.List;
 
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.HolderLookup;
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.NbtOps;
 import net.minecraft.network.chat.Component;
+import net.minecraft.network.protocol.Packet;
+import net.minecraft.network.protocol.game.ClientGamePacketListener;
+import net.minecraft.network.protocol.game.ClientboundBlockEntityDataPacket;
 import net.minecraft.resources.Identifier;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
@@ -58,7 +64,7 @@ import za.co.neroland.neroarcade.runtime.MatchResult;
  * the test host and its seat. Chips are templates and never consumed; LOAD-materialised chips ("ghosts") are
  * never dropped on break and cannot be taken out.
  */
-public class GameBenchBlockEntity extends BlockEntity implements MenuProvider, SeatHolder {
+public class GameBenchBlockEntity extends BlockEntity implements MenuProvider, SeatHolder, LoadedBenches.AuthorHolder {
 
     private static final String KEY_DRAFT = "draft";
     private static final String KEY_GHOSTS = "ghosts";
@@ -99,9 +105,20 @@ public class GameBenchBlockEntity extends BlockEntity implements MenuProvider, S
     private String statusKey = "";
     private List<String> statusArgs = List.of();
 
+    private static final String KEY_RACK = "holo_rack";
+    private static final String KEY_PREVIEW = "holo_preview";
+    /** Server: what the holo-rack clients were last sent (mask and draft), to send again only on a change. */
+    private long sentHolo = Long.MIN_VALUE;
+    /** Client: slot kinds with a chip in the rack (one bit per {@code ModuleType}), for the holo-rack renderer. */
+    private int clientRackMask;
+    /** Client: the draft for the floating preview (no author), or null. */
+    private @Nullable GameDef clientPreview;
+
     private @Nullable MatchHost testHost;
     private @Nullable Seat testSeat;
     private int rejectedInputs;
+    /** Server: joined {@link LoadedBenches} (on the first tick), so an erasure can reach this draft. */
+    private boolean tracked;
 
     public GameBenchBlockEntity(BlockPos pos, BlockState state) {
         super(ModBlockEntities.GAME_BENCH.get(), pos, state);
@@ -238,6 +255,10 @@ public class GameBenchBlockEntity extends BlockEntity implements MenuProvider, S
         if (!(level instanceof ServerLevel serverLevel)) {
             return;
         }
+        if (!tracked) {
+            tracked = true;
+            LoadedBenches.add(this);
+        }
         if (dirty) {
             dirty = false;
             sendState(serverLevel);
@@ -248,7 +269,14 @@ public class GameBenchBlockEntity extends BlockEntity implements MenuProvider, S
         }
         MatchHost host = testHost;
         if (host != null) {
-            host.tick();
+            try {
+                host.tick();
+            } catch (RuntimeException e) {
+                // the host guards its own runtime step; anything that still escapes ends the test play (final
+                // review H1) so the bench cannot fault again next tick
+                host.escapedFault(e);
+                stopTest(DropReason.FAULT);
+            }
         }
     }
 
@@ -269,6 +297,42 @@ public class GameBenchBlockEntity extends BlockEntity implements MenuProvider, S
         if (wanted != state) {
             serverLevel.setBlock(worldPosition, wanted, Block.UPDATE_CLIENTS);
         }
+        long holo = ((long) rackMask() << 32) ^ draft.preview().hashCode();
+        if (holo != sentHolo) {
+            sentHolo = holo;
+            serverLevel.sendBlockUpdated(worldPosition, wanted, wanted, Block.UPDATE_CLIENTS);
+        }
+    }
+
+    private int rackMask() {
+        return BenchSlots.rackMask(i -> !inventory.getItem(i).isEmpty());
+    }
+
+    /** Client side: rack slot kinds holding a chip (one bit per {@code ModuleType} ordinal). */
+    public int clientRackMask() {
+        return clientRackMask;
+    }
+
+    /** Client side: the draft the holo-table previews, or null. */
+    public @Nullable GameDef clientPreview() {
+        return clientPreview;
+    }
+
+    /**
+     * The holo-rack's view: which slot kinds hold a chip and the draft without its author (the same anonymous
+     * preview the bench screen gets). Never the container or the tray.
+     */
+    @Override
+    public CompoundTag getUpdateTag(HolderLookup.Provider registries) {
+        CompoundTag tag = new CompoundTag();
+        tag.putInt(KEY_RACK, rackMask());
+        GameDef.CODEC.encodeStart(NbtOps.INSTANCE, draft.preview()).result().ifPresent(t -> tag.put(KEY_PREVIEW, t));
+        return tag;
+    }
+
+    @Override
+    public @Nullable Packet<ClientGamePacketListener> getUpdatePacket() {
+        return ClientboundBlockEntityDataPacket.create(this);
     }
 
     /**
@@ -438,7 +502,36 @@ public class GameBenchBlockEntity extends BlockEntity implements MenuProvider, S
         testSeat = null;
         testHost = null;
         AwakeCabinets.SERVER.release(this);
+        LoadedBenches.remove(this);
+        tracked = false;
         super.setRemoved();
+    }
+
+    // --- privacy (Stage 6) ------------------------------------------------------------------------------
+
+    /** Erasure: the draft stops naming {@code player} (author tombstoned, credit cleared); saved with the chunk. */
+    @Override
+    public boolean eraseAuthor(java.util.UUID player) {
+        if (!draft.eraseAuthor(player)) {
+            return false;
+        }
+        markDirty();
+        return true;
+    }
+
+    @Override
+    public boolean holdsAuthor(java.util.UUID player) {
+        return draft.holdsAuthor(player);
+    }
+
+    /** Credit opt-out: the draft's credit goes if {@code player} is its author; saved with the chunk. */
+    @Override
+    public boolean stripCredit(java.util.UUID player) {
+        if (!draft.stripCredit(player)) {
+            return false;
+        }
+        markDirty();
+        return true;
     }
 
     // --- persistence --------------------------------------------------------------------------------
@@ -460,6 +553,9 @@ public class GameBenchBlockEntity extends BlockEntity implements MenuProvider, S
             ContainerHelper.loadAllItems(input, inventory.getItems());
             input.read(KEY_DRAFT, BenchDraft.CODEC).ifPresent(draft::copyFrom);
             ghostMask = input.getIntOr(KEY_GHOSTS, 0) & 0x3FFF;
+            // the update tag's holo view (absent in saved data)
+            clientRackMask = input.getIntOr(KEY_RACK, 0);
+            clientPreview = input.read(KEY_PREVIEW, GameDef.CODEC).orElse(null);
         } finally {
             muted = false;
         }

@@ -23,7 +23,27 @@ import za.co.neroland.neroarcade.runtime.MatchResult;
  */
 public final class ArcadeMatchEnds {
 
+    /** A late subscriber to finished matches (the NeroLink module, 007 §4). Server thread; must not throw. */
+    @FunctionalInterface
+    public interface EndHook {
+        void onEnd(ServerLevel level, MatchListener.MatchEnd end);
+    }
+
+    private static final java.util.List<EndHook> HOOKS = new java.util.concurrent.CopyOnWriteArrayList<>();
+
     private ArcadeMatchEnds() {
+    }
+
+    /** Adds a hook run after everything else for each finished match. Adding the same instance twice is ignored. */
+    public static void addHook(EndHook hook) {
+        if (hook != null && !HOOKS.contains(hook)) {
+            HOOKS.add(hook);
+        }
+    }
+
+    /** Test teardown only. */
+    public static boolean removeHook(EndHook hook) {
+        return HOOKS.remove(hook);
     }
 
     public static MatchListener listener(ServerLevel level) {
@@ -34,10 +54,10 @@ public final class ArcadeMatchEnds {
         BusMatchResult result = end.result();
         if (!end.hotSeat()) {
             if (end.outcome().won()) {
-                ArcadeMilestones.matchWon(result.lineageRoot(), end.outcome().wins());
+                ArcadeMilestones.matchWon(result.cartridgeId(), end.outcome().wins());
             }
             if (end.outcome().recordSet()) {
-                ArcadeMilestones.recordSet(result.lineageRoot(), end.outcome().records());
+                ArcadeMilestones.recordSet(result.cartridgeId(), end.outcome().records());
             }
             versusWinner(end).ifPresent(winner -> ArcadeMilestones.firstVersusWin(server, winner));
             Tournaments.publish(result);
@@ -49,6 +69,14 @@ public final class ArcadeMatchEnds {
             Seams.morale().onMatchPlayed(level, end.hostPos());
         } catch (RuntimeException | LinkageError e) {
             Seams.failed("morale", e);
+        }
+        for (EndHook hook : HOOKS) {
+            try {
+                hook.onEnd(level, end);
+            } catch (RuntimeException | LinkageError e) {
+                za.co.neroland.neroarcade.NeroArcadeCommon.LOGGER.warn("[NeroArcade] match-end hook failed ({})",
+                        e.getClass().getName());
+            }
         }
     }
 

@@ -25,6 +25,14 @@ public enum CabinetStatus implements StringRepresentable {
         return name().toLowerCase(Locale.ROOT);
     }
 
+    /**
+     * The block light the cabinet's lower half emits in this status: 7 while the strip is lit, 0 when OFF (asleep,
+     * no cartridge) or NO POWER (an unpowered cabinet does not glow; 004 §1, A10).
+     */
+    public int blockLight() {
+        return this == OFF || this == NO_POWER ? 0 : 7;
+    }
+
     /** {@code neroarcade.cabinet.status.ready} — the word the screen and the action bar show. */
     public String langKey() {
         return "neroarcade.cabinet.status." + getSerializedName();

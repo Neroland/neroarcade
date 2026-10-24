@@ -51,7 +51,7 @@ public class LinkBusBlockEntity extends BlockEntity {
     private final List<BlockPos> fullCabinets = new ArrayList<>();
     private boolean active;
     private final Map<UUID, Integer> sentBoards = new HashMap<>();
-    private String sentLineage = "";
+    private String sentBoard = "";
 
     public LinkBusBlockEntity(BlockPos pos, BlockState state) {
         super(ModBlockEntities.LINK_BUS.get(), pos, state);
@@ -86,10 +86,12 @@ public class LinkBusBlockEntity extends BlockEntity {
         String dim = dimension(serverLevel);
         long busId = worldPosition.asLong();
         BusTopology previous = topology;
-        BusTopology next = NeroArcadeConfig.MULTIPLAYER_ENABLED.get()
-                ? BusTopology.discover(new LevelBusWorld(serverLevel), worldPosition,
-                        pos -> BusRegistry.SERVER.claimedElsewhere(dim, pos, busId))
-                : BusTopology.empty(worldPosition);
+        BusTopology next = BusTopology.discoverIf(NeroArcadeConfig.MULTIPLAYER_ENABLED.get(), worldPosition,
+                () -> BusTopology.discover(new LevelBusWorld(serverLevel), worldPosition,
+                        pos -> BusRegistry.SERVER.claimedElsewhere(dim, pos, busId)));
+        if (previous != null) {
+            next = next.keeping(previous.cabinets()); // a newcomer never pushes a member off the bus
+        }
         topology = next;
         BusRegistry.SERVER.put(dim, next);
         if (previous != null) {
@@ -113,43 +115,49 @@ public class LinkBusBlockEntity extends BlockEntity {
         assign(next);
     }
 
+    /** Sticky host and seat indexes across rediscoveries (review 003b F1). Runtime only. */
+    private final BusAssignment assignment = new BusAssignment();
+
     private void assign(BusTopology t) {
         long busId = t.busId();
         List<ArcadeCabinetBlockEntity> cabinets = new ArrayList<>();
-        List<BusElection.Candidate> candidates = new ArrayList<>();
+        List<BusAssignment.Member> members = new ArrayList<>();
         for (BlockPos pos : t.cabinets()) {
             ArcadeCabinetBlockEntity c = cabinetAt(pos);
             if (c == null) {
                 continue;
             }
             cabinets.add(c);
-            candidates.add(new BusElection.Candidate(c.hasCartridge(), c.game() != null, c.insertedAt()));
+            members.add(new BusAssignment.Member(pos.asLong(), c.hasCartridge(), c.game() != null, c.insertedAt(),
+                    c.ownMatchRunning(), c.heldSeat() != null));
         }
-        BusElection.Part[] parts = BusElection.parts(candidates);
+        BusElection.Part[] parts = assignment.assign(members);
         BlockPos hostPos = null;
-        int seated = 0;
         for (int i = 0; i < parts.length; i++) {
-            if (parts[i].role() == BusElection.Role.HOST) {
+            if (parts[i] != null && parts[i].role() == BusElection.Role.HOST) {
                 hostPos = cabinets.get(i).getBlockPos();
             }
-            if (parts[i].seat() >= 0) {
-                seated++;
-            }
         }
+        int slots = BusAssignment.slots(parts);
+        int present = BusAssignment.present(parts);
         List<BlockPos> screens = new ArrayList<>();
         for (int i = 0; i < parts.length; i++) {
-            if (parts[i].role() != BusElection.Role.HOST) {
+            if (parts[i] != null && parts[i].role() != BusElection.Role.HOST) {
                 screens.add(cabinets.get(i).getBlockPos());
             }
         }
         screens.addAll(t.marquees());
         for (int i = 0; i < parts.length; i++) {
-            cabinets.get(i).assignBus(busId, BusRole.of(parts[i].role()), parts[i].seat(), hostPos, seated, screens);
+            if (parts[i] == null) {
+                continue; // a linked stranger's own match is running: assigned once it ends
+            }
+            cabinets.get(i).assignBus(busId, BusRole.of(parts[i].role()), parts[i].seat(), hostPos, slots, present,
+                    screens);
         }
         for (BlockPos pos : t.overflow()) {
             ArcadeCabinetBlockEntity c = cabinetAt(pos);
-            if (c != null && (c.role() == BusRole.SOLO || c.busId() == busId)) {
-                c.assignBus(busId, BusRole.FULL, -1, null, 0, List.of());
+            if (c != null && (c.role() == BusRole.SOLO || c.busId() == busId) && !c.ownMatchRunning()) {
+                c.assignBus(busId, BusRole.FULL, -1, null, 0, 0, List.of());
                 fullCabinets.add(pos);
             }
         }
@@ -212,9 +220,9 @@ public class LinkBusBlockEntity extends BlockEntity {
         if (phase != null && phase != BusPhase.IDLE && phase != BusPhase.LOBBY) {
             return; // the marquee mirrors the match; the board waits for the idle loop
         }
-        String lineage = game.def().lineageRoot();
-        if (!lineage.equals(sentLineage)) {
-            sentLineage = lineage;
+        String boardKey = game.def().id(); // boards are per cartridge id (D-owner-1)
+        if (!boardKey.equals(sentBoard)) {
+            sentBoard = boardKey;
             sentBoards.clear();
         }
         Set<UUID> viewers = new HashSet<>();
@@ -235,7 +243,7 @@ public class LinkBusBlockEntity extends BlockEntity {
                 }
                 ServerPlayer player = serverLevel.getServer().getPlayerList().getPlayer(viewer);
                 if (player != null) {
-                    Services.NETWORK.sendToPlayer(player, Boards.page(lineage, store.board(lineage), viewer, 10));
+                    Services.NETWORK.sendToPlayer(player, Boards.page(boardKey, store.board(boardKey), viewer, 10));
                     sentBoards.put(viewer, version);
                 }
             }
@@ -250,6 +258,7 @@ public class LinkBusBlockEntity extends BlockEntity {
         BusTopology t = topology;
         BusRegistry.SERVER.remove(dimension(serverLevel), busId);
         topology = null;
+        assignment.clear();
         if (t == null) {
             return;
         }

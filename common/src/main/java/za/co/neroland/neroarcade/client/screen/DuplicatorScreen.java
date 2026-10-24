@@ -31,6 +31,8 @@ public class DuplicatorScreen extends AbstractContainerScreen<DuplicatorMenu> {
     private static final int BAR_X = 50;
     private static final int BAR_Y = 49;
     private static final int BAR_W = 58;
+    /** The status line's first row; the second sits 10 px below, the inventory starts at 96. */
+    static final int STATUS_Y = 76;
 
     private @Nullable ArcadeButton copyButton;
 
@@ -124,12 +126,12 @@ public class DuplicatorScreen extends AbstractContainerScreen<DuplicatorMenu> {
             g.fill(bx, by, bx + BAR_W, by + 6, ArcadeColours.OK_TEXT);
         }
         super.extractContents(g, mouseX, mouseY, partialTick);
-        // the result line
+        // the result line: up to two lines at y 76 and 86, clear of the inventory at 96 (no "Inventory" label)
         Component line = statusLine();
         int colour = statusColour();
         List<FormattedCharSequence> wrapped = font.split(line, W - 2 * PAD);
-        for (int i = 0; i < wrapped.size() && i < 1; i++) {
-            g.text(font, wrapped.get(i), x + PAD, y + 79, colour, false);
+        for (int i = 0; i < wrapped.size() && i < 2; i++) {
+            g.text(font, wrapped.get(i), x + PAD, y + STATUS_Y + i * 10, colour, false);
         }
     }
 
@@ -163,8 +165,11 @@ public class DuplicatorScreen extends AbstractContainerScreen<DuplicatorMenu> {
         return status >= DuplicatorMenu.STATUS_DENY_BASE ? ArcadeColours.DENY_TEXT : ArcadeColours.SUBTLE;
     }
 
+    /**
+     * Draws nothing: the title and the slot captions already say what the slots are, and the status line's two rows
+     * use the space the "Inventory" label had (Stage 5 review F2).
+     */
     @Override
     protected void extractLabels(GuiGraphicsExtractor g, int mouseX, int mouseY) {
-        g.text(font, playerInventoryTitle, inventoryLabelX, inventoryLabelY, ArcadeColours.SUBTLE, false);
     }
 }

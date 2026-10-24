@@ -15,11 +15,30 @@ final class FakeHostEnv implements HostEnv {
     record Sent(UUID to, CustomPacketPayload payload) {
     }
 
+    record Unseat(net.minecraft.core.BlockPos at, DropReason why) {
+    }
+
+    /** Holders the host told to drop their seat ({@link HostEnv#unseat}). */
+    final List<Unseat> unseats = new ArrayList<>();
+    /** Optional stand-in holders by position: unseat calls their {@code dropSeat}. */
+    final java.util.Map<net.minecraft.core.BlockPos, SeatHolder> holders = new java.util.HashMap<>();
+
     long time;
     long seed = 0x4E45524FL;
     boolean powered = true;
     final Set<UUID> viewers = new LinkedHashSet<>();
     final List<Sent> sent = new ArrayList<>();
+
+    record Message(UUID to, String langKey) {
+    }
+
+    /** Chat lines the host sent ({@link HostEnv#message}). */
+    final List<Message> messages = new ArrayList<>();
+
+    @Override
+    public void message(UUID player, String langKey) {
+        messages.add(new Message(player, langKey));
+    }
 
     @Override
     public long gameTime() {
@@ -44,6 +63,15 @@ final class FakeHostEnv implements HostEnv {
     @Override
     public boolean powered() {
         return powered;
+    }
+
+    @Override
+    public void unseat(net.minecraft.core.BlockPos at, DropReason why) {
+        unseats.add(new Unseat(at, why));
+        SeatHolder holder = holders.get(at);
+        if (holder != null) {
+            holder.dropSeat(why);
+        }
     }
 
     <T extends CustomPacketPayload> List<T> sentTo(UUID player, Class<T> type) {

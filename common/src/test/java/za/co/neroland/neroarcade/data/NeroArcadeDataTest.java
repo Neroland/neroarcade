@@ -16,8 +16,9 @@ import za.co.neroland.nerolandcore.data.PlayerDataErasure;
 
 /**
  * The erasure seam: registered with Core exactly once, walks every added store, keeps going past a
- * failing store and then reports the request as incomplete. Plain JVM, no game bootstrap (the server
- * is {@code null}, so no backup refresh is attempted).
+ * failing store and then reports the request as incomplete. Plain JVM, no game bootstrap. Since Stage 6 the
+ * composite asks every store that erased cleanly to refresh its backup even without a server (each store decides;
+ * the real ones do nothing without one), so the backup step is observable in tests.
  */
 class NeroArcadeDataTest {
 
@@ -43,7 +44,8 @@ class NeroArcadeDataTest {
             assertEquals(2, NeroArcadeData.storeCount());
             UUID player = UUID.randomUUID();
             assertThrows(IllegalStateException.class, () -> NeroArcadeData.eraser().erase(null, player));
-            assertEquals(List.of("failing", "healthy"), erased);
+            assertEquals(List.of("failing", "healthy", "healthy:backup"), erased,
+                    "a failing store is not backed up; a healthy one is, right after its erase");
         } finally {
             NeroArcadeData.removeStore(failing);
             NeroArcadeData.removeStore(healthy);
@@ -68,7 +70,7 @@ class NeroArcadeDataTest {
 
             @Override
             public void backupNow(MinecraftServer server) {
-                throw new AssertionError("no backup refresh without a live server");
+                log.add(name + ":backup");
             }
         };
     }

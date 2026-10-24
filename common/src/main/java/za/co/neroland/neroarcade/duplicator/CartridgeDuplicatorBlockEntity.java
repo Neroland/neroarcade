@@ -27,7 +27,6 @@ import org.jetbrains.annotations.Nullable;
 import za.co.neroland.nerolandcore.registry.RegistrationProvider.RegistryEntry;
 
 import za.co.neroland.neroarcade.block.ArcadeBlockProperties;
-import za.co.neroland.neroarcade.config.NeroArcadeConfig;
 import za.co.neroland.neroarcade.game.CartridgeValidator;
 import za.co.neroland.neroarcade.game.GameDef;
 import za.co.neroland.neroarcade.game.ValidationError;
@@ -41,8 +40,8 @@ import za.co.neroland.neroarcade.registry.ModSounds;
  * The Cartridge Duplicator (003 §7). An original and a Blank Cartridge go in; {@code [COPY]} runs for
  * {@link DuplicatorRules#COPY_TICKS} ticks with {@code copying=true} (the BER spins the platter); then the original
  * and one identical copy come out in the two output slots — the same id, lineage, revision, author and credit.
- * With {@code cabinetsNeedPower} on, a copy needs {@link DuplicatorRules#COPY_ENERGY} FE at its start; the
- * duplicator has no energy buffer in 0.1.0 (like the cabinets), so it then refuses with "needs power".
+ * Copies are free in 0.1.0: the duplicator has no energy buffer (like the cabinets), and the "needs power" refusal
+ * ({@link DuplicatorRules#COPY_ENERGY}) is kept for a later release.
  */
 public class CartridgeDuplicatorBlockEntity extends BlockEntity implements MenuProvider {
 
@@ -94,9 +93,9 @@ public class CartridgeDuplicatorBlockEntity extends BlockEntity implements MenuP
         return dataAccess;
     }
 
-    /** Power for one copy: free unless {@code cabinetsNeedPower} (no buffer in 0.1.0, so then never). */
+    /** Power for one copy: 0.1.0 has no energy buffer, so always; the NO POWER refusal is a later-release seam. */
     static boolean powered() {
-        return !NeroArcadeConfig.CABINETS_NEED_POWER.get();
+        return true;
     }
 
     private Optional<GameDef> originalGame() {

@@ -147,4 +147,12 @@ public final class BenchModel {
         return statusKey.equals("neroarcade.bench.status.saved") || statusKey.equals("neroarcade.bench.status.loaded")
                 || statusKey.equals("neroarcade.bench.status.test_started");
     }
+
+    /** A slider's mouse-wheel step for a range of {@code span}: a sixtieth of it, at least one (005a P4). */
+    public static int wheelStep(int span) {
+        return Math.max(1, span / 60);
+    }
+
+    /** Most slider commits per second while dragging (the server's edit rate cap is 20/s; 005a P4). */
+    public static final int DRAG_COMMIT_HZ = 10;
 }

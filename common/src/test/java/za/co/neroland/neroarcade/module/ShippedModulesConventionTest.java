@@ -68,17 +68,21 @@ class ShippedModulesConventionTest {
 
     @Test
     void noCommercialGameNames() {
-        List<String> blocked = TestFiles.read(TestFiles.testResources().resolve("blocked_names.txt")).lines()
-                .map(String::strip).filter(l -> !l.isEmpty() && !l.startsWith("#")).toList();
+        // each line is a regex with a one-character class, so the public repo never spells a name out
+        List<java.util.regex.Pattern> blocked = TestFiles.read(TestFiles.testResources().resolve("blocked_names.txt"))
+                .lines().map(String::strip).filter(l -> !l.isEmpty() && !l.startsWith("#"))
+                .map(l -> java.util.regex.Pattern.compile(l, java.util.regex.Pattern.CASE_INSENSITIVE)).toList();
+        assertEquals(17, blocked.size(), "every blocked name is loaded");
+        assertTrue(blocked.get(0).matcher("T" + "ETRIS").find(), "the patterns match the real spelling");
         Map<String, String> lang = TestFiles.lang();
         for (ArcadeModule module : ModuleRegistry.all()) {
             String text = (module.id() + " " + lang.getOrDefault(module.langKey(), "") + " "
                     + lang.getOrDefault(module.descLangKey(), "")).toLowerCase(Locale.ROOT);
-            for (String name : blocked) {
-                assertFalse(text.contains(name), module.id() + " mentions " + name);
+            for (java.util.regex.Pattern name : blocked) {
+                assertFalse(name.matcher(text).find(), module.id() + " mentions " + name.pattern());
             }
         }
         lang.forEach((key, value) -> blocked.forEach(name ->
-                assertFalse(value.toLowerCase(Locale.ROOT).contains(name), key + " mentions " + name)));
+                assertFalse(name.matcher(value).find(), key + " mentions " + name.pattern())));
     }
 }

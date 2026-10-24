@@ -4,7 +4,7 @@
   "ingredients": [
     "neroarcade:blank_chip",
     "minecraft:glass_pane",
-    "minecraft:chain"
+    "minecraft:iron_chain"
   ],
   "result": {
     "id": "neroarcade:module_chip",

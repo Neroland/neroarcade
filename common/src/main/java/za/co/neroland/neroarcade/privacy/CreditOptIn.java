@@ -44,6 +44,9 @@ public final class CreditOptIn extends SavedData {
     public static final SavedDataType<CreditOptIn> TYPE = new SavedDataType<CreditOptIn>(
             Identifier.fromNamespaceAndPath(NeroArcadeCommon.MOD_ID, "credit"), FACTORY, CODEC, null);
 
+    /** Where the erasers find this store (tests swap in an instance). */
+    public static final StoreAccess<CreditOptIn> ACCESS = new StoreAccess<>(CreditOptIn::get);
+
     private final CreditTable table;
 
     public CreditOptIn() {
@@ -96,8 +99,25 @@ public final class CreditOptIn extends SavedData {
         return table.holds(player);
     }
 
+    /** Whether {@code player} has credit on in this store instance (the export reads it). */
+    public boolean isOnHere(UUID player) {
+        return table.isOn(player);
+    }
+
+    /** Test seam: switch a flag on without a server (no opt-out listeners, no backup). */
+    public void setForTest(UUID player, boolean on) {
+        if (table.set(player, on)) {
+            setDirty();
+        }
+    }
+
+    /** What this store's saved form (and so its backup) holds. */
+    public net.minecraft.nbt.CompoundTag saveForm() {
+        return table.save();
+    }
+
     public void backup(MinecraftServer server) {
-        BackupHook.current().backup(server, "credit",
+        BackupHook.current().backup(server, "credit", table::save,
                 () -> SavedDataRecovery.backupNow(server.overworld(), TYPE, this, RECOVERY_NAME));
     }
 }

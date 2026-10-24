@@ -210,6 +210,45 @@ public final class BenchDraft {
         return meta;
     }
 
+    // --- privacy (Stage 6) ------------------------------------------------------------------------------
+
+    /** Whether the draft's origin names {@code player} as author (the erasure probe for a loaded bench). */
+    public boolean holdsAuthor(java.util.UUID player) {
+        return player != null && meta.author().filter(player::equals).isPresent();
+    }
+
+    /**
+     * Erasure (review 005a / 003b P2): if the draft's origin names {@code player} as author, the author becomes the
+     * tombstone and the credit goes; id, lineage and the rack stay (the game itself is not personal data). A later
+     * SAVE therefore mints a new id, as for any game the saver did not write.
+     *
+     * @return true if anything changed
+     */
+    public boolean eraseAuthor(java.util.UUID player) {
+        if (!holdsAuthor(player)) {
+            return false;
+        }
+        meta = new Meta(meta.id(), meta.lineage(), meta.revision(),
+                Optional.of(za.co.neroland.neroarcade.privacy.Tombstones.ERASED_AUTHOR), Optional.empty(),
+                meta.seed(), meta.createdAt());
+        return true;
+    }
+
+    /**
+     * Credit opt-out (compliance review F5): if the draft's origin names {@code player} as author and carries a
+     * credit, the credit goes; the author, id and rack stay.
+     *
+     * @return true if anything changed
+     */
+    public boolean stripCredit(java.util.UUID player) {
+        if (!holdsAuthor(player) || meta.credit().isEmpty()) {
+            return false;
+        }
+        meta = new Meta(meta.id(), meta.lineage(), meta.revision(), meta.author(), Optional.empty(), meta.seed(),
+                meta.createdAt());
+        return true;
+    }
+
     // --- building ---------------------------------------------------------------------------------
 
     /** Slots from the rack: each type's chips in stack order; an empty type is absent (= its default). */
@@ -224,10 +263,13 @@ public final class BenchDraft {
         return out;
     }
 
-    /** What the preview runs: never an author UUID; placeholder id and title until the first save. */
+    /**
+     * What the preview runs, and what the update tag and the bench screen receive: never an author UUID and never
+     * the credit (compliance review F3: no client draws it there); placeholder id and title until the first save.
+     */
     public GameDef preview() {
         return new GameDef(ArcadeSchema.CURRENT, meta.id().orElse(PLACEHOLDER_ID),
-                title.isBlank() ? PLACEHOLDER_TITLE : title, Optional.empty(), meta.credit(), meta.lineage(),
+                title.isBlank() ? PLACEHOLDER_TITLE : title, Optional.empty(), Optional.empty(), meta.lineage(),
                 meta.seed(), slots(), meta.createdAt(), Math.max(1, meta.revision()));
     }
 

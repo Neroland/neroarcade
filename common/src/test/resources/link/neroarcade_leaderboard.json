@@ -1,0 +1,23 @@
+{
+  "ok": true,
+  "data": {
+    "asOf": 1792000000000,
+    "lineageRoot": "k7m2p9qa3f8d1z6b",
+    "title": "Neon Dodge",
+    "retentionDays": 90,
+    "enabled": true,
+    "top": [
+      { "rank": 1, "name": "StarPilot", "score": 12400, "at": 1791900000 },
+      { "rank": 2, "name": null, "score": 10950, "at": 1791910000 },
+      { "rank": 3, "name": "Vega_7", "score": 10420, "at": 1791920000 },
+      { "rank": 4, "score": 9980, "at": 1791930000 },
+      { "rank": 5, "name": "Quasar", "score": 9500, "at": 1791940000 },
+      { "rank": 6, "score": 9120, "at": 1791990000 },
+      { "rank": 7, "score": 8800, "at": 1791950000 },
+      { "rank": 8, "name": "NovaKid", "score": 8410, "at": 1791960000 },
+      { "rank": 9, "score": 8020, "at": 1791970000 },
+      { "rank": 10, "name": "Halley", "score": 7700, "at": 1791975000 }
+    ],
+    "you": { "rank": 6, "score": 9120, "at": 1791990000, "inTop": true }
+  }
+}

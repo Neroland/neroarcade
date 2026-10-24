@@ -18,6 +18,17 @@ class CabinetStatusTest {
     }
 
     @Test
+    void lightFollowsTheStripButNotWithoutPower() {
+        // Stage 5 review F4 / 004 A10: 7 for every status but OFF and NO POWER
+        assertEquals(0, CabinetStatus.OFF.blockLight());
+        assertEquals(0, CabinetStatus.NO_POWER.blockLight(), "an unpowered cabinet does not glow");
+        assertEquals(7, CabinetStatus.READY.blockLight());
+        assertEquals(7, CabinetStatus.PLAYING.blockLight());
+        assertEquals(7, CabinetStatus.LINKED.blockLight());
+        assertEquals(7, CabinetStatus.LOCKED.blockLight());
+    }
+
+    @Test
     void anAwakeHostReportsItsPhase() {
         assertEquals(CabinetStatus.READY, CabinetStatus.of(true, true, true, BusPhase.LOBBY));
         assertEquals(CabinetStatus.PLAYING, CabinetStatus.of(true, true, true, BusPhase.COUNTDOWN));

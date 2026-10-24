@@ -1,0 +1,29 @@
+{
+  "title": "quest.neroarcade.insert_coin.busy_arcade.title",
+  "description": "quest.neroarcade.insert_coin.busy_arcade.desc",
+  "icon": "neroarcade:arcade_exchange",
+  "prerequisites": [
+    "neroarcade:insert_coin/grand_opening"
+  ],
+  "objectives": [
+    {
+      "type": "neroquests:custom_event",
+      "channel": "neroarcade:cartridge_published",
+      "event_scope": "exchange",
+      "direction": "rising",
+      "min_value": 10,
+      "audience": "world"
+    }
+  ],
+  "rewards": [
+    {
+      "type": "neroquests:xp",
+      "amount": 150
+    },
+    {
+      "type": "neroquests:currency",
+      "amount": 80
+    }
+  ],
+  "scope": "server"
+}

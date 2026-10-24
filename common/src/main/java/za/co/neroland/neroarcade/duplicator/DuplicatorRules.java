@@ -14,7 +14,7 @@ public final class DuplicatorRules {
 
     /** Ticks one copy takes (3 seconds). */
     public static final int COPY_TICKS = 60;
-    /** FE one copy draws at its start when {@code cabinetsNeedPower} is on. */
+    /** FE one copy would draw at its start once the duplicator has an energy buffer (a later release; unused). */
     public static final int COPY_ENERGY = 200;
 
     /** Why COPY cannot start, as the one sentence the screen shows ({@code neroarcade.duplicator.deny.*}). */

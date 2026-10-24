@@ -1,0 +1,25 @@
+{
+  "title": "quest.neroarcade.insert_coin.on_the_exchange.title",
+  "description": "quest.neroarcade.insert_coin.on_the_exchange.desc",
+  "icon": "neroarcade:arcade_exchange",
+  "prerequisites": [
+    "neroarcade:insert_coin/first_cartridge"
+  ],
+  "objectives": [
+    {
+      "type": "neroquests:gate_open",
+      "gate": "neroarcade:first_published"
+    }
+  ],
+  "rewards": [
+    {
+      "type": "neroquests:xp",
+      "amount": 100
+    },
+    {
+      "type": "neroquests:currency",
+      "amount": 40
+    }
+  ],
+  "scope": "player"
+}

@@ -141,6 +141,7 @@ public final class ArcadeClient {
             SENDER.reset();
         }
         CabinetScreens.tick(ClientMatches.now());
+        GalleryCapture.tick();
     }
 
     /** Asks to leave the seat at {@code match}'s host. */

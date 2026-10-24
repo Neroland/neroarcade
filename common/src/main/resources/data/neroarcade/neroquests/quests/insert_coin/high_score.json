@@ -1,0 +1,26 @@
+{
+  "title": "quest.neroarcade.insert_coin.high_score.title",
+  "description": "quest.neroarcade.insert_coin.high_score.desc",
+  "icon": "neroarcade:marquee_screen",
+  "prerequisites": [],
+  "objectives": [
+    {
+      "type": "neroquests:custom_event",
+      "channel": "neroarcade:record_set",
+      "direction": "rising",
+      "min_value": 1,
+      "audience": "world"
+    }
+  ],
+  "rewards": [
+    {
+      "type": "neroquests:xp",
+      "amount": 50
+    },
+    {
+      "type": "neroquests:currency",
+      "amount": 30
+    }
+  ],
+  "scope": "server"
+}

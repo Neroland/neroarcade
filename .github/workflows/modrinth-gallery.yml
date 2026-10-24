@@ -5,8 +5,8 @@ name: Sync Modrinth gallery
 # release time). To keep the gallery an exact mirror of the repo folder, this wipes
 # the existing gallery and re-uploads every PNG in a fixed order, featuring the first as the card.
 #
-# Source of truth: neoforge/versions/26.2/runs/client/screenshots/neroarcade/*.png (written by the
-# NeoForge 26.2 client; a gallery capture harness will write here once one exists).
+# Source of truth: neoforge/versions/26.2/runs/client/screenshots/neroarcade/*.png, written by the
+# NeoForge 26.2 client's `/nsarcgallery capture` (it builds `/neroarcade gallery` and shoots the list).
 # Requires the same secrets as the description sync: MODRINTH_PROJECT_ID + MODRINTH_API_TOKEN.
 on:
   push:
@@ -30,7 +30,7 @@ jobs:
       DIR: neoforge/versions/26.2/runs/client/screenshots/neroarcade
       # Gallery order; the first present file becomes the featured card. Any PNG not listed here is
       # appended afterwards in alphabetical order, so new shots still sync without editing this.
-      ORDER: "hero"
+      ORDER: "hero aisle_west aisle_east link_row workshop"
     steps:
       - name: Checkout repository
         uses: actions/checkout@v6

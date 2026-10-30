@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- On Minecraft 26.3, left clicks on the Game Bench's module property controls work again (right-click still steps a choice backwards).
+
 ## [0.1.0-beta.1] - 2026-10-24
 
 The first build with gameplay: a mini-game construction kit. Players build a game from module chips at a Game

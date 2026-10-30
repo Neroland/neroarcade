@@ -1,5 +1,6 @@
 package za.co.neroland.neroarcade.client.widget;
 
+import com.mojang.blaze3d.platform.InputConstants;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
@@ -101,7 +102,7 @@ public class PropControl extends AbstractWidget {
             }
             case ENUM -> {
                 int n = spec.constants().size();
-                value = Math.floorMod(value + (event.button() == 1 ? -1 : 1), n);
+                value = Math.floorMod(value + (event.button() == InputConstants.MOUSE_BUTTON_RIGHT ? -1 : 1), n);
                 commit.commit(spec, value);
             }
         }
@@ -109,8 +110,8 @@ public class PropControl extends AbstractWidget {
 
     @Override
     protected boolean isValidClickButton(net.minecraft.client.input.MouseButtonInfo buttonInfo) {
-        return buttonInfo.button() == 0 || (spec.kind() == za.co.neroland.neroarcade.module.PropertyKind.ENUM
-                && buttonInfo.button() == 1);
+        return buttonInfo.button() == InputConstants.MOUSE_BUTTON_LEFT || (spec.kind() == za.co.neroland.neroarcade.module.PropertyKind.ENUM
+                && buttonInfo.button() == InputConstants.MOUSE_BUTTON_RIGHT);
     }
 
     @Override

@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.2.1-beta.1] - 2026-10-31
+
+### Changed
+
+- Release uploads now target CurseForge and GitHub Releases only.
+- Removed automatic project description and gallery uploads.
+- Renamed the website overview source to `art/description.md` and refreshed public documentation links.
+
 ## [0.2.0-beta.1] - 2026-10-30
 
 Adds Minecraft 1.21.x builds next to the 26.x ones and fixes a Game Bench click on 26.3. Existing worlds and
@@ -107,7 +115,7 @@ stage-by-stage development record is kept in `BUILD-HISTORY.md`.
 ### Changed
 
 - **New logo and mod icon:** the family core-prism now plays on a neon arcade cabinet, with a pixel-font wordmark.
-  The Modrinth and CurseForge pages are rewritten to match the other Neroland mods.
+  The store pages are rewritten to match the other Neroland mods.
 - The mod version moves from the `0.0.1-alpha.1` scaffold to `0.1.0-beta.1`. Neroland Core is pinned at 1.15.0 and
   every loader manifest floors it there.
 - **Leaderboards belong to a cartridge id**, not to a game's lineage: a remix with easier rules can no longer post

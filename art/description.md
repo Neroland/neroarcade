@@ -43,7 +43,7 @@ NeroArcade keeps as little as it can, and **never shows a player's name unless t
 
 ## Requirements & compatibility
 
-- **Requires [Neroland Core](https://modrinth.com/mod/nerolandcore) 1.15.0 or newer** — install it alongside NeroArcade (it loads first).
+- **Requires [Neroland Core](https://nerolandmc.net/mods/neroland-core/) 1.15.0 or newer** — install it alongside NeroArcade (it loads first).
 - Optional: **NeroEconomy** 0.4.0-beta.1+, **NeroLink** 1.0.0+ (1.1.0 for rich notification text) and **NeroQuests**. NeroArcade is complete without them.
 - **Modpacks are allowed and encouraged** — any platform, no need to ask. Use the official files and credit *NeroArcade by Neroland* with links to this page and the [GitHub repository](https://github.com/Neroland/neroarcade). Full terms: [LICENSE](https://github.com/Neroland/neroarcade/blob/main/LICENSE).
 

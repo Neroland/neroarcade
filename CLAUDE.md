@@ -1,5 +1,7 @@
 # NeroArcade — agent guide
 
+> Modrinth is temporarily being removed from the upload and is no longer being referenced. Avoid making references to modrinth.
+
 NeroArcade is a Minecraft mod for building, playing and sharing mini games inside Minecraft. It is part of
 the Neroland mod family and is built on **Neroland Core**.
 
@@ -14,7 +16,7 @@ the Neroland mod family and is built on **Neroland Core**.
 | `common/src/test/java/` | Plain-JVM JUnit 5 tests (wired into the NeoForge cells) |
 | `fabric/`, `forge/`, `neoforge/` | One branch per loader: entry points, network + platform implementations, manifest templates |
 | `tools/` | `ecj.prefs`, `merge_lang.py` + `lang/` fragments, `gen_logo.py`, the Gradle MCP server |
-| `art/` | Logo outputs and the Modrinth / CurseForge descriptions |
+| `art/` | Logo outputs and the website / CurseForge descriptions |
 | `wiki/` | Player-facing wiki pages, published to the public GitHub wiki |
 
 Common packages so far: `platform` (the `PlatformInfo` / `NetworkPlatform` / `Services` trio), `config`,
@@ -324,8 +326,7 @@ and JVM. Desync is a defect, and `ReplayTest` pins final state hashes per exampl
 - **Config through Core's `ConfigSchema`** (`config/neroarcade.properties`).
 - **Opt-out Sentry telemetry** with no personal data. The DSN is NeroArcade's own Sentry project (EU ingest);
   keep the placeholder guard so a fork with the placeholder DSN stays silent.
-- **`publish.yml` rules.** Direct-curl CurseForge upload with `max-parallel: 1` and the 5xx retry loop, plus
-  the Modrinth v3 environment-metadata step after `mc-publish`.
+- **`publish.yml` rules.** Direct-curl CurseForge upload with `max-parallel: 1` and the 5xx retry loop.
 - **Own creative tab** (`registry/ModCreativeTab`, id `neroarcade`, title `itemGroup.neroarcade`). Never add
   items to Core's tab.
 - **Never commit, tag or push.** Leave version control to the owner.

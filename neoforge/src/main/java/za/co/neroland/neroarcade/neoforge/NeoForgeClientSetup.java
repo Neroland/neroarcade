@@ -56,6 +56,15 @@ public final class NeoForgeClientSetup {
         modEventBus.addListener((RegisterGuiLayersEvent event) -> event.registerAboveAll(
                 Identifier.fromNamespaceAndPath(NeroArcadeCommon.MOD_ID, "arcade_hud"), (g, delta) -> ArcadeHud.render(g)));
         modEventBus.addListener((RegisterKeyMappingsEvent event) -> ArcadeKeys.all().forEach(event::register));
+        // Before 1.21.4 item tints come from item colour handlers (no item model definitions).
+        //? if <1.21.4 {
+        /*modEventBus.addListener((net.neoforged.neoforge.client.event.RegisterColorHandlersEvent.Item event) ->
+                event.register(za.co.neroland.neroarcade.client.ArcadeItemColours::colour,
+                za.co.neroland.neroarcade.registry.ModItems.CARTRIDGE.get(),
+                za.co.neroland.neroarcade.registry.ModItems.MODULE_CHIP.get(),
+                za.co.neroland.neroarcade.registry.ModItems.BLANK_CARTRIDGE.get(),
+                za.co.neroland.neroarcade.registry.ModItems.BLANK_CHIP.get()));
+        *///?}
         NeoForge.EVENT_BUS.addListener((ClientTickEvent.Post event) -> ArcadeClient.tick());
         // the client-only /nsarcgallery capture and /nsarcber
         NeoForge.EVENT_BUS.addListener((RegisterClientCommandsEvent event) ->

@@ -10,6 +10,10 @@ import net.minecraftforge.client.event.RegisterKeyMappingsEvent;
 import net.minecraftforge.event.TickEvent;
 import net.minecraftforge.fml.event.lifecycle.FMLClientSetupEvent;
 import net.minecraftforge.fml.javafmlmod.FMLJavaModLoadingContext;
+//? if <1.21.6 {
+/*import net.minecraftforge.common.MinecraftForge;
+import net.minecraftforge.eventbus.api.IEventBus;
+*///?}
 
 import za.co.neroland.neroarcade.NeroArcadeCommon;
 import za.co.neroland.neroarcade.client.ArcadeClient;
@@ -41,6 +45,7 @@ public final class ForgeClientSetup {
     /** Forge 26.x: each event class owns a static {@code BUS}; the client-setup event lives on the mod bus group. */
     public static void init(FMLJavaModLoadingContext context) {
         ArcadeClient.init();
+        //? if >=1.21.9 {
         FMLClientSetupEvent.getBus(context.getModBusGroup()).addListener(event -> event.enqueueWork(() -> {
             MenuScreens.register(ModMenus.GAME_BENCH.get(), GameBenchScreen::new);
             MenuScreens.register(ModMenus.CARTRIDGE_DUPLICATOR.get(), DuplicatorScreen::new);
@@ -71,5 +76,72 @@ public final class ForgeClientSetup {
         ClientPlayerNetworkEvent.LoggingOut.BUS.addListener(event -> {
             ArcadeNetwork.clearClientCaches();
         });
+        //?} else if >=1.21.6 {
+        /*// Forge 1.21.6-1.21.8: the mod-bus events are reached through getBus(modBusGroup).
+        FMLClientSetupEvent.getBus(context.getModBusGroup()).addListener(event -> event.enqueueWork(() -> {
+            MenuScreens.register(ModMenus.GAME_BENCH.get(), GameBenchScreen::new);
+            MenuScreens.register(ModMenus.CARTRIDGE_DUPLICATOR.get(), DuplicatorScreen::new);
+            MenuScreens.register(ModMenus.ARCADE_EXCHANGE.get(), ExchangeScreen::new);
+        }));
+        EntityRenderersEvent.RegisterRenderers.getBus(context.getModBusGroup()).addListener(event -> {
+            event.registerBlockEntityRenderer(ModBlockEntities.ARCADE_CABINET.get(), ctx -> new ArcadeCabinetRenderer());
+            event.registerBlockEntityRenderer(ModBlockEntities.MARQUEE_SCREEN.get(), ctx -> new MarqueeScreenRenderer());
+            event.registerBlockEntityRenderer(ModBlockEntities.GAME_BENCH.get(), ctx -> new GameBenchRenderer());
+            event.registerBlockEntityRenderer(ModBlockEntities.CARTRIDGE_DUPLICATOR.get(), ctx -> new DuplicatorRenderer());
+            event.registerBlockEntityRenderer(ModBlockEntities.ARCADE_EXCHANGE.get(), ctx -> new ExchangeRenderer());
+        });
+        AddGuiOverlayLayersEvent.getBus(context.getModBusGroup()).addListener(event -> {
+            event.getLayeredDraw().add(Identifier.fromNamespaceAndPath(NeroArcadeCommon.MOD_ID, "arcade_hud"),
+                    (g, delta) -> ArcadeHud.render(g));
+        });
+        RegisterKeyMappingsEvent.getBus(context.getModBusGroup()).addListener(event -> {
+            ArcadeKeys.all().forEach(event::register);
+        });
+        TickEvent.ClientTickEvent.Post.BUS.addListener(event -> {
+            ArcadeClient.tick();
+        });
+        // the client-only /nsarcgallery capture and /nsarcber
+        RegisterClientCommandsEvent.BUS.addListener(event -> {
+            GalleryCapture.registerClientCommands(event.getDispatcher());
+        });
+        // A new session starts from a clean client mirror.
+        ClientPlayerNetworkEvent.LoggingOut.BUS.addListener(event -> {
+            ArcadeNetwork.clearClientCaches();
+        });
+        *///?} else {
+        /*// Before Forge's EventBus 7 (1.21.6): mod-lifecycle events on the mod's own event bus, game events on
+        // the global MinecraftForge.EVENT_BUS.
+        IEventBus modBus = context.getModEventBus();
+        modBus.addListener((FMLClientSetupEvent event) -> event.enqueueWork(() -> {
+            MenuScreens.register(ModMenus.GAME_BENCH.get(), GameBenchScreen::new);
+            MenuScreens.register(ModMenus.CARTRIDGE_DUPLICATOR.get(), DuplicatorScreen::new);
+            MenuScreens.register(ModMenus.ARCADE_EXCHANGE.get(), ExchangeScreen::new);
+        }));
+        modBus.addListener((EntityRenderersEvent.RegisterRenderers event) -> {
+            event.registerBlockEntityRenderer(ModBlockEntities.ARCADE_CABINET.get(), ctx -> new ArcadeCabinetRenderer());
+            event.registerBlockEntityRenderer(ModBlockEntities.MARQUEE_SCREEN.get(), ctx -> new MarqueeScreenRenderer());
+            event.registerBlockEntityRenderer(ModBlockEntities.GAME_BENCH.get(), ctx -> new GameBenchRenderer());
+            event.registerBlockEntityRenderer(ModBlockEntities.CARTRIDGE_DUPLICATOR.get(), ctx -> new DuplicatorRenderer());
+            event.registerBlockEntityRenderer(ModBlockEntities.ARCADE_EXCHANGE.get(), ctx -> new ExchangeRenderer());
+        });
+        modBus.addListener((AddGuiOverlayLayersEvent event) ->
+                event.getLayeredDraw().add(Identifier.fromNamespaceAndPath(NeroArcadeCommon.MOD_ID, "arcade_hud"),
+                        (g, delta) -> ArcadeHud.render(g)));
+        modBus.addListener((RegisterKeyMappingsEvent event) -> ArcadeKeys.all().forEach(event::register));
+        MinecraftForge.EVENT_BUS.addListener((TickEvent.ClientTickEvent.Post event) -> ArcadeClient.tick());
+        MinecraftForge.EVENT_BUS.addListener((RegisterClientCommandsEvent event) ->
+                GalleryCapture.registerClientCommands(event.getDispatcher()));
+        MinecraftForge.EVENT_BUS.addListener((ClientPlayerNetworkEvent.LoggingOut event) ->
+                ArcadeNetwork.clearClientCaches());
+        *///?}
+        // Before 1.21.4 item tints come from item colour handlers (no item model definitions).
+        //? if <1.21.4 {
+        /*context.getModEventBus().addListener((net.minecraftforge.client.event.RegisterColorHandlersEvent.Item event) ->
+                event.register(za.co.neroland.neroarcade.client.ArcadeItemColours::colour,
+                za.co.neroland.neroarcade.registry.ModItems.CARTRIDGE.get(),
+                za.co.neroland.neroarcade.registry.ModItems.MODULE_CHIP.get(),
+                za.co.neroland.neroarcade.registry.ModItems.BLANK_CARTRIDGE.get(),
+                za.co.neroland.neroarcade.registry.ModItems.BLANK_CHIP.get()));
+        *///?}
     }
 }

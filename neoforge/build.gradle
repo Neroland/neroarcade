@@ -15,7 +15,10 @@ def mc = stonecutter.current.version
 // Upper bound of this cell's Minecraft range: the next minor line (26.1.2 -> 26.2, 26.2 -> 26.3), same
 // expression as Neroland Core. Without it a jar built for one line loads on the next and fails on a changed
 // signature at runtime instead of a clean loader message.
-def mcCeiling = mc.tokenize('.').with { "${it[0]}.${it[1].toInteger() + 1}" }
+def mcCeiling = project.findProperty("mc_ceiling_${mc}") ?: mc.tokenize('.').with { "${it[0]}.${it[1].toInteger() + 1}" }
+// Lowest Minecraft this jar accepts: the compiled version, or an older hotfix sibling (gradle.properties).
+// 1.21.x cells spell out their [floor, ceiling) range there (mc_floor_<v> / mc_ceiling_<v>).
+def mcFloor = project.findProperty("mc_floor_${mc}") ?: mc
 def neoVersion = project.findProperty("neo_version_${mc}")
 def jeiVersion = project.findProperty("jei_version_${mc}")
 def emiFile = project.findProperty("emi_file_neoforge_${mc}")
@@ -71,7 +74,8 @@ sourceSets.main.resources.srcDir rootProject.ext.commonResources
 // compileOnly behind compat/economy: one bridge class imports it, found through META-INF/services after isModLoaded.
 // `neroeconomy_compat=false` (gradle.properties or -P) drops the dependency, excludes the bridge class and its services
 // line, and leaves the optional manifest entry out, so the mod builds with no NeroEconomy artifact at all.
-def economyOn = (rootProject.findProperty('neroeconomy_compat') ?: 'true').toString().trim() == 'true'
+// Per-MC override neroeconomy_compat_<mc> wins (NeroEconomy has no 1.21.x builds yet, see gradle.properties).
+def economyOn = (rootProject.findProperty("neroeconomy_compat_${mc}") ?: rootProject.findProperty('neroeconomy_compat') ?: 'true').toString().trim() == 'true'
 if (!economyOn) {
     sourceSets.main.java.exclude 'za/co/neroland/neroarcade/compat/economy/bridge/NeroEconomyCoinOp.java'
     sourceSets.main.resources.exclude 'META-INF/services/za.co.neroland.neroarcade.compat.economy.CoinOpSeam'
@@ -146,7 +150,7 @@ def generateModMetadata = tasks.register('generateModMetadata', ProcessResources
         mod_name               : rootProject.mod_name,
         mod_authors            : rootProject.mod_authors,
         mod_license            : rootProject.mod_license,
-        minecraft_version_range: "[${mc},${mcCeiling})",
+        minecraft_version_range: "[${mcFloor},${mcCeiling})",
         // Floor at the compiled Core version: a too-old Core would be missing APIs NeroArcade
         // links against, which surfaces as a NoSuchMethodError deep in gameplay instead of a clean
         // "update Neroland Core" loader message.
@@ -274,7 +278,7 @@ tasks.register('ecjCheck', JavaExec) {
         ecjSources.text = sourceSets.main.java.files.collect { it.absolutePath.replace('\\', '/') }.join('\n') + '\n'
         def srcDirs = ['@' + ecjSources.absolutePath.replace('\\', '/')]
         args = [
-                '--release', '25',
+                '--release', "${project.javaRelease}",
                 '-proc:none',
                 '-d', 'none',
                 '-properties', rootProject.file('tools/ecj.prefs').absolutePath,

@@ -15,6 +15,7 @@ import net.minecraft.nbt.NbtOps;
 import net.minecraft.nbt.StringTag;
 import net.minecraft.nbt.Tag;
 
+import za.co.neroland.neroarcade.compat.NbtCompat;
 import za.co.neroland.neroarcade.NeroArcadeCommon;
 import za.co.neroland.neroarcade.game.CartridgeValidator;
 import za.co.neroland.neroarcade.game.GameDef;
@@ -538,21 +539,21 @@ public final class ExchangeTable {
     public static ExchangeTable load(CompoundTag root) {
         ExchangeTable table = new ExchangeTable();
         int maxId = 0;
-        ListTag rows = root.getList(KEY_LISTINGS).orElseGet(ListTag::new);
+        ListTag rows = NbtCompat.getList(root, KEY_LISTINGS).orElseGet(ListTag::new);
         for (int i = 0; i < rows.size(); i++) {
             try {
-                CompoundTag row = rows.getCompound(i).orElseThrow();
+                CompoundTag row = NbtCompat.getCompound(rows, i).orElseThrow();
                 List<String> tags = new ArrayList<>();
-                ListTag tagList = row.getList(KEY_TAGS).orElseGet(ListTag::new);
+                ListTag tagList = NbtCompat.getList(row, KEY_TAGS).orElseGet(ListTag::new);
                 for (int t = 0; t < tagList.size(); t++) {
-                    tagList.getString(t).ifPresent(word -> GenreTags.add(tags, word));
+                    NbtCompat.getString(tagList, t).ifPresent(word -> GenreTags.add(tags, word));
                 }
-                Listing l = new Listing(row.getInt(KEY_ID).orElseThrow(), decode(row.get(KEY_GAME)),
-                        UUID.fromString(row.getString(KEY_AUTHOR).orElseThrow()), row.getString(KEY_CREDIT),
-                        tags, Math.max(0, row.getIntOr(KEY_PLAYS, 0)), Math.max(0, row.getIntOr(KEY_HEARTS, 0)),
-                        row.getLongOr(KEY_AT, 0L));
+                Listing l = new Listing(NbtCompat.getInt(row, KEY_ID).orElseThrow(), decode(row.get(KEY_GAME)),
+                        UUID.fromString(NbtCompat.getString(row, KEY_AUTHOR).orElseThrow()), NbtCompat.getString(row, KEY_CREDIT),
+                        tags, Math.max(0, NbtCompat.getIntOr(row, KEY_PLAYS, 0)), Math.max(0, NbtCompat.getIntOr(row, KEY_HEARTS, 0)),
+                        NbtCompat.getLongOr(row, KEY_AT, 0L));
                 table.listings.add(l);
-                int pending = Math.max(0, row.getIntOr(KEY_DOWNLOADS_PENDING, 0));
+                int pending = Math.max(0, NbtCompat.getIntOr(row, KEY_DOWNLOADS_PENDING, 0));
                 if (pending > 0) {
                     table.downloadsPending.put(l.listingId(), pending);
                 }
@@ -562,14 +563,14 @@ public final class ExchangeTable {
                         malformed.getClass().getSimpleName());
             }
         }
-        table.nextListingId = Math.max(maxId + 1, root.getIntOr(KEY_NEXT, 1));
-        ListTag draftRows = root.getList(KEY_DRAFTS).orElseGet(ListTag::new);
+        table.nextListingId = Math.max(maxId + 1, NbtCompat.getIntOr(root, KEY_NEXT, 1));
+        ListTag draftRows = NbtCompat.getList(root, KEY_DRAFTS).orElseGet(ListTag::new);
         for (int i = 0; i < draftRows.size(); i++) {
             try {
-                CompoundTag row = draftRows.getCompound(i).orElseThrow();
-                UUID owner = UUID.fromString(row.getString(KEY_OWNER).orElseThrow());
+                CompoundTag row = NbtCompat.getCompound(draftRows, i).orElseThrow();
+                UUID owner = UUID.fromString(NbtCompat.getString(row, KEY_OWNER).orElseThrow());
                 table.drafts.computeIfAbsent(owner, k -> new ArrayList<>())
-                        .add(new Draft(owner, decode(row.get(KEY_GAME)), row.getLongOr(KEY_AT, 0L)));
+                        .add(new Draft(owner, decode(row.get(KEY_GAME)), NbtCompat.getLongOr(row, KEY_AT, 0L)));
             } catch (RuntimeException malformed) {
                 NeroArcadeCommon.LOGGER.warn("[NeroArcade] skipping malformed exchange draft {} ({})", i,
                         malformed.getClass().getSimpleName());

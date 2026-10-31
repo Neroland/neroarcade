@@ -7,6 +7,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.2.0-beta.1] - 2026-10-30
+
+Adds Minecraft 1.21.x builds next to the 26.x ones and fixes a Game Bench click on 26.3. Existing worlds and
+cartridges load unchanged. **Now requires Neroland Core 1.17.0 or later** (was 1.15.0).
+
+### Added
+
+- **Minecraft 1.21.x builds.** NeroArcade now also builds for Minecraft 1.21.1, 1.21.4, 1.21.5, 1.21.8 (also
+  runs on 1.21.7), 1.21.10 (also runs on 1.21.9) and 1.21.11, on NeoForge, Fabric and Forge, next to the 26.1.2,
+  26.2 and 26.3 jars. The 1.21.x jars need Java 21. The whole kit is there on every version: the Game Bench,
+  cartridges, Arcade Cabinets and linked play, the Link Bus and Marquee Screen, the Cartridge Duplicator, the
+  Arcade Exchange, leaderboards, coin-op play with NeroEconomy, the NeroLink module and the player-data erase
+  and export tools. The 1.21.x builds have not been tested in a live game yet.
+
+### Changed
+
+- Now requires Neroland Core 1.17.0 or later, the first Core release with Minecraft 1.21.x builds. This applies
+  to every build, 26.x included.
+- The optional NeroEconomy support now expects NeroEconomy 0.5.0-beta.1 or later (was 0.4.0-beta.1).
+
 ### Fixed
 
 - On Minecraft 26.3, left clicks on the Game Bench's module property controls work again (right-click still steps a choice backwards).

@@ -3,10 +3,18 @@ package za.co.neroland.neroarcade.fabric;
 import net.fabricmc.api.ClientModInitializer;
 import net.fabricmc.fabric.api.client.command.v2.ClientCommandRegistrationCallback;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
+//? if >=26.1 {
 import net.fabricmc.fabric.api.client.keymapping.v1.KeyMappingHelper;
+//?} else {
+/*import net.fabricmc.fabric.api.client.keybinding.v1.KeyBindingHelper;
+*///?}
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayConnectionEvents;
 import net.fabricmc.fabric.api.client.rendering.v1.BlockEntityRendererRegistry;
+//? if >=1.21.6 {
 import net.fabricmc.fabric.api.client.rendering.v1.hud.HudElementRegistry;
+//?} else {
+/*import net.fabricmc.fabric.api.client.rendering.v1.HudRenderCallback;
+*///?}
 import net.minecraft.client.gui.screens.MenuScreens;
 import net.minecraft.resources.Identifier;
 
@@ -50,10 +58,27 @@ public final class NeroArcadeFabricClient implements ClientModInitializer {
         // the client-only /nsarcgallery capture and /nsarcber
         ClientCommandRegistrationCallback.EVENT.register((dispatcher, registryAccess) ->
                 GalleryCapture.registerClientCommands(dispatcher));
+        //? if >=1.21.6 {
         HudElementRegistry.addLast(Identifier.fromNamespaceAndPath(NeroArcadeCommon.MOD_ID, "arcade_hud"),
                 (graphics, delta) -> ArcadeHud.render(graphics));
+        //?} else {
+        /*HudRenderCallback.EVENT.register((graphics, delta) -> ArcadeHud.render(graphics));
+        *///?}
+        //? if >=26.1 {
         ArcadeKeys.all().forEach(KeyMappingHelper::registerKeyMapping);
+        //?} else {
+        /*ArcadeKeys.all().forEach(KeyBindingHelper::registerKeyBinding);
+        *///?}
         ClientTickEvents.END_CLIENT_TICK.register(mc -> ArcadeClient.tick());
+        // Before 1.21.4 item tints come from item colour providers (no item model definitions).
+        //? if <1.21.4 {
+        /*net.fabricmc.fabric.api.client.rendering.v1.ColorProviderRegistry.ITEM.register(
+                za.co.neroland.neroarcade.client.ArcadeItemColours::colour,
+                za.co.neroland.neroarcade.registry.ModItems.CARTRIDGE.get(),
+                za.co.neroland.neroarcade.registry.ModItems.MODULE_CHIP.get(),
+                za.co.neroland.neroarcade.registry.ModItems.BLANK_CARTRIDGE.get(),
+                za.co.neroland.neroarcade.registry.ModItems.BLANK_CHIP.get());
+        *///?}
         // A new session starts from a clean client mirror.
         ClientPlayConnectionEvents.DISCONNECT.register((handler, client) -> ArcadeNetwork.clearClientCaches());
     }

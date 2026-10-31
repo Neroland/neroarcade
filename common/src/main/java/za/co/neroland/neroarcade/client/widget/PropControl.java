@@ -89,8 +89,15 @@ public class PropControl extends AbstractWidget {
         }
     }
 
+    //? if >=1.21.9 {
     @Override
     public void onClick(MouseButtonEvent event, boolean doubleClick) {
+    //?} else {
+    /*// Before 1.21.9 onClick gets no button; mouseClicked (below) remembers it.
+    @Override
+    public void onClick(double mouseX, double mouseY) {
+        MouseButtonEvent event = new MouseButtonEvent(mouseX, mouseY, lastButton);
+    *///?}
         switch (spec.kind()) {
             case INT -> {
                 dragging = true;
@@ -108,6 +115,7 @@ public class PropControl extends AbstractWidget {
         }
     }
 
+    //? if >=1.21.9 {
     @Override
     protected boolean isValidClickButton(net.minecraft.client.input.MouseButtonInfo buttonInfo) {
         return buttonInfo.button() == InputConstants.MOUSE_BUTTON_LEFT || (spec.kind() == za.co.neroland.neroarcade.module.PropertyKind.ENUM
@@ -116,6 +124,25 @@ public class PropControl extends AbstractWidget {
 
     @Override
     protected void onDrag(MouseButtonEvent event, double dx, double dy) {
+    //?} else {
+    /*private int lastButton = InputConstants.MOUSE_BUTTON_LEFT;
+
+    @Override
+    public boolean mouseClicked(double mouseX, double mouseY, int button) {
+        lastButton = button;
+        return super.mouseClicked(mouseX, mouseY, button);
+    }
+
+    @Override
+    protected boolean isValidClickButton(int button) {
+        return button == InputConstants.MOUSE_BUTTON_LEFT || (spec.kind() == za.co.neroland.neroarcade.module.PropertyKind.ENUM
+                && button == InputConstants.MOUSE_BUTTON_RIGHT);
+    }
+
+    @Override
+    protected void onDrag(double mouseX, double mouseY, double dx, double dy) {
+        MouseButtonEvent event = new MouseButtonEvent(mouseX, mouseY, lastButton);
+    *///?}
         if (dragging) {
             value = valueAt(event.x());
             long now = System.currentTimeMillis();
@@ -125,8 +152,13 @@ public class PropControl extends AbstractWidget {
         }
     }
 
+    //? if >=1.21.9 {
     @Override
     public void onRelease(MouseButtonEvent event) {
+    //?} else {
+    /*@Override
+    public void onRelease(double mouseX, double mouseY) {
+    *///?}
         if (dragging) {
             dragging = false;
             if (value != lastCommitted) {

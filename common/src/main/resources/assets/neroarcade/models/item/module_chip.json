@@ -1,0 +1,65 @@
+{
+  "parent": "neroarcade:item/blank_chip",
+  "overrides": [
+    {
+      "predicate": {
+        "custom_model_data": 1
+      },
+      "model": "neroarcade:item/module_chip_arena"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2
+      },
+      "model": "neroarcade:item/module_chip_pawn"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 3
+      },
+      "model": "neroarcade:item/module_chip_rule"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 4
+      },
+      "model": "neroarcade:item/module_chip_hazard"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 5
+      },
+      "model": "neroarcade:item/module_chip_pickup"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 6
+      },
+      "model": "neroarcade:item/module_chip_control"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 7
+      },
+      "model": "neroarcade:item/module_chip_pace"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 8
+      },
+      "model": "neroarcade:item/module_chip_modifier"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 9
+      },
+      "model": "neroarcade:item/module_chip_multiplayer"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 10
+      },
+      "model": "neroarcade:item/module_chip_theme"
+    }
+  ]
+}

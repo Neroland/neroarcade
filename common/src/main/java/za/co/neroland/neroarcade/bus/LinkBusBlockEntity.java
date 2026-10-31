@@ -306,9 +306,14 @@ public class LinkBusBlockEntity extends BlockEntity {
     }
 
     /** Real removal only: dissolve the bus with world access. */
+    //? if >=1.21.5 {
     @Override
     public void preRemoveSideEffects(BlockPos pos, BlockState state) {
         super.preRemoveSideEffects(pos, state);
+    //?} else {
+    /*// Called from the block's onRemove(..) before 1.21.5 (no such BlockEntity hook there).
+    public void preRemoveSideEffects(BlockPos pos, BlockState state) {
+    *///?}
         if (level instanceof ServerLevel serverLevel) {
             dissolve(serverLevel);
         }

@@ -31,7 +31,9 @@ import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.entity.SignBlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.properties.RotationSegment;
+//? if >=1.21.6 {
 import net.minecraft.world.level.storage.TagValueInput;
+//?}
 import net.minecraft.world.phys.AABB;
 
 import org.jetbrains.annotations.Nullable;
@@ -269,7 +271,11 @@ public final class GalleryCommands {
         tag.put("front_text", text);
         tag.put("back_text", text.copy());
         tag.putBoolean("is_waxed", true);
+        //? if >=1.21.6 {
         be.loadWithComponents(TagValueInput.create(ProblemReporter.DISCARDING, rec.level.registryAccess(), tag));
+        //?} else {
+        /*be.loadWithComponents(tag, rec.level.registryAccess());
+        *///?}
         be.setChanged();
         rec.level.sendBlockUpdated(pos, sign, sign, FLAGS);
     }

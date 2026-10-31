@@ -17,6 +17,7 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import za.co.neroland.neroarcade.compat.NbtCompat;
 import za.co.neroland.neroarcade.game.GameDef;
 import za.co.neroland.neroarcade.game.ValidationError;
 import za.co.neroland.neroarcade.module.ModuleDefaults;
@@ -71,8 +72,8 @@ class CartridgeComponentTest {
     void newerCartridgeSurvivesUntouchedAndReadsAsUnreadable() throws ValidationError {
         CompoundTag tag = StoredCartridge.of(sample()).tag();
         tag.putInt("schema", 99);
-        tag.put("slots", tag.getCompoundOrEmpty("slots").copy());
-        tag.getCompoundOrEmpty("slots").put("future_slot", new net.minecraft.nbt.ListTag());
+        tag.put("slots", NbtCompat.getCompoundOrEmpty(tag, "slots").copy());
+        NbtCompat.getCompoundOrEmpty(tag, "slots").put("future_slot", new net.minecraft.nbt.ListTag());
         StoredCartridge future = new StoredCartridge(tag);
         Tag written = StoredCartridge.CODEC.encodeStart(NbtOps.INSTANCE, future).getOrThrow();
         StoredCartridge read = StoredCartridge.CODEC.parse(NbtOps.INSTANCE, written).getOrThrow();

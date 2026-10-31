@@ -70,9 +70,14 @@ public class ArcadeExchangeBlockEntity extends BlockEntity implements MenuProvid
         return new ExchangeMenu(containerId, playerInventory, this);
     }
 
+    //? if >=1.21.5 {
     @Override
     public void preRemoveSideEffects(BlockPos pos, BlockState state) {
         super.preRemoveSideEffects(pos, state);
+    //?} else {
+    /*// Called from the block's onRemove(..) before 1.21.5 (no such BlockEntity hook there).
+    public void preRemoveSideEffects(BlockPos pos, BlockState state) {
+    *///?}
         dropLegacy(pos);
     }
 
@@ -120,19 +125,41 @@ public class ArcadeExchangeBlockEntity extends BlockEntity implements MenuProvid
         return ClientboundBlockEntityDataPacket.create(this);
     }
 
+    //? if >=1.21.6 {
     @Override
     protected void saveAdditional(ValueOutput output) {
         super.saveAdditional(output);
+    //?} else {
+    /*@Override
+    protected void saveAdditional(net.minecraft.nbt.CompoundTag tag, net.minecraft.core.HolderLookup.Provider registries) {
+        super.saveAdditional(tag, registries);
+        ValueOutput output = ValueOutput.of(tag, registries);
+    *///?}
         if (!legacyTray.isEmpty()) {
+            //? if >=1.21.6 {
             ContainerHelper.saveAllItems(output, legacyTray.getItems());
+            //?} else {
+            /*ContainerHelper.saveAllItems(tag, legacyTray.getItems(), registries);
+            *///?}
         }
     }
 
+    //? if >=1.21.6 {
     @Override
     protected void loadAdditional(ValueInput input) {
         super.loadAdditional(input);
+    //?} else {
+    /*@Override
+    protected void loadAdditional(net.minecraft.nbt.CompoundTag tag, net.minecraft.core.HolderLookup.Provider registries) {
+        super.loadAdditional(tag, registries);
+        ValueInput input = ValueInput.of(tag, registries);
+    *///?}
         legacyTray.clearContent();
+        //? if >=1.21.6 {
         ContainerHelper.loadAllItems(input, legacyTray.getItems());
+        //?} else {
+        /*ContainerHelper.loadAllItems(tag, legacyTray.getItems(), registries);
+        *///?}
         // the update tag's rows (absent in saved data, so a server load always reads none)
         clientBoard = input.read(KEY_BOARD, KioskBoard.LIST_CODEC).orElse(List.of());
     }

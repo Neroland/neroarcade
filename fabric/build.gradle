@@ -2,16 +2,26 @@
 // module's source directly (single copy -> no drift).
 
 plugins {
-    id 'net.fabricmc.fabric-loom'
+    // Two Loom flavours from the same plugin jar: `fabric-loom` for de-obfuscated 26.x (no mappings, no
+    // remap) and `fabric-loom-remap` for obfuscated 1.21.x (Mojang mappings + remapJar to intermediary).
+    // Neither is applied here; the node picks one below from its Minecraft version.
+    id 'net.fabricmc.fabric-loom' apply false
+    id 'net.fabricmc.fabric-loom-remap' apply false
     id 'eclipse'   // for eclipse.synchronizationTasks (VS Code / Buildship import hook)
     id 'maven-publish'
 }
 
 // MC version comes from the Stonecutter node (e.g. :fabric:26.1.2), not a global property.
 def mc = stonecutter.current.version
+// Minecraft before 26.1 ships obfuscated, so those cells need mappings and a remapped jar.
+def obfuscated = mc.startsWith('1.')
+apply plugin: obfuscated ? 'net.fabricmc.fabric-loom-remap' : 'net.fabricmc.fabric-loom'
 // Upper bound of this cell's Minecraft range: the next minor line (26.1.2 -> 26.2, 26.2 -> 26.3), same
 // expression as Neroland Core, so each cell's jar declares only its own MC line.
-def mcCeiling = mc.tokenize('.').with { "${it[0]}.${it[1].toInteger() + 1}" }
+def mcCeiling = project.findProperty("mc_ceiling_${mc}") ?: mc.tokenize('.').with { "${it[0]}.${it[1].toInteger() + 1}" }
+// Lowest Minecraft this jar accepts: the compiled version, or an older hotfix sibling (gradle.properties).
+// 1.21.x cells spell out their [floor, ceiling) range there (mc_floor_<v> / mc_ceiling_<v>).
+def mcFloor = project.findProperty("mc_floor_${mc}") ?: mc
 def fabricApi = project.findProperty("fabric_api_version_${mc}")
 def jeiVersion = project.findProperty("jei_version_${mc}")
 def emiFile = project.findProperty("emi_file_fabric_${mc}")
@@ -34,7 +44,8 @@ publishing {
             groupId = rootProject.mod_group_id
             artifactId = "neroarcade-fabric-${mc}"
             version = rootProject.mod_version
-            artifact tasks.named('jar')
+            // 1.21.x consumers remap NeroArcade with modImplementation, so they need the intermediary jar.
+            artifact tasks.named(obfuscated ? 'remapJar' : 'jar')
         }
     }
     // Remote target so a fresh CI runner / clone (empty ~/.m2) can resolve NeroArcade — GitHub Packages
@@ -63,7 +74,8 @@ sourceSets.main.resources.srcDir rootProject.ext.commonResources
 // compileOnly behind compat/economy: one bridge class imports it, found through META-INF/services after isModLoaded.
 // `neroeconomy_compat=false` (gradle.properties or -P) drops the dependency, excludes the bridge class and its services
 // line, and leaves the optional manifest entry out, so the mod builds with no NeroEconomy artifact at all.
-def economyOn = (rootProject.findProperty('neroeconomy_compat') ?: 'true').toString().trim() == 'true'
+// Per-MC override neroeconomy_compat_<mc> wins (NeroEconomy has no 1.21.x builds yet, see gradle.properties).
+def economyOn = (rootProject.findProperty("neroeconomy_compat_${mc}") ?: rootProject.findProperty('neroeconomy_compat') ?: 'true').toString().trim() == 'true'
 if (!economyOn) {
     sourceSets.main.java.exclude 'za/co/neroland/neroarcade/compat/economy/bridge/NeroEconomyCoinOp.java'
     sourceSets.main.resources.exclude 'META-INF/services/za.co.neroland.neroarcade.compat.economy.CoinOpSeam'
@@ -71,6 +83,16 @@ if (!economyOn) {
 
 dependencies {
     minecraft "com.mojang:minecraft:${mc}"
+    if (obfuscated) {
+        // Obfuscated 1.21.x: Mojang's official names, remapped to intermediary on jar. Mod dependencies
+        // (loader, Fabric API, Core) go through modImplementation so Loom remaps them.
+        mappings loom.officialMojangMappings()
+        modImplementation "net.fabricmc:fabric-loader:${rootProject.fabric_loader_version}"
+        if (fabricApi != null) {
+            modImplementation "net.fabricmc.fabric-api:fabric-api:${fabricApi}"
+        }
+        modImplementation "za.co.neroland.nerolandcore:nerolandcore-fabric-${mc}:${nerolandcoreVersion}"
+    } else {
     // NOTE: no `mappings` — de-obfuscated 26.x needs none (Fabric Loom 1.17+).
     implementation "net.fabricmc:fabric-loader:${rootProject.fabric_loader_version}"
     if (fabricApi != null) {
@@ -82,6 +104,7 @@ dependencies {
     // remap and `modImplementation` isn't available. Core ships as its own mod and loads BEFORE
     // NeroArcade (see fabric.mod.json depends).
     implementation "za.co.neroland.nerolandcore:nerolandcore-fabric-${mc}:${nerolandcoreVersion}"
+    }
 
     // NeroEconomy - OPTIONAL (see the compat block above). compileOnly: never bundled, never a hard requirement.
     if (economyOn) {
@@ -131,7 +154,7 @@ def generateModMetadata = tasks.register('generateModMetadata', ProcessResources
         mod_authors          : rootProject.mod_authors,
         mod_license          : rootProject.mod_license,
         fabric_loader_version: rootProject.fabric_loader_version,
-        minecraft_version    : mc,
+        minecraft_version    : mcFloor,
         minecraft_version_ceiling: mcCeiling,
         nerolandcore_version : nerolandcoreVersion,
         // The optional NeroEconomy suggestion (floor = the compiled version), or "" when neroeconomy_compat=false.
@@ -181,8 +204,20 @@ sourceSets.main.resources.srcDir generateWikiResources
 eclipse.synchronizationTasks generateWikiResources
 eclipse.synchronizationTasks generateModMetadata
 
+// The access widener's namespace differs by era: 26.x is `official` (de-obfuscated), 1.21.x is `named`
+// (Mojang mappings, remapped to intermediary in remapJar). Each 1.21.x line has its own file under
+// src/main/accesswidener/, swapped into the jar under the name fabric.mod.json declares.
+def awFile = obfuscated ? file("${branchDir}/src/main/accesswidener/${mc}.accesswidener")
+        : file("${branchDir}/src/main/resources/neroarcade.accesswidener")
+if (obfuscated) {
+    tasks.named('processResources', ProcessResources) {
+        exclude 'neroarcade.accesswidener'
+        from(awFile) { rename { 'neroarcade.accesswidener' } }
+    }
+}
+
 loom {
-    accessWidenerPath = file("${branchDir}/src/main/resources/neroarcade.accesswidener")
+    accessWidenerPath = awFile
 
     runs {
         client {
@@ -241,7 +276,7 @@ tasks.register('ecjCheck', JavaExec) {
         ecjSources.text = sourceSets.main.java.files.collect { it.absolutePath.replace('\\', '/') }.join('\n') + '\n'
         def srcDirs = ['@' + ecjSources.absolutePath.replace('\\', '/')]
         args = [
-                '--release', '25',
+                '--release', "${project.javaRelease}",
                 '-proc:none',
                 '-d', 'none',
                 '-properties', rootProject.file('tools/ecj.prefs').absolutePath,

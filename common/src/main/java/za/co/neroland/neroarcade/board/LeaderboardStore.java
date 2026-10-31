@@ -13,6 +13,7 @@ import net.minecraft.server.MinecraftServer;
 import net.minecraft.world.level.saveddata.SavedData;
 import net.minecraft.world.level.saveddata.SavedDataType;
 
+import za.co.neroland.nerolandcore.data.SavedDataCompat;
 import za.co.neroland.nerolandcore.data.SavedDataRecovery;
 
 import za.co.neroland.neroarcade.NeroArcadeCommon;
@@ -35,8 +36,8 @@ public final class LeaderboardStore extends SavedData {
 
     private static final Supplier<LeaderboardStore> FACTORY = LeaderboardStore::new;
 
-    public static final SavedDataType<LeaderboardStore> TYPE = new SavedDataType<LeaderboardStore>(
-            Identifier.fromNamespaceAndPath(NeroArcadeCommon.MOD_ID, "leaderboards"), FACTORY, CODEC, null);
+    public static final SavedDataType<LeaderboardStore> TYPE = SavedDataCompat.type(
+            Identifier.fromNamespaceAndPath(NeroArcadeCommon.MOD_ID, "leaderboards"), FACTORY, CODEC);
 
     /** Where the erasers find this store (tests swap in an instance). */
     public static final za.co.neroland.neroarcade.privacy.StoreAccess<LeaderboardStore> ACCESS =

@@ -86,23 +86,42 @@ public class MarqueeScreenBlockEntity extends BlockEntity {
         }
     }
 
+    //? if >=1.21.5 {
     @Override
     public void preRemoveSideEffects(BlockPos pos, BlockState state) {
         super.preRemoveSideEffects(pos, state);
+    //?} else {
+    /*// Called from the block's onRemove(..) before 1.21.5 (no such BlockEntity hook there).
+    public void preRemoveSideEffects(BlockPos pos, BlockState state) {
+    *///?}
         if (level instanceof ServerLevel serverLevel) {
             BusRegistry.SERVER.touch(serverLevel.dimension().identifier().toString(), pos);
         }
     }
 
+    //? if >=1.21.6 {
     @Override
     protected void saveAdditional(ValueOutput output) {
         super.saveAdditional(output);
+    //?} else {
+    /*@Override
+    protected void saveAdditional(net.minecraft.nbt.CompoundTag tag, net.minecraft.core.HolderLookup.Provider registries) {
+        super.saveAdditional(tag, registries);
+        ValueOutput output = ValueOutput.of(tag, registries);
+    *///?}
         output.putLong(KEY_BUS, busId);
     }
 
+    //? if >=1.21.6 {
     @Override
     protected void loadAdditional(ValueInput input) {
         super.loadAdditional(input);
+    //?} else {
+    /*@Override
+    protected void loadAdditional(net.minecraft.nbt.CompoundTag tag, net.minecraft.core.HolderLookup.Provider registries) {
+        super.loadAdditional(tag, registries);
+        ValueInput input = ValueInput.of(tag, registries);
+    *///?}
         busId = input.getLongOr(KEY_BUS, 0L);
         long display = input.getLongOr(KEY_DISPLAY_OF, 0L);
         clientDisplayOf = display == 0L ? null : BlockPos.of(display);

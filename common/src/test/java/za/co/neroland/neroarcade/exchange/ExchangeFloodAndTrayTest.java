@@ -21,6 +21,11 @@ import za.co.neroland.neroarcade.game.GameDef;
  */
 class ExchangeFloodAndTrayTest {
 
+    @org.junit.jupiter.api.BeforeAll
+    static void bootstrap() {
+        za.co.neroland.neroarcade.TestBootstrap.ensure();
+    }
+
     private static final int WORLD_CAP = 200;
     private static final int AUTHOR_CAP = 16;
 

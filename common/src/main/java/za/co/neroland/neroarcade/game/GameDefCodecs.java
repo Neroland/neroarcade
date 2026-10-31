@@ -77,6 +77,75 @@ public final class GameDefCodecs {
 
     /** The {@code .nac} export form: pretty JSON. */
     public static String toJson(GameDef def) {
-        return PRETTY.toJson(GAME_DEF.encodeStart(JsonOps.INSTANCE, def).getOrThrow());
+        return PRETTY.toJson(contractOrder(GAME_DEF.encodeStart(JsonOps.INSTANCE, def).getOrThrow()));
+    }
+
+    /** The top-level fields of an exported cartridge, in the documented contract order. */
+    private static final List<String> FIELD_ORDER = List.of("schema", "id", "title", "author", "author_credit",
+            "lineage", "seed", "slots", "created_at", "revision");
+
+    /**
+     * Puts an encoded cartridge's fields in the contract order (and its slots in slot order, each entry as id then
+     * props), so an export reads the same on every Minecraft line. 26.x's codecs already write that order; the
+     * older DataFixerUpper on the 1.21.x lines writes record fields in a different one.
+     */
+    public static com.google.gson.JsonElement contractOrder(com.google.gson.JsonElement encoded) {
+        if (!(encoded instanceof com.google.gson.JsonObject in)) {
+            return encoded;
+        }
+        com.google.gson.JsonObject out = new com.google.gson.JsonObject();
+        for (String key : FIELD_ORDER) {
+            if (!in.has(key)) {
+                continue;
+            }
+            if (key.equals("slots") && in.get(key) instanceof com.google.gson.JsonObject slots) {
+                com.google.gson.JsonObject ordered = new com.google.gson.JsonObject();
+                for (ModuleType type : ModuleType.values()) {
+                    if (slots.has(type.key())) {
+                        ordered.add(type.key(), entriesInOrder(slots.get(type.key())));
+                    }
+                }
+                slots.entrySet().forEach(e -> {
+                    if (!ordered.has(e.getKey())) {
+                        ordered.add(e.getKey(), e.getValue());
+                    }
+                });
+                out.add(key, ordered);
+            } else {
+                out.add(key, in.get(key));
+            }
+        }
+        in.entrySet().forEach(e -> {
+            if (!out.has(e.getKey())) {
+                out.add(e.getKey(), e.getValue());
+            }
+        });
+        return out;
+    }
+
+    private static com.google.gson.JsonElement entriesInOrder(com.google.gson.JsonElement list) {
+        if (!(list instanceof com.google.gson.JsonArray array)) {
+            return list;
+        }
+        com.google.gson.JsonArray out = new com.google.gson.JsonArray();
+        for (com.google.gson.JsonElement element : array) {
+            if (element instanceof com.google.gson.JsonObject entry) {
+                com.google.gson.JsonObject ordered = new com.google.gson.JsonObject();
+                for (String key : List.of("id", "props")) {
+                    if (entry.has(key)) {
+                        ordered.add(key, entry.get(key));
+                    }
+                }
+                entry.entrySet().forEach(e -> {
+                    if (!ordered.has(e.getKey())) {
+                        ordered.add(e.getKey(), e.getValue());
+                    }
+                });
+                out.add(ordered);
+            } else {
+                out.add(element);
+            }
+        }
+        return out;
     }
 }

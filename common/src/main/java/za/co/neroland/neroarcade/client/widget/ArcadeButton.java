@@ -79,6 +79,7 @@ public class ArcadeButton extends AbstractWidget {
         }
     }
 
+    //? if >=1.21.9 {
     @Override
     public void onClick(MouseButtonEvent event, boolean doubleClick) {
         press();
@@ -86,6 +87,16 @@ public class ArcadeButton extends AbstractWidget {
 
     @Override
     public boolean keyPressed(KeyEvent event) {
+    //?} else {
+    /*@Override
+    public void onClick(double mouseX, double mouseY) {
+        press();
+    }
+
+    @Override
+    public boolean keyPressed(int keyCode, int scanCode, int modifiers) {
+        KeyEvent event = new KeyEvent(keyCode, scanCode, modifiers);
+    *///?}
         if (this.active && this.visible && event.isSelection()) {
             playDownSound(Minecraft.getInstance().getSoundManager());
             press();

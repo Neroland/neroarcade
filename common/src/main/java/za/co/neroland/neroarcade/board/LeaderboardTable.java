@@ -16,6 +16,7 @@ import net.minecraft.nbt.ListTag;
 
 import org.jetbrains.annotations.Nullable;
 
+import za.co.neroland.neroarcade.compat.NbtCompat;
 import za.co.neroland.neroarcade.NeroArcadeCommon;
 import za.co.neroland.neroarcade.cabinet.BusMatchResult;
 import za.co.neroland.neroarcade.runtime.MatchResult;
@@ -416,43 +417,43 @@ public final class LeaderboardTable {
 
     /** The board key of a saved row: {@code "id"}, else a pre-D-owner-1 {@code "root"} (read as that id). */
     private static Optional<String> boardKey(CompoundTag row) {
-        Optional<String> id = row.getString(KEY_BOARD_ID).filter(s -> !s.isEmpty());
-        return id.isPresent() ? id : row.getString(KEY_LEGACY_ROOT).filter(s -> !s.isEmpty());
+        Optional<String> id = NbtCompat.getString(row, KEY_BOARD_ID).filter(s -> !s.isEmpty());
+        return id.isPresent() ? id : NbtCompat.getString(row, KEY_LEGACY_ROOT).filter(s -> !s.isEmpty());
     }
 
     public static LeaderboardTable load(CompoundTag root) {
         LeaderboardTable table = new LeaderboardTable();
-        ListTag tallyList = root.getList(KEY_TALLIES).orElseGet(ListTag::new);
+        ListTag tallyList = NbtCompat.getList(root, KEY_TALLIES).orElseGet(ListTag::new);
         for (int i = 0; i < tallyList.size(); i++) {
-            tallyList.getCompound(i).ifPresent(row -> boardKey(row).ifPresent(id -> table.tallies.put(
-                    id, new int[] {Math.max(0, row.getIntOr(KEY_WINS, 0)), Math.max(0, row.getIntOr(KEY_RECORDS, 0))})));
+            NbtCompat.getCompound(tallyList, i).ifPresent(row -> boardKey(row).ifPresent(id -> table.tallies.put(
+                    id, new int[] {Math.max(0, NbtCompat.getIntOr(row, KEY_WINS, 0)), Math.max(0, NbtCompat.getIntOr(row, KEY_RECORDS, 0))})));
         }
-        Optional<ListTag> list = root.getList(KEY_BOARDS);
+        Optional<ListTag> list = NbtCompat.getList(root, KEY_BOARDS);
         if (list.isEmpty()) {
             return table;
         }
         for (int i = 0; i < list.get().size(); i++) {
-            Optional<CompoundTag> board = list.get().getCompound(i);
+            Optional<CompoundTag> board = NbtCompat.getCompound(list.get(), i);
             if (board.isEmpty()) {
                 continue;
             }
             try {
                 String id = boardKey(board.get()).orElseThrow();
                 MutableBoard b = new MutableBoard();
-                ListTag top = board.get().getList(KEY_TOP).orElseGet(ListTag::new);
+                ListTag top = NbtCompat.getList(board.get(), KEY_TOP).orElseGet(ListTag::new);
                 for (int r = 0; r < top.size(); r++) {
-                    CompoundTag row = top.getCompound(r).orElseThrow();
-                    b.top.add(new Entry(UUID.fromString(row.getString(KEY_UUID).orElseThrow()),
-                            row.getInt(KEY_SCORE).orElseThrow(), row.getLong(KEY_AT).orElseThrow(),
-                            row.getString(KEY_NAME).orElse(null)));
+                    CompoundTag row = NbtCompat.getCompound(top, r).orElseThrow();
+                    b.top.add(new Entry(UUID.fromString(NbtCompat.getString(row, KEY_UUID).orElseThrow()),
+                            NbtCompat.getInt(row, KEY_SCORE).orElseThrow(), NbtCompat.getLong(row, KEY_AT).orElseThrow(),
+                            NbtCompat.getString(row, KEY_NAME).orElse(null)));
                 }
                 b.top.sort(ORDER);
-                ListTag bests = board.get().getList(KEY_BESTS).orElseGet(ListTag::new);
+                ListTag bests = NbtCompat.getList(board.get(), KEY_BESTS).orElseGet(ListTag::new);
                 for (int r = 0; r < bests.size(); r++) {
-                    CompoundTag row = bests.getCompound(r).orElseThrow();
-                    UUID who = UUID.fromString(row.getString(KEY_UUID).orElseThrow());
-                    b.bests.put(who, row.getInt(KEY_SCORE).orElseThrow());
-                    b.bestAt.put(who, row.getLong(KEY_AT).orElse(UNKNOWN_AT));
+                    CompoundTag row = NbtCompat.getCompound(bests, r).orElseThrow();
+                    UUID who = UUID.fromString(NbtCompat.getString(row, KEY_UUID).orElseThrow());
+                    b.bests.put(who, NbtCompat.getInt(row, KEY_SCORE).orElseThrow());
+                    b.bestAt.put(who, NbtCompat.getLong(row, KEY_AT).orElse(UNKNOWN_AT));
                 }
                 table.boards.put(id, b);
             } catch (RuntimeException malformed) {

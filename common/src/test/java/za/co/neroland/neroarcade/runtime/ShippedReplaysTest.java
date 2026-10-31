@@ -58,7 +58,14 @@ class ShippedReplaysTest {
 
     /** Canonical text: two-space JSON, one input-log triple per line, LF, trailing newline. */
     static String text(Replay replay) {
-        JsonElement json = Replay.CODEC.encodeStart(JsonOps.INSTANCE, replay).getOrThrow();
+        JsonElement encoded = Replay.CODEC.encodeStart(JsonOps.INSTANCE, replay).getOrThrow();
+        // Field order as the codecs declare it (26.x writes that order; the 1.21.x DataFixerUpper does not).
+        com.google.gson.JsonObject json = new com.google.gson.JsonObject();
+        for (String key : List.of("game_def", "seed", "seats", "input_log", "final_hash", "final_tick")) {
+            JsonElement value = encoded.getAsJsonObject().get(key);
+            json.add(key, key.equals("game_def")
+                    ? za.co.neroland.neroarcade.game.GameDefCodecs.contractOrder(value) : value);
+        }
         String pretty = new GsonBuilder().setPrettyPrinting().disableHtmlEscaping().create().toJson(json);
         String collapsed = pretty.replaceAll(
                 "\\[\\s*\\n\\s*(-?\\d+),\\s*\\n\\s*(-?\\d+),\\s*\\n\\s*(-?\\d+)\\s*\\n\\s*]", "[$1, $2, $3]");

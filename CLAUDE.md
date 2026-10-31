@@ -82,7 +82,8 @@ determinism change: re-pin only on purpose and say why in the change.
 
 ## Build
 
-Stonecutter produces nine cells (three loaders x three Minecraft lines). Never run a plain `build`: the root
+Stonecutter produces 27 cells (three loaders x nine Minecraft lines: 1.21.1, 1.21.4, 1.21.5, 1.21.8, 1.21.10,
+1.21.11, 26.1.2, 26.2, 26.3; source is written for 26.x, older lines use `//?` blocks and `legacyRenames`). Never run a plain `build`: the root
 `:fabric`, `:forge` and `:neoforge` projects are vestigial containers. Build the cells explicitly:
 
 ```text

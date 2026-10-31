@@ -8,6 +8,7 @@ import java.util.UUID;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
 
+import za.co.neroland.neroarcade.compat.NbtCompat;
 import za.co.neroland.neroarcade.NeroArcadeCommon;
 
 /**
@@ -64,14 +65,14 @@ public final class CreditTable {
 
     public static CreditTable load(CompoundTag root) {
         CreditTable table = new CreditTable();
-        Optional<ListTag> list = root.getList(KEY_ON);
+        Optional<ListTag> list = NbtCompat.getList(root, KEY_ON);
         if (list.isEmpty()) {
             return table;
         }
         for (int i = 0; i < list.get().size(); i++) {
             try {
-                CompoundTag row = list.get().getCompound(i).orElseThrow();
-                table.flags.put(UUID.fromString(row.getString("uuid").orElseThrow()), Boolean.TRUE);
+                CompoundTag row = NbtCompat.getCompound(list.get(), i).orElseThrow();
+                table.flags.put(UUID.fromString(NbtCompat.getString(row, "uuid").orElseThrow()), Boolean.TRUE);
             } catch (RuntimeException malformed) {
                 NeroArcadeCommon.LOGGER.warn("[NeroArcade] skipping malformed credit row {} ({})", i,
                         malformed.getClass().getSimpleName());

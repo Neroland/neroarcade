@@ -28,6 +28,7 @@ import net.minecraft.world.phys.Vec3;
 
 import org.jetbrains.annotations.Nullable;
 
+import za.co.neroland.neroarcade.compat.PlayerMessages;
 import za.co.neroland.neroarcade.NeroArcadeCommon;
 import za.co.neroland.neroarcade.block.ArcadeBlockProperties;
 import za.co.neroland.neroarcade.block.CabinetStatus;
@@ -160,7 +161,7 @@ public class ArcadeCabinetBlockEntity extends BlockEntity implements SeatHolder 
                                 displayOf != null ? displayOf : worldPosition));
             }
             if (player != null && why != DropReason.ESC) {
-                player.sendOverlayMessage(Component.translatable(why.langKey()));
+                PlayerMessages.overlay(player, Component.translatable(why.langKey()));
             }
         }
     }
@@ -537,7 +538,7 @@ public class ArcadeCabinetBlockEntity extends BlockEntity implements SeatHolder 
             }
             ServerPlayer waiting = queuedFor == null ? null : serverLevel.getServer().getPlayerList().getPlayer(queuedFor);
             if (waiting != null) {
-                waiting.sendOverlayMessage(Component.translatable("neroarcade.cabinet.msg.your_turn"));
+                PlayerMessages.overlay(waiting, Component.translatable("neroarcade.cabinet.msg.your_turn"));
             }
             queuedFor = null;
         }
@@ -681,9 +682,14 @@ public class ArcadeCabinetBlockEntity extends BlockEntity implements SeatHolder 
      * Real removal only (never chunk unload): end the match, drop the seat with a message, free the slot, drop the
      * cartridge item and make the bus rediscover.
      */
+    //? if >=1.21.5 {
     @Override
     public void preRemoveSideEffects(BlockPos pos, BlockState state) {
         super.preRemoveSideEffects(pos, state);
+    //?} else {
+    /*// Called from the block's onRemove(..) before 1.21.5 (no such BlockEntity hook there).
+    public void preRemoveSideEffects(BlockPos pos, BlockState state) {
+    *///?}
         sleepNow(DropReason.BROKEN);
         if (level instanceof ServerLevel serverLevel) {
             BusRegistry.SERVER.markDirty(dimension(serverLevel), busId);
@@ -714,25 +720,44 @@ public class ArcadeCabinetBlockEntity extends BlockEntity implements SeatHolder 
 
     // --- persistence and sync ---------------------------------------------------------------------
 
+    //? if >=1.21.6 {
     @Override
     protected void saveAdditional(ValueOutput output) {
         super.saveAdditional(output);
+    //?} else {
+    /*@Override
+    protected void saveAdditional(net.minecraft.nbt.CompoundTag tag, net.minecraft.core.HolderLookup.Provider registries) {
+        super.saveAdditional(tag, registries);
+        ValueOutput output = ValueOutput.of(tag, registries);
+    *///?}
         if (!cartridge.isEmpty()) {
             output.store(KEY_CARTRIDGE, ItemStack.CODEC, cartridge);
         }
         output.putLong(KEY_BUS, busId);
     }
 
+    //? if >=1.21.6 {
     @Override
     protected void loadAdditional(ValueInput input) {
         super.loadAdditional(input);
+    //?} else {
+    /*@Override
+    protected void loadAdditional(net.minecraft.nbt.CompoundTag tag, net.minecraft.core.HolderLookup.Provider registries) {
+        super.loadAdditional(tag, registries);
+        ValueInput input = ValueInput.of(tag, registries);
+    *///?}
         cartridge = input.read(KEY_CARTRIDGE, ItemStack.CODEC).orElse(ItemStack.EMPTY);
         busId = input.getLongOr(KEY_BUS, 0L);
         readability = null;
         // a loaded cartridge predates every live insert: it keeps the bus after a restart (review 003b F1)
         insertedAt = cartridge.isEmpty() ? Long.MAX_VALUE : Long.MIN_VALUE;
         // The update tag's client view (absent in saved data, so a server load always reads EMPTY).
+        //? if >=1.21.6 {
         Optional<String> title = input.getString(CabinetClientInfo.KEY_TITLE);
+        //?} else {
+        /*Optional<String> title = tag.contains(CabinetClientInfo.KEY_TITLE)
+                ? Optional.of(input.getStringOr(CabinetClientInfo.KEY_TITLE, "")) : Optional.empty();
+        *///?}
         clientInfo = title.isEmpty() ? CabinetClientInfo.EMPTY
                 : new CabinetClientInfo(true, title.get(),
                         input.getIntOr(CabinetClientInfo.KEY_TINT, CartridgeTint.GREY),

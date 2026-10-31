@@ -42,7 +42,11 @@ public final class ScreenTexture {
             return;
         }
         if (current == null) {
+            //? if >=1.21.5 {
             current = new DynamicTexture(id::toString, ScreenPixels.TEXTURE, ScreenPixels.TEXTURE, false);
+            //?} else {
+            /*current = new DynamicTexture(ScreenPixels.TEXTURE, ScreenPixels.TEXTURE, false);
+            *///?}
             Minecraft.getInstance().getTextureManager().register(id, current);
             texture = current;
         }
@@ -50,7 +54,13 @@ public final class ScreenTexture {
         byte[] pixels = renderer.pixels();
         for (int ty = 0; ty < ScreenPixels.TEXTURE; ty++) {
             for (int tx = 0; tx < ScreenPixels.TEXTURE; tx++) {
+                //? if >=1.21.2 {
                 image.setPixel(tx, ty, ScreenPixels.texel(pixels, theme, scanlines, tx, ty));
+                //?} else {
+                /*// 1.21.1's NativeImage takes ABGR; texel(..) is ARGB, so swap red and blue.
+                int argb = ScreenPixels.texel(pixels, theme, scanlines, tx, ty);
+                image.setPixelRGBA(tx, ty, (argb & 0xFF00FF00) | ((argb >> 16) & 0xFF) | ((argb & 0xFF) << 16));
+                *///?}
             }
         }
         current.upload();

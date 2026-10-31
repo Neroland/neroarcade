@@ -24,6 +24,7 @@ import net.minecraft.world.phys.Vec3;
 
 import org.jetbrains.annotations.Nullable;
 
+import za.co.neroland.neroarcade.compat.PlayerMessages;
 import za.co.neroland.neroarcade.client.render.ArcadeBerStats;
 import za.co.neroland.neroarcade.client.render.AttractReplays;
 import za.co.neroland.neroarcade.client.render.CabinetScreens;
@@ -235,9 +236,13 @@ public final class GalleryCapture {
     }
 
     private static void grab(Minecraft mc, String name) {
+        //? if >=1.21.6 {
         Screenshot.grab(mc.gameDirectory, FOLDER + "/" + name + ".png", mainRenderTarget(mc), 1, msg -> {
+        //?} else {
+        /*Screenshot.grab(mc.gameDirectory, FOLDER + "/" + name + ".png", mainRenderTarget(mc), msg -> {
+        *///?}
             if (mc.player != null) {
-                mc.player.sendSystemMessage(msg);
+                PlayerMessages.chat(mc.player, msg);
             }
         });
     }
@@ -263,7 +268,7 @@ public final class GalleryCapture {
     private static void say(String text) {
         LocalPlayer player = Minecraft.getInstance().player;
         if (player != null) {
-            player.sendSystemMessage(Component.literal(text));
+            PlayerMessages.chat(player, Component.literal(text));
         }
     }
 

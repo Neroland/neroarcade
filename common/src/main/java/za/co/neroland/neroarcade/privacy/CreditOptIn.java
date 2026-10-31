@@ -13,6 +13,7 @@ import net.minecraft.server.MinecraftServer;
 import net.minecraft.world.level.saveddata.SavedData;
 import net.minecraft.world.level.saveddata.SavedDataType;
 
+import za.co.neroland.nerolandcore.data.SavedDataCompat;
 import za.co.neroland.nerolandcore.data.SavedDataRecovery;
 
 import za.co.neroland.neroarcade.NeroArcadeCommon;
@@ -41,8 +42,8 @@ public final class CreditOptIn extends SavedData {
 
     private static final Supplier<CreditOptIn> FACTORY = CreditOptIn::new;
 
-    public static final SavedDataType<CreditOptIn> TYPE = new SavedDataType<CreditOptIn>(
-            Identifier.fromNamespaceAndPath(NeroArcadeCommon.MOD_ID, "credit"), FACTORY, CODEC, null);
+    public static final SavedDataType<CreditOptIn> TYPE = SavedDataCompat.type(
+            Identifier.fromNamespaceAndPath(NeroArcadeCommon.MOD_ID, "credit"), FACTORY, CODEC);
 
     /** Where the erasers find this store (tests swap in an instance). */
     public static final StoreAccess<CreditOptIn> ACCESS = new StoreAccess<>(CreditOptIn::get);

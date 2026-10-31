@@ -35,6 +35,11 @@ import za.co.neroland.neroarcade.module.TestModules;
 /** The bench draft: chips → GameDef with defaults, edits, SAVE identity rules, LOAD round-trip, unreadable. */
 class BenchDraftTest {
 
+    @org.junit.jupiter.api.BeforeAll
+    static void bootstrap() {
+        za.co.neroland.neroarcade.TestBootstrap.ensure();
+    }
+
     private static final UUID ALICE = UUID.fromString("11111111-2222-4333-8444-555555555555");
     private static final UUID BOB = UUID.fromString("66666666-7777-4888-9999-aaaaaaaaaaaa");
     private static final String MINTED = "qqqqqqqqqqqqqqqq";

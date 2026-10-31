@@ -13,7 +13,9 @@ import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.TooltipFlag;
 import net.minecraft.world.item.component.CustomModelData;
+//? if >=1.21.5 {
 import net.minecraft.world.item.component.TooltipDisplay;
+//?}
 
 import org.jetbrains.annotations.Nullable;
 
@@ -47,8 +49,10 @@ public class CartridgeItem extends Item {
     /** Writes {@code def} into an existing cartridge stack (component + tint). */
     public static void write(ItemStack stack, GameDef def) throws ValidationError {
         stack.set(ModDataComponents.GAME_DEF.get(), StoredCartridge.of(def));
+        //? if >=1.21.4 {
         stack.set(DataComponents.CUSTOM_MODEL_DATA,
                 new CustomModelData(List.of(), List.of(), List.of(), List.of(CartridgeTint.of(def))));
+        //?}
     }
 
     /** The stored cartridge on a stack, or null for anything that is not a written cartridge. */
@@ -72,9 +76,17 @@ public class CartridgeItem extends Item {
     }
 
     @Override
+    //? if >=1.21.5 {
     public void appendHoverText(ItemStack stack, Item.TooltipContext context, TooltipDisplay display,
             Consumer<Component> tooltip, TooltipFlag flag) {
         super.appendHoverText(stack, context, display, tooltip, flag);
+    //?} else {
+    /*// Before 1.21.5 the tooltip is a mutable list instead of a consumer.
+    public void appendHoverText(ItemStack stack, Item.TooltipContext context, java.util.List<Component> lines,
+            TooltipFlag flag) {
+        super.appendHoverText(stack, context, lines, flag);
+        Consumer<Component> tooltip = lines::add;
+    *///?}
         StoredCartridge stored = stack.get(ModDataComponents.GAME_DEF.get());
         if (stored == null) {
             tooltip.accept(Component.translatable("item.neroarcade.cartridge.empty").withStyle(ChatFormatting.GRAY));

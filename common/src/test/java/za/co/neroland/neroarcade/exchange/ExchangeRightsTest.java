@@ -19,6 +19,11 @@ import za.co.neroland.neroarcade.privacy.Tombstones;
  */
 class ExchangeRightsTest {
 
+    @org.junit.jupiter.api.BeforeAll
+    static void bootstrap() {
+        za.co.neroland.neroarcade.TestBootstrap.ensure();
+    }
+
     @Test
     void publishOnlyByAuthorOrOp() {
         Optional<java.util.UUID> alice = Optional.of(ExchangeFixtures.ALICE);

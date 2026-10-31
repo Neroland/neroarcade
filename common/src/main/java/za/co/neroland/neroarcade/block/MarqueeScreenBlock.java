@@ -21,6 +21,7 @@ import org.jetbrains.annotations.Nullable;
 
 import za.co.neroland.nerolandcore.registry.BlockCodecs;
 
+import za.co.neroland.neroarcade.compat.PlayerMessages;
 import za.co.neroland.neroarcade.bus.MarqueeScreenBlockEntity;
 import za.co.neroland.neroarcade.registry.ModBlockEntities;
 
@@ -58,7 +59,7 @@ public class MarqueeScreenBlock extends FacingBlock implements EntityBlock {
         if (!level.isClientSide()) {
             int next = state.getValue(ArcadeBlockProperties.SCALE) % 4 + 1;
             level.setBlock(pos, state.setValue(ArcadeBlockProperties.SCALE, next), Block.UPDATE_CLIENTS);
-            player.sendOverlayMessage(Component.translatable("block.neroarcade.marquee_screen.scale", next));
+            PlayerMessages.overlay(player, Component.translatable("block.neroarcade.marquee_screen.scale", next));
         }
         return InteractionResult.SUCCESS;
     }
@@ -77,4 +78,15 @@ public class MarqueeScreenBlock extends FacingBlock implements EntityBlock {
         }
         return (BlockEntityTicker<T>) (BlockEntityTicker<MarqueeScreenBlockEntity>) (lvl, pos, st, m) -> m.serverTick();
     }
+
+    // Before 1.21.5 a block entity gets no preRemoveSideEffects(..) call on real removal; run it from here.
+    //? if <1.21.5 {
+    /*@Override
+    protected void onRemove(BlockState state, Level level, BlockPos pos, BlockState newState, boolean movedByPiston) {
+        if (!state.is(newState.getBlock()) && level.getBlockEntity(pos) instanceof MarqueeScreenBlockEntity be) {
+            be.preRemoveSideEffects(pos, state);
+        }
+        super.onRemove(state, level, pos, newState, movedByPiston);
+    }
+    *///?}
 }

@@ -13,6 +13,7 @@ import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.saveddata.SavedData;
 import net.minecraft.world.level.saveddata.SavedDataType;
 
+import za.co.neroland.nerolandcore.data.SavedDataCompat;
 import za.co.neroland.nerolandcore.data.SavedDataRecovery;
 
 import za.co.neroland.neroarcade.NeroArcadeCommon;
@@ -54,8 +55,8 @@ public final class GalleryStore extends SavedData {
     private static final Codec<GalleryStore> CODEC = Gallery.CODEC.listOf()
             .xmap(GalleryStore::new, store -> store.galleries);
 
-    public static final SavedDataType<GalleryStore> TYPE = new SavedDataType<GalleryStore>(
-            Identifier.fromNamespaceAndPath(NeroArcadeCommon.MOD_ID, "gallery"), GalleryStore::new, CODEC, null);
+    public static final SavedDataType<GalleryStore> TYPE = SavedDataCompat.type(
+            Identifier.fromNamespaceAndPath(NeroArcadeCommon.MOD_ID, "gallery"), GalleryStore::new, CODEC);
 
     public static final String RECOVERY_NAME = "neroarcade:gallery";
 

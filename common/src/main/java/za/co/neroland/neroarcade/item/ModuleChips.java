@@ -34,7 +34,13 @@ public final class ModuleChips {
 
     /** {@code CustomModelData(strings=[slot key], colors=[slot colour])}. */
     public static CustomModelData modelData(ModuleType type) {
+        //? if >=1.21.4 {
         return new CustomModelData(List.of(), List.of(), List.of(type.key()), List.of(type.colour));
+        //?} else {
+        /*// Before 1.21.4 custom model data is one number: the slot + 1 picks the chip model
+        // (models/item/module_chip.json overrides); ArcadeItemColours supplies the colour.
+        return new CustomModelData(type.ordinal() + 1);
+        *///?}
     }
 
     /** The module id a stack carries (any item; empty when it is not a chip or has no id). */

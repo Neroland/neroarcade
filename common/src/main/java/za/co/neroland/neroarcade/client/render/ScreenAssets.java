@@ -81,7 +81,13 @@ public final class ScreenAssets {
                 int[] out = new int[width * height];
                 for (int y = 0; y < height; y++) {
                     for (int x = 0; x < width; x++) {
+                        //? if >=1.21.2 {
                         out[y * width + x] = image.getPixel(x, y);
+                        //?} else {
+                        /*// 1.21.1's NativeImage reads ABGR; the screen code works in ARGB, so swap red and blue.
+                        int abgr = image.getPixelRGBA(x, y);
+                        out[y * width + x] = (abgr & 0xFF00FF00) | ((abgr >> 16) & 0xFF) | ((abgr & 0xFF) << 16);
+                        *///?}
                     }
                 }
                 return out;

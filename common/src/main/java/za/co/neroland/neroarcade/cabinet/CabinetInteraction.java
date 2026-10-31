@@ -9,6 +9,7 @@ import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.InteractionResult;
 import net.minecraft.world.item.ItemStack;
 
+import za.co.neroland.neroarcade.compat.PlayerMessages;
 import za.co.neroland.neroarcade.game.ValidationError;
 import za.co.neroland.neroarcade.item.ItemGiving;
 import za.co.neroland.neroarcade.registry.ModItems;
@@ -58,10 +59,10 @@ public final class CabinetInteraction {
         cabinet.play(level, ModSounds.CABINET_INSERT.get());
         Optional<ValidationError> error = cabinet.cartridgeError();
         if (error.isPresent()) {
-            player.sendOverlayMessage(Component.translatable("neroarcade.cabinet.msg.unreadable",
+            PlayerMessages.overlay(player, Component.translatable("neroarcade.cabinet.msg.unreadable",
                     Component.translatable(error.get().langKey, error.get().args.toArray())));
         } else {
-            player.sendOverlayMessage(Component.translatable("neroarcade.cabinet.msg.inserted"));
+            PlayerMessages.overlay(player, Component.translatable("neroarcade.cabinet.msg.inserted"));
         }
         return InteractionResult.SUCCESS;
     }
@@ -80,7 +81,7 @@ public final class CabinetInteraction {
         }
         ItemStack out = cabinet.takeCartridge();
         ItemGiving.give(player, out);
-        player.sendOverlayMessage(Component.translatable("neroarcade.cabinet.msg.ejected"));
+        PlayerMessages.overlay(player, Component.translatable("neroarcade.cabinet.msg.ejected"));
         return InteractionResult.SUCCESS;
     }
 
@@ -194,7 +195,7 @@ public final class CabinetInteraction {
 
     private static InteractionResult deny(ArcadeCabinetBlockEntity cabinet, ServerPlayer player, String key,
             Object... args) {
-        player.sendOverlayMessage(Component.translatable(key, args));
+        PlayerMessages.overlay(player, Component.translatable(key, args));
         if (cabinet.getLevel() instanceof ServerLevel level) {
             cabinet.play(level, ModSounds.CABINET_DENY.get());
         }

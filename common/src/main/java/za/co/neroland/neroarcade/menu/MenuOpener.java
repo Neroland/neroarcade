@@ -9,6 +9,7 @@ import net.minecraft.world.InteractionResult;
 import net.minecraft.world.MenuProvider;
 import net.minecraft.world.entity.player.Player;
 
+import za.co.neroland.neroarcade.compat.PlayerMessages;
 import za.co.neroland.neroarcade.NeroArcadeCommon;
 import za.co.neroland.neroarcade.telemetry.NeroArcadeTelemetry;
 
@@ -84,7 +85,7 @@ public final class MenuOpener {
             // Nothing further to do; the client will resync on its own.
         }
         try {
-            player.sendSystemMessage(Component.translatable("gui.neroarcade.menu_open_failed"));
+            PlayerMessages.chat(player, Component.translatable("gui.neroarcade.menu_open_failed"));
         } catch (RuntimeException | LinkageError ignored) {
             // The player simply does not get the notice.
         }

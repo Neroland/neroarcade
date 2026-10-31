@@ -13,6 +13,7 @@ import net.minecraft.server.MinecraftServer;
 import net.minecraft.world.level.saveddata.SavedData;
 import net.minecraft.world.level.saveddata.SavedDataType;
 
+import za.co.neroland.nerolandcore.data.SavedDataCompat;
 import za.co.neroland.nerolandcore.data.SavedDataRecovery;
 
 import za.co.neroland.neroarcade.NeroArcadeCommon;
@@ -48,8 +49,8 @@ public final class ExchangeStore extends SavedData {
 
     private static final Supplier<ExchangeStore> FACTORY = ExchangeStore::new;
 
-    public static final SavedDataType<ExchangeStore> TYPE = new SavedDataType<ExchangeStore>(
-            Identifier.fromNamespaceAndPath(NeroArcadeCommon.MOD_ID, "exchange"), FACTORY, CODEC, null);
+    public static final SavedDataType<ExchangeStore> TYPE = SavedDataCompat.type(
+            Identifier.fromNamespaceAndPath(NeroArcadeCommon.MOD_ID, "exchange"), FACTORY, CODEC);
 
     /** Where the erasers find this store (tests swap in an instance). */
     public static final za.co.neroland.neroarcade.privacy.StoreAccess<ExchangeStore> ACCESS =

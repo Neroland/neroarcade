@@ -14,7 +14,11 @@ import net.minecraft.commands.arguments.GameProfileArgument;
 import net.minecraft.core.BlockPos;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerPlayer;
+//? if >=1.21.9 {
 import net.minecraft.server.players.NameAndId;
+//?} else {
+/*import com.mojang.authlib.GameProfile;
+*///?}
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.ClipContext;
 import net.minecraft.world.level.block.state.BlockState;
@@ -106,12 +110,21 @@ public final class ArcadeCommands {
      * 003b F5). Works for offline players (by profile). The reply names the profile the operator typed; nothing is
      * logged.
      */
+    //? if >=1.21.9 {
     private static int unpublish(CommandSourceStack source, Collection<NameAndId> targets) {
         int total = 0;
         for (NameAndId target : targets) {
             int removed = ExchangeStore.get(source.getServer()).unpublishBy(source.getServer(), target.id());
             total += removed;
             String name = target.name();
+    //?} else {
+    /*private static int unpublish(CommandSourceStack source, Collection<GameProfile> targets) {
+        int total = 0;
+        for (GameProfile target : targets) {
+            int removed = ExchangeStore.get(source.getServer()).unpublishBy(source.getServer(), target.getId());
+            total += removed;
+            String name = target.getName();
+    *///?}
             if (removed == 0) {
                 source.sendFailure(Component.translatable("neroarcade.command.unpublish.none", name));
             } else {

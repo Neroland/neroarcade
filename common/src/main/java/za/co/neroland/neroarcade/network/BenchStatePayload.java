@@ -55,6 +55,8 @@ public record BenchStatePayload(BlockPos bench, GameDef draft, List<BenchWarning
     private static final StreamCodec<ByteBuf, List<BenchWarning>> WARNINGS_CODEC = ByteBufCodecs.VAR_INT.map(
             BenchStatePayload::warningsFromMask, BenchStatePayload::maskOf);
 
+    // 1.21.1's StreamCodec.composite stops at six fields.
+    //? if >=1.21.4 {
     public static final StreamCodec<ByteBuf, BenchStatePayload> STREAM_CODEC = StreamCodec.composite(
             BlockPos.STREAM_CODEC, BenchStatePayload::bench,
             DRAFT_CODEC, BenchStatePayload::draft,
@@ -65,6 +67,18 @@ public record BenchStatePayload(BlockPos bench, GameDef draft, List<BenchWarning
             ByteBufCodecs.BOOL, BenchStatePayload::testing,
             ByteBufCodecs.BOOL, BenchStatePayload::canSave,
             BenchStatePayload::new);
+    //?} else {
+    /*public static final StreamCodec<ByteBuf, BenchStatePayload> STREAM_CODEC = za.co.neroland.neroarcade.compat.StreamCodecs8.composite(
+            BlockPos.STREAM_CODEC, BenchStatePayload::bench,
+            DRAFT_CODEC, BenchStatePayload::draft,
+            WARNINGS_CODEC, BenchStatePayload::warnings,
+            ByteBufCodecs.VAR_INT, BenchStatePayload::ghostMask,
+            ByteBufCodecs.stringUtf8(128), BenchStatePayload::statusKey,
+            ByteBufCodecs.stringUtf8(64).apply(ByteBufCodecs.list(4)), BenchStatePayload::statusArgs,
+            ByteBufCodecs.BOOL, BenchStatePayload::testing,
+            ByteBufCodecs.BOOL, BenchStatePayload::canSave,
+            BenchStatePayload::new);
+    *///?}
 
     public BenchStatePayload {
         warnings = List.copyOf(warnings);

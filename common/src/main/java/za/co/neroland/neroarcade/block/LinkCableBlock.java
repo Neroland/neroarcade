@@ -15,7 +15,11 @@ import net.minecraft.world.item.context.BlockPlaceContext;
 import net.minecraft.world.level.BlockGetter;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.LevelReader;
+//? if >=1.21.2 {
 import net.minecraft.world.level.ScheduledTickAccess;
+//?} else {
+/*import net.minecraft.world.level.LevelAccessor;
+*///?}
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.StateDefinition;
@@ -76,9 +80,16 @@ public class LinkCableBlock extends Block {
         return state;
     }
 
+    // 1.21.2 reordered updateShape and added the tick-access + random arguments.
+    //? if >=1.21.2 {
     @Override
     protected BlockState updateShape(BlockState state, LevelReader level, ScheduledTickAccess ticks, BlockPos pos,
             Direction direction, BlockPos neighbourPos, BlockState neighbourState, RandomSource random) {
+    //?} else {
+    /*@Override
+    protected BlockState updateShape(BlockState state, Direction direction, BlockState neighbourState,
+            LevelAccessor level, BlockPos pos, BlockPos neighbourPos) {
+    *///?}
         BlockState next = state.setValue(BY_DIRECTION.get(direction), connects(neighbourState));
         if (next != state && level instanceof ServerLevel serverLevel) {
             touch(serverLevel, pos);

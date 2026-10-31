@@ -80,6 +80,7 @@ public class ArcadeCabinetBlock extends TwoHighBlock {
                 (lvl, pos, st, cabinet) -> cabinet.serverTick());
     }
 
+    //? if >=1.21.2 {
     @Override
     protected InteractionResult useItemOn(ItemStack stack, BlockState state, Level level, BlockPos pos, Player player,
             InteractionHand hand, BlockHitResult hit) {
@@ -92,6 +93,27 @@ public class ArcadeCabinetBlock extends TwoHighBlock {
         }
         return InteractionResult.TRY_WITH_EMPTY_HAND;
     }
+    //?} else {
+    /*// Before 1.21.2 an item use on a block answers with an ItemInteractionResult.
+    @Override
+    protected net.minecraft.world.ItemInteractionResult useItemOn(ItemStack stack, BlockState state, Level level,
+            BlockPos pos, Player player, InteractionHand hand, BlockHitResult hit) {
+        if (!(level instanceof ServerLevel) || !(player instanceof ServerPlayer serverPlayer)) {
+            return CabinetInteraction.isCartridgeLike(stack) ? net.minecraft.world.ItemInteractionResult.SUCCESS
+                    : net.minecraft.world.ItemInteractionResult.PASS_TO_DEFAULT_BLOCK_INTERACTION;
+        }
+        if (controller(level, pos, state) instanceof ArcadeCabinetBlockEntity cabinet
+                && CabinetInteraction.isCartridgeLike(stack)) {
+            InteractionResult result = CabinetInteraction.insert(cabinet, serverPlayer, stack);
+            if (result == InteractionResult.FAIL) {
+                return net.minecraft.world.ItemInteractionResult.FAIL;
+            }
+            return result.consumesAction() ? net.minecraft.world.ItemInteractionResult.CONSUME
+                    : net.minecraft.world.ItemInteractionResult.PASS_TO_DEFAULT_BLOCK_INTERACTION;
+        }
+        return net.minecraft.world.ItemInteractionResult.PASS_TO_DEFAULT_BLOCK_INTERACTION;
+    }
+    *///?}
 
     @Override
     protected InteractionResult useWithoutItem(BlockState state, Level level, BlockPos pos, Player player,
@@ -106,4 +128,15 @@ public class ArcadeCabinetBlock extends TwoHighBlock {
         }
         return InteractionResult.CONSUME;
     }
+
+    // Before 1.21.5 a block entity gets no preRemoveSideEffects(..) call on real removal; run it from here.
+    //? if <1.21.5 {
+    /*@Override
+    protected void onRemove(BlockState state, Level level, BlockPos pos, BlockState newState, boolean movedByPiston) {
+        if (!state.is(newState.getBlock()) && level.getBlockEntity(pos) instanceof ArcadeCabinetBlockEntity be) {
+            be.preRemoveSideEffects(pos, state);
+        }
+        super.onRemove(state, level, pos, newState, movedByPiston);
+    }
+    *///?}
 }

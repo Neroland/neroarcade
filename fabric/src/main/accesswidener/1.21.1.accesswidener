@@ -1,0 +1,4 @@
+accessWidener	v2	named
+# Minecraft 1.21.1 (obfuscated, Mojang-mapped in dev). Same purpose as ../resources/neroarcade.accesswidener,
+# which is the 26.x (official-namespace) file. The build swaps this one into the 1.21.1 jar.
+accessible	class	net/minecraft/world/level/block/entity/BlockEntityType$BlockEntitySupplier

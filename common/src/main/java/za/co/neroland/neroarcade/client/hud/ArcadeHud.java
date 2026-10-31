@@ -137,11 +137,19 @@ public final class ArcadeHud {
         int y = 6;
         g.fill(x - 2, y - 2, x + w, y + h, ArcadeColours.HUD_BACK);
         g.text(font, rule, x + 2, y + 2, ArcadeColours.AMBER_TEXT, false);
+        //? if >=1.21.6 {
         g.pose().pushMatrix();
         g.pose().translate(x + 2, y + 13);
         g.pose().scale(2f, 2f);
         g.text(font, score, 0, 0, ArcadeColours.TITLE, true);
         g.pose().popMatrix();
+        //?} else {
+        /*g.pose().pushPose();
+        g.pose().translate(x + 2, y + 13, 0f);
+        g.pose().scale(2f, 2f, 1f);
+        g.text(font, score, 0, 0, ArcadeColours.TITLE, true);
+        g.pose().popPose();
+        *///?}
         int line = y + 32;
         if (!timer.isEmpty()) {
             g.text(font, timer, x + 2, line, ArcadeColours.CYAN_TEXT, false);
@@ -261,11 +269,19 @@ public final class ArcadeHud {
 
     private static void drawCountdown(GuiGraphicsExtractor g, Font font, int ticksLeft, int width, int height) {
         String digit = Integer.toString(Math.max(1, (ticksLeft + 19) / 20));
+        //? if >=1.21.6 {
         g.pose().pushMatrix();
         g.pose().translate(width / 2f, height / 2f - 40f);
         g.pose().scale(4f, 4f);
         g.text(font, digit, -font.width(digit) / 2, 0, ArcadeColours.TITLE, true);
         g.pose().popMatrix();
+        //?} else {
+        /*g.pose().pushPose();
+        g.pose().translate(width / 2f, height / 2f - 40f, 0f);
+        g.pose().scale(4f, 4f, 1f);
+        g.text(font, digit, -font.width(digit) / 2, 0, ArcadeColours.TITLE, true);
+        g.pose().popPose();
+        *///?}
     }
 
     private static void panel(GuiGraphicsExtractor g, int x, int y, int w, int h) {

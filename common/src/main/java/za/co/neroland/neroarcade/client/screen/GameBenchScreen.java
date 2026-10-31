@@ -504,8 +504,14 @@ public class GameBenchScreen extends AbstractContainerScreen<GameBenchMenu> {
 
     // --- input --------------------------------------------------------------------------------------
 
+    //? if >=1.21.9 {
     @Override
     public boolean keyPressed(KeyEvent event) {
+    //?} else {
+    /*@Override
+    public boolean keyPressed(int keyCode, int scanCode, int modifiers) {
+        KeyEvent event = new KeyEvent(keyCode, scanCode, modifiers);
+    *///?}
         if (testing() && !(getFocused() instanceof EditBox) && ArcadeKeys.screenKey(event, true)) {
             return true; // the test play has the arcade keys
         }
@@ -515,12 +521,21 @@ public class GameBenchScreen extends AbstractContainerScreen<GameBenchMenu> {
                 setFocused(null);
                 return true;
             }
+            //? if >=1.21.9 {
             box.keyPressed(event);
+            //?} else {
+            /*box.keyPressed(keyCode, scanCode, modifiers);
+            *///?}
             return true; // typing "e" never closes the screen
         }
+        //? if >=1.21.9 {
         return super.keyPressed(event);
+        //?} else {
+        /*return super.keyPressed(keyCode, scanCode, modifiers);
+        *///?}
     }
 
+    //? if >=1.21.9 {
     @Override
     public boolean keyReleased(KeyEvent event) {
         if (ArcadeKeys.screenKey(event, false)) {
@@ -531,6 +546,19 @@ public class GameBenchScreen extends AbstractContainerScreen<GameBenchMenu> {
 
     @Override
     public boolean mouseClicked(MouseButtonEvent event, boolean doubleClick) {
+    //?} else {
+    /*@Override
+    public boolean keyReleased(int keyCode, int scanCode, int modifiers) {
+        if (ArcadeKeys.screenKey(new KeyEvent(keyCode, scanCode, modifiers), false)) {
+            return true;
+        }
+        return super.keyReleased(keyCode, scanCode, modifiers);
+    }
+
+    @Override
+    public boolean mouseClicked(double mouseX, double mouseY, int button) {
+        MouseButtonEvent event = new MouseButtonEvent(mouseX, mouseY, button);
+    *///?}
         ModuleType row = rowAt(event.x(), event.y());
         if (row != null) {
             // a click anywhere on a row (its chip slot included) selects that chip for PARAMETERS
@@ -538,7 +566,11 @@ public class GameBenchScreen extends AbstractContainerScreen<GameBenchMenu> {
             selectedStack = stackAt(row, event.x());
             selectionChosen = true;
         }
+        //? if >=1.21.9 {
         return super.mouseClicked(event, doubleClick) || row != null;
+        //?} else {
+        /*return super.mouseClicked(mouseX, mouseY, button) || row != null;
+        *///?}
     }
 
     private @Nullable ModuleType rowAt(double mx, double my) {
@@ -779,7 +811,15 @@ public class GameBenchScreen extends AbstractContainerScreen<GameBenchMenu> {
         int py = topPos + PREVIEW_Y;
         g.fill(px - 1, py - 1, px + 65, py + 65, ArcadeColours.BUTTON_EDGE);
         if (previewTexture.ready()) {
+            //? if >=1.21.6 {
             g.blit(previewTexture.id(), px, py, px + 64, py + 64, 0f, 1f, 0f, 1f);
+            //?} else if >=1.21.2 {
+            /*g.blit(net.minecraft.client.renderer.RenderType::guiTextured, previewTexture.id(), px, py, 0f, 0f, 64, 64,
+                    ScreenPixels.TEXTURE, ScreenPixels.TEXTURE, ScreenPixels.TEXTURE, ScreenPixels.TEXTURE);
+            *///?} else {
+            /*g.blit(previewTexture.id(), px, py, 64, 64, 0f, 0f, ScreenPixels.TEXTURE, ScreenPixels.TEXTURE,
+                    ScreenPixels.TEXTURE, ScreenPixels.TEXTURE);
+            *///?}
         } else {
             g.fill(px, py, px + 64, py + 64, ArcadeColours.INNER);
         }
@@ -970,7 +1010,11 @@ public class GameBenchScreen extends AbstractContainerScreen<GameBenchMenu> {
         for (Component line : lines) {
             out.addAll(font.split(line, TOOLTIP_WIDTH));
         }
+        //? if >=1.21.6 {
         g.setTooltipForNextFrame(font, out, mx, my);
+        //?} else {
+        /*g.renderTooltip(font, out, mx, my);
+        *///?}
     }
 
     /** The deny buzz for a refused bench action (client side; the status bar says why). */

@@ -58,4 +58,15 @@ public class LinkBusBlock extends FacingBlock implements EntityBlock {
         }
         return (BlockEntityTicker<T>) (BlockEntityTicker<LinkBusBlockEntity>) (lvl, pos, st, hub) -> hub.serverTick();
     }
+
+    // Before 1.21.5 a block entity gets no preRemoveSideEffects(..) call on real removal; run it from here.
+    //? if <1.21.5 {
+    /*@Override
+    protected void onRemove(BlockState state, Level level, BlockPos pos, BlockState newState, boolean movedByPiston) {
+        if (!state.is(newState.getBlock()) && level.getBlockEntity(pos) instanceof LinkBusBlockEntity be) {
+            be.preRemoveSideEffects(pos, state);
+        }
+        super.onRemove(state, level, pos, newState, movedByPiston);
+    }
+    *///?}
 }

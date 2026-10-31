@@ -24,8 +24,13 @@ import za.co.neroland.neroarcade.runtime.SeatInput;
  */
 public final class ArcadeKeys {
 
+    //? if >=1.21.9 {
     public static final KeyMapping.Category CATEGORY =
             KeyMapping.Category.register(Identifier.fromNamespaceAndPath("neroarcade", "arcade"));
+    //?} else {
+    /*// Before 1.21.9 a key category is its translation key.
+    public static final String CATEGORY = "key.category.neroarcade.arcade";
+    *///?}
 
     public static final KeyMapping UP = key("up", InputConstants.KEY_W);
     public static final KeyMapping DOWN = key("down", InputConstants.KEY_S);
@@ -82,7 +87,12 @@ public final class ArcadeKeys {
         }
         boolean matched = false;
         for (int i = 0; i < ALL.size(); i++) {
-            if (ALL.get(i).matches(event)) {
+            //? if >=1.21.9 {
+            boolean hit = ALL.get(i).matches(event);
+            //?} else {
+            /*boolean hit = ALL.get(i).matches(event.key(), event.scancode());
+            *///?}
+            if (hit) {
                 screenHeld = down ? screenHeld | (1 << i) : screenHeld & ~(1 << i);
                 matched = true;
             }

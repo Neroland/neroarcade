@@ -31,6 +31,7 @@ import net.minecraft.world.phys.Vec3;
 
 import org.jetbrains.annotations.Nullable;
 
+import za.co.neroland.neroarcade.compat.PlayerMessages;
 import za.co.neroland.neroarcade.block.ArcadeBlockProperties;
 import za.co.neroland.neroarcade.cabinet.AwakeCabinets;
 import za.co.neroland.neroarcade.cabinet.BoardWriter;
@@ -430,7 +431,7 @@ public class GameBenchBlockEntity extends BlockEntity implements MenuProvider, S
             SeatRegistry.SERVER.release(seat.playerUuid, seatKey(serverLevel));
             ServerPlayer player = serverLevel.getServer().getPlayerList().getPlayer(seat.playerUuid);
             if (player != null && why != DropReason.ESC) {
-                player.sendOverlayMessage(Component.translatable(why.langKey()));
+                PlayerMessages.overlay(player, Component.translatable(why.langKey()));
             }
         }
         if (host != null) {
@@ -475,9 +476,14 @@ public class GameBenchBlockEntity extends BlockEntity implements MenuProvider, S
     // --- removal ------------------------------------------------------------------------------------
 
     /** Real removal: end a test play and drop every real item (never a LOAD-materialised chip). */
+    //? if >=1.21.5 {
     @Override
     public void preRemoveSideEffects(BlockPos pos, BlockState state) {
         super.preRemoveSideEffects(pos, state);
+    //?} else {
+    /*// Called from the block's onRemove(..) before 1.21.5 (no such BlockEntity hook there).
+    public void preRemoveSideEffects(BlockPos pos, BlockState state) {
+    *///?}
         dropSeat(DropReason.BROKEN);
         if (level != null) {
             for (int i = 0; i < BenchSlots.SIZE; i++) {
@@ -536,21 +542,43 @@ public class GameBenchBlockEntity extends BlockEntity implements MenuProvider, S
 
     // --- persistence --------------------------------------------------------------------------------
 
+    //? if >=1.21.6 {
     @Override
     protected void saveAdditional(ValueOutput output) {
         super.saveAdditional(output);
+    //?} else {
+    /*@Override
+    protected void saveAdditional(net.minecraft.nbt.CompoundTag tag, net.minecraft.core.HolderLookup.Provider registries) {
+        super.saveAdditional(tag, registries);
+        ValueOutput output = ValueOutput.of(tag, registries);
+    *///?}
+        //? if >=1.21.6 {
         ContainerHelper.saveAllItems(output, inventory.getItems());
+        //?} else {
+        /*ContainerHelper.saveAllItems(tag, inventory.getItems(), registries);
+        *///?}
         output.store(KEY_DRAFT, BenchDraft.CODEC, draft);
         output.putInt(KEY_GHOSTS, ghostMask);
     }
 
+    //? if >=1.21.6 {
     @Override
     protected void loadAdditional(ValueInput input) {
         super.loadAdditional(input);
+    //?} else {
+    /*@Override
+    protected void loadAdditional(net.minecraft.nbt.CompoundTag tag, net.minecraft.core.HolderLookup.Provider registries) {
+        super.loadAdditional(tag, registries);
+        ValueInput input = ValueInput.of(tag, registries);
+    *///?}
         muted = true;
         try {
             inventory.clearContent();
+            //? if >=1.21.6 {
             ContainerHelper.loadAllItems(input, inventory.getItems());
+            //?} else {
+            /*ContainerHelper.loadAllItems(tag, inventory.getItems(), registries);
+            *///?}
             input.read(KEY_DRAFT, BenchDraft.CODEC).ifPresent(draft::copyFrom);
             ghostMask = input.getIntOr(KEY_GHOSTS, 0) & 0x3FFF;
             // the update tag's holo view (absent in saved data)

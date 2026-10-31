@@ -10,7 +10,11 @@ import net.minecraft.world.item.context.BlockPlaceContext;
 import net.minecraft.world.level.BlockGetter;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.LevelReader;
+//? if >=1.21.2 {
 import net.minecraft.world.level.ScheduledTickAccess;
+//?} else {
+/*import net.minecraft.world.level.LevelAccessor;
+*///?}
 import net.minecraft.world.level.block.BaseEntityBlock;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
@@ -68,16 +72,27 @@ public abstract class TwoHighBlock extends BaseEntityBlock {
     }
 
     /** A half whose partner is gone (or is not this block's matching half) becomes air. */
+    // 1.21.2 reordered updateShape and added the tick-access + random arguments.
+    //? if >=1.21.2 {
     @Override
     protected BlockState updateShape(BlockState state, LevelReader level, ScheduledTickAccess ticks, BlockPos pos,
             Direction direction, BlockPos neighbourPos, BlockState neighbourState, RandomSource random) {
+    //?} else {
+    /*@Override
+    protected BlockState updateShape(BlockState state, Direction direction, BlockState neighbourState,
+            LevelAccessor level, BlockPos pos, BlockPos neighbourPos) {
+    *///?}
         Half half = state.getValue(HALF);
         boolean partnerSide = half == Half.LOWER ? direction == Direction.UP : direction == Direction.DOWN;
         if (partnerSide && !(neighbourState.getBlock() == this && neighbourState.getValue(HALF) != half
                 && neighbourState.getValue(FACING) == state.getValue(FACING))) {
             return Blocks.AIR.defaultBlockState();
         }
+        //? if >=1.21.2 {
         return super.updateShape(state, level, ticks, pos, direction, neighbourPos, neighbourState, random);
+        //?} else {
+        /*return super.updateShape(state, direction, neighbourState, level, pos, neighbourPos);
+        *///?}
     }
 
     /**

@@ -17,6 +17,7 @@ import net.minecraft.nbt.Tag;
 
 import org.junit.jupiter.api.Test;
 
+import za.co.neroland.neroarcade.compat.NbtCompat;
 import za.co.neroland.neroarcade.game.ValidationError;
 import za.co.neroland.neroarcade.module.PropertyValue.BoolValue;
 import za.co.neroland.neroarcade.module.PropertyValue.EnumValue;
@@ -44,7 +45,7 @@ class SlotEntryCodecTest {
     @Test
     void nbtRoundTripWritesBoolAsByteAndCoercesBack() throws ValidationError {
         Tag tag = SlotEntry.CODEC.encodeStart(NbtOps.INSTANCE, ENTRY).getOrThrow();
-        CompoundTag props = ((CompoundTag) tag).getCompound("props").orElseThrow();
+        CompoundTag props = NbtCompat.getCompound((CompoundTag) tag, "props").orElseThrow();
         assertTrue(props.get("fires") instanceof ByteTag);
         SlotEntry back = SlotEntry.CODEC.parse(NbtOps.INSTANCE, tag).getOrThrow();
         assertEquals(new IntValue(1), back.props().get("fires"));

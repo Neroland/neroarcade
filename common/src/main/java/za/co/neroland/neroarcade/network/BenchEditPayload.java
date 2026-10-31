@@ -46,6 +46,8 @@ public record BenchEditPayload(BlockPos bench, Op op, int slot, int stackIndex, 
     private static final StreamCodec<ByteBuf, Op> OP_CODEC = ByteBufCodecs.VAR_INT.map(
             i -> Op.values()[Math.floorMod(i, Op.values().length)], Op::ordinal);
 
+    // 1.21.1's StreamCodec.composite stops at six fields.
+    //? if >=1.21.4 {
     public static final StreamCodec<ByteBuf, BenchEditPayload> STREAM_CODEC = StreamCodec.composite(
             BlockPos.STREAM_CODEC, BenchEditPayload::bench,
             OP_CODEC, BenchEditPayload::op,
@@ -56,6 +58,18 @@ public record BenchEditPayload(BlockPos bench, Op op, int slot, int stackIndex, 
             ByteBufCodecs.BOOL, BenchEditPayload::boolValue,
             ByteBufCodecs.stringUtf8(MAX_TITLE_WIRE), BenchEditPayload::title,
             BenchEditPayload::new);
+    //?} else {
+    /*public static final StreamCodec<ByteBuf, BenchEditPayload> STREAM_CODEC = za.co.neroland.neroarcade.compat.StreamCodecs8.composite(
+            BlockPos.STREAM_CODEC, BenchEditPayload::bench,
+            OP_CODEC, BenchEditPayload::op,
+            ByteBufCodecs.VAR_INT, BenchEditPayload::slot,
+            ByteBufCodecs.VAR_INT, BenchEditPayload::stackIndex,
+            ByteBufCodecs.stringUtf8(MAX_PROP_KEY), BenchEditPayload::propKey,
+            ByteBufCodecs.VAR_INT, BenchEditPayload::intValue,
+            ByteBufCodecs.BOOL, BenchEditPayload::boolValue,
+            ByteBufCodecs.stringUtf8(MAX_TITLE_WIRE), BenchEditPayload::title,
+            BenchEditPayload::new);
+    *///?}
 
     public BenchEditPayload {
         propKey = propKey == null ? "" : propKey;

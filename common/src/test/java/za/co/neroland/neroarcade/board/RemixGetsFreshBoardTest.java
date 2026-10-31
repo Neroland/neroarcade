@@ -11,6 +11,7 @@ import net.minecraft.nbt.ListTag;
 
 import org.junit.jupiter.api.Test;
 
+import za.co.neroland.neroarcade.compat.NbtCompat;
 import za.co.neroland.neroarcade.cabinet.BusMatchResult;
 import za.co.neroland.neroarcade.runtime.MatchResult;
 
@@ -55,9 +56,9 @@ class RemixGetsFreshBoardTest {
         LeaderboardTable table = new LeaderboardTable();
         table.record(on(REMIX, 40), 1L, 10, uuid -> null);
         CompoundTag saved = table.save();
-        CompoundTag board = saved.getList("boards").orElseThrow().getCompound(0).orElseThrow();
-        assertEquals(REMIX, board.getString("id").orElseThrow());
-        assertTrue(board.getString("root").isEmpty(), "the lineage root is never the key");
+        CompoundTag board = NbtCompat.getCompound(NbtCompat.getList(saved, "boards").orElseThrow(), 0).orElseThrow();
+        assertEquals(REMIX, NbtCompat.getString(board, "id").orElseThrow());
+        assertTrue(NbtCompat.getString(board, "root").isEmpty(), "the lineage root is never the key");
         LeaderboardTable back = LeaderboardTable.load(saved);
         assertEquals(40, back.board(REMIX).orElseThrow().top().get(0).score());
         assertArrayEquals(new int[] {1, 1}, back.tally(REMIX));
@@ -99,7 +100,7 @@ class RemixGetsFreshBoardTest {
         // a remix of it starts fresh
         assertTrue(loaded.board(REMIX).isEmpty());
         // and the next save writes the new key
-        CompoundTag resaved = loaded.save().getList("boards").orElseThrow().getCompound(0).orElseThrow();
-        assertEquals(ORIGINAL, resaved.getString("id").orElseThrow());
+        CompoundTag resaved = NbtCompat.getCompound(NbtCompat.getList(loaded.save(), "boards").orElseThrow(), 0).orElseThrow();
+        assertEquals(ORIGINAL, NbtCompat.getString(resaved, "id").orElseThrow());
     }
 }

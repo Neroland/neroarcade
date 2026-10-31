@@ -6,6 +6,7 @@ import com.mojang.serialization.Codec;
 
 import net.minecraft.nbt.CompoundTag;
 
+import za.co.neroland.neroarcade.compat.NbtCompat;
 import za.co.neroland.neroarcade.game.CartridgeValidator;
 import za.co.neroland.neroarcade.game.GameDef;
 import za.co.neroland.neroarcade.game.ResolvedGame;
@@ -72,7 +73,7 @@ public record StoredCartridge(CompoundTag tag) {
 
     /** The raw title (for a tooltip on an unreadable cartridge), stripped of control characters and capped. */
     public String rawTitle() {
-        String title = tag.getStringOr("title", "");
+        String title = NbtCompat.getStringOr(tag, "title", "");
         StringBuilder out = new StringBuilder();
         title.codePoints().filter(c -> !Character.isISOControl(c)).limit(32).forEach(out::appendCodePoint);
         return out.toString().strip();
@@ -80,6 +81,6 @@ public record StoredCartridge(CompoundTag tag) {
 
     /** The raw cartridge id (for {@code /neroarcade cartridge inspect} on an unreadable cartridge). */
     public String rawId() {
-        return tag.getStringOr("id", "");
+        return NbtCompat.getStringOr(tag, "id", "");
     }
 }

@@ -52,27 +52,27 @@ co-op on one server-side simulation.
 
 ## Requirements
 
-- **Minecraft** 26.1.2, 26.2 or 26.3 on **NeoForge**, **MinecraftForge** or **Fabric**.
-- **Neroland Core 1.15.0** or newer (below 2.0). Every loader manifest floors it at the compiled version.
-- **Java 25.**
+- **Minecraft** 1.21.1, 1.21.4, 1.21.5, 1.21.8 (also 1.21.7), 1.21.10 (also 1.21.9), 1.21.11, 26.1.2, 26.2 or 26.3
+  on **NeoForge**, **MinecraftForge** or **Fabric**.
+- **Neroland Core 1.17.0** or newer (below 2.0). Every loader manifest floors it at the compiled version.
+- **Java 21** for the 1.21.x builds, **Java 25** for 26.x.
 
 Optional, each detected at start-up; NeroArcade is complete without them:
 
 | Mod | Minimum | What it adds |
 | --- | --- | --- |
-| NeroEconomy | 0.4.0-beta.1 | Coin-op seats and paid downloads (`economy.coinOp`, off by default). |
+| NeroEconomy | 0.5.0-beta.1 | Coin-op seats and paid downloads (`economy.coinOp`, off by default). |
 | NeroLink | 1.0.0 (1.1.0 for rich notification text) | The companion-app module: library, leaderboards, export/import, notifications. |
 | NeroQuests | — | Loads the "Insert Coin" chapter shipped as data. |
 
 ## Supported cells
 
-Nine cells, each a Stonecutter node `:<loader>:<mc>`:
+27 cells, each a Stonecutter node `:<loader>:<mc>`, for `<loader>` in `neoforge`, `forge`, `fabric`:
 
-| | 26.1.2 | 26.2 | 26.3 |
-| --- | --- | --- | --- |
-| NeoForge | `:neoforge:26.1.2` | `:neoforge:26.2` | `:neoforge:26.3` |
-| Forge | `:forge:26.1.2` | `:forge:26.2` | `:forge:26.3` |
-| Fabric | `:fabric:26.1.2` | `:fabric:26.2` | `:fabric:26.3` |
+| Line | Cells |
+| --- | --- |
+| 1.21.x | `1.21.1`, `1.21.4`, `1.21.5`, `1.21.8` (runs on 1.21.7-1.21.8), `1.21.10` (runs on 1.21.9-1.21.10), `1.21.11` |
+| 26.x | `26.1.2`, `26.2`, `26.3` |
 
 ## Layout
 
@@ -96,7 +96,7 @@ empty containers).
 ./gradlew :fabric:26.2:build          # one cell
 ./gradlew :neoforge:26.1.2:build :neoforge:26.2:build :neoforge:26.3:build \
           :forge:26.1.2:build :forge:26.2:build :forge:26.3:build \
-          :fabric:26.1.2:build :fabric:26.2:build :fabric:26.3:build   # all nine
+          :fabric:26.1.2:build :fabric:26.2:build :fabric:26.3:build   # the 26.x cells
 ./gradlew :fabric:26.2:ecjCheck       # static analysis (Eclipse compiler, tools/ecj.prefs)
 ```
 

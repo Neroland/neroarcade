@@ -20,7 +20,11 @@ public final class NeroArcadeForge {
         NeroArcadeCommon.init();
         // Common init created NeroArcade's deferred registers through Core's registration seam; this
         // attaches them to our mod bus group.
+        //? if >=1.21.6 {
         RegistrationProvider.attach(context.getModBusGroup());
+        //?} else {
+        /*RegistrationProvider.attach(context.getModEventBus());
+        *///?}
         ForgeArcadeNetwork.register();
         ForgeArcadeEvents.register();
         // Client-only setup. Gated so client classes never load on a dedicated server.

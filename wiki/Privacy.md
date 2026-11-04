@@ -66,3 +66,18 @@ through the NeroLink relay (`nerorelay.neroserver.xyz`) and Apple's or Google's 
 ## Questions
 
 Ask your server operator, or write to [info@neroland.co.za](mailto:info@neroland.co.za).
+
+## Optional encrypted support reports
+
+`/nsarcdebug dump` saves a local encrypted `.nad` file under `neroarcade-debug/` in your game directory.
+It includes mod/loader/Java versions, maximum heap, screen range, renderer counters, seated match phase,
+and up to 16 recent handled faults (exception class and NeroArcade code locations only).
+It excludes raw logs, exception messages, chat, player identities, cartridge contents and world coordinates.
+Fault metadata is held in memory until the game exits, including when automatic telemetry is disabled.
+Nothing is uploaded: you decide whether to send the file to support. Only the holder of the maintainer's
+private key can decrypt the saved file. Your own running client still has access to the underlying diagnostics.
+This client report does not fetch dedicated-server errors.
+
+Creation is limited to once per minute and ten local files. Delete files when no longer needed;
+these anonymous local reports are not removed by server player-data erasure. Support copies and decrypted
+reports should be deleted once the issue is resolved.

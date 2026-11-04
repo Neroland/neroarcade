@@ -307,6 +307,7 @@ public final class NeroArcadeTelemetry {
     /** Capture a handled exception if it is still clearly from NeroArcade code. */
     public static void captureHandledException(Throwable t) {
         if (t != null && touchesNeroArcade(t)) {
+            za.co.neroland.neroarcade.diagnostics.DebugFaults.capture(t);
             capture(t);
         }
     }
@@ -322,6 +323,9 @@ public final class NeroArcadeTelemetry {
      * unrelated handled failures stay separate issues.
      */
     public static void captureHandledException(Throwable t, String source, String operation) {
+        if (t != null && touchesNeroArcade(t)) {
+            za.co.neroland.neroarcade.diagnostics.DebugFaults.capture(t);
+        }
         if (!active || t == null || !touchesNeroArcade(t)) {
             return;
         }

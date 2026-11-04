@@ -80,6 +80,7 @@ public final class GalleryCapture {
 
     /** Registers {@code /nsarcgallery} and {@code /nsarcber}; generic so one call serves every loader. */
     public static <S> void registerClientCommands(CommandDispatcher<S> dispatcher) {
+        DebugDumpCommand.register(dispatcher);
         dispatcher.register(LiteralArgumentBuilder.<S>literal("nsarcgallery")
                 .then(LiteralArgumentBuilder.<S>literal("capture")
                         .executes(ctx -> start("night"))

@@ -115,6 +115,7 @@ empty containers).
 - [Wiki](wiki/Home.md) — playing, building games, sharing, multiplayer, commands, config, privacy
 - [CHANGELOG.md](CHANGELOG.md) — releases, scope cuts, known gaps and placeholders
 - [PRIVACY.md](PRIVACY.md) — the full privacy and telemetry disclosure
+- [Support dumps](tools/DEBUG-DUMPS.md) — collecting and decrypting optional encrypted diagnostics
 - [USING-CORE.md](USING-CORE.md) — how NeroArcade consumes Neroland Core
 - [USING-NEROLINK.md](USING-NEROLINK.md) — the companion-app module: sections, actions, events
 - [AGENTS.md](AGENTS.md) — layout, invariants and conventions for contributors

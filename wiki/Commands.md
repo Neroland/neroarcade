@@ -34,6 +34,8 @@ These run on your own game and need no permission on the server.
 | `/nsarcgallery capture [time]` | Builds the gallery where you stand and takes its screenshots to `screenshots/neroarcade/`. `time` is `day`, `noon`, `night` (default) or `midnight`. Needs the same permissions as `/neroarcade gallery`. |
 | `/nsarcber` | Prints how much drawing NeroArcade's screens and machines cost over the last 200 frames. |
 | `/nsarcber reset` | Starts a new count. |
+| `/nsarcdebug` | Explains the optional encrypted support report. |
+| `/nsarcdebug dump` | Saves a technical report in your game folder's `neroarcade-debug/`. Only the maintainer's private key can decrypt it. Send the `.nad` file to support yourself; nothing is uploaded automatically. |
 
 ## Neroland Core commands you will want
 

@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.2.2-beta.1] - 2026-11-04
+
+### Added
+
+- Added a debug command to inspect the internal state of the Game Bench and cartridges.
+
 ## [0.2.1-beta.1] - 2026-10-31
 
 ### Changed

@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.2.3-beta.1] - 2026-11-06
+
+### Fixed
+
+- **Forge 1.21.1 crash on launch (`NoClassDefFoundError: AddGuiOverlayLayersEvent`).** The Forge jars accepted
+  any Forge build of the same major, but the HUD layer uses an event Forge added in 52.1.2, so Forge 52.1.0 and
+  52.1.1 crashed while constructing the mod. Each Forge jar now requires at least the Forge build it was compiled
+  against (1.21.1: Forge 52.1.20 or later), so an older Forge shows a clear "update Forge" message instead.
+
 ## [0.2.2-beta.1] - 2026-11-04
 
 ### Added

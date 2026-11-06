@@ -333,3 +333,7 @@ and JVM. Desync is a defect, and `ReplayTest` pins final state hashes per exampl
 - **The wiki is public.** Everything under `wiki/` is published as is; keep private planning material out of
   it and out of the repository.
 - **No commercial game names.** Mini games, templates, items and docs use original names only.
+
+## Translation workflow
+
+English is the source language for new and changed text. Community translations are intended to be contributed through Weblate; other-language translations are not required when implementing a feature. Preserve existing translations. This supersedes older instructions that require translating every change.

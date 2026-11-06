@@ -158,6 +158,10 @@ def generateModMetadata = tasks.register('generateModMetadata', ProcessResources
         mod_authors               : rootProject.mod_authors,
         mod_license               : rootProject.mod_license,
         forge_loader_version_range: "[${forgeMajor},)",
+        // Floor the forge dependency at the compiled build: Forge adds API inside a major (1.21.1's
+        // AddGuiOverlayLayersEvent arrived in 52.1.2), so "any 52.x" let 52.1.0 crash at mod construction
+        // (MC-NEROARCADE-1). loaderVersion (javafml) stays at the major.
+        forge_version_range       : "[${forgeBuild},)",
         minecraft_version_range   : "[${mcFloor},${mcCeiling})",
         // Floor at the compiled Core version — see the NeoForge build script for the reasoning.
         nerolandcore_version_range: "[${nerolandcoreVersion},2.0)",

@@ -2,8 +2,6 @@ package za.co.neroland.neroarcade.forge;
 
 import net.minecraftforge.client.event.RegisterClientCommandsEvent;
 import net.minecraft.client.gui.screens.MenuScreens;
-import net.minecraft.resources.Identifier;
-import net.minecraftforge.client.event.AddGuiOverlayLayersEvent;
 import net.minecraftforge.client.event.ClientPlayerNetworkEvent;
 import net.minecraftforge.client.event.EntityRenderersEvent;
 import net.minecraftforge.client.event.RegisterKeyMappingsEvent;
@@ -18,7 +16,6 @@ import net.minecraftforge.eventbus.api.IEventBus;
 import za.co.neroland.neroarcade.NeroArcadeCommon;
 import za.co.neroland.neroarcade.client.ArcadeClient;
 import za.co.neroland.neroarcade.client.GalleryCapture;
-import za.co.neroland.neroarcade.client.hud.ArcadeHud;
 import za.co.neroland.neroarcade.client.input.ArcadeKeys;
 import za.co.neroland.neroarcade.client.render.ArcadeCabinetRenderer;
 import za.co.neroland.neroarcade.client.render.DuplicatorRenderer;
@@ -58,10 +55,6 @@ public final class ForgeClientSetup {
             event.registerBlockEntityRenderer(ModBlockEntities.CARTRIDGE_DUPLICATOR.get(), ctx -> new DuplicatorRenderer());
             event.registerBlockEntityRenderer(ModBlockEntities.ARCADE_EXCHANGE.get(), ctx -> new ExchangeRenderer());
         });
-        AddGuiOverlayLayersEvent.BUS.addListener(event -> {
-            event.getLayeredDraw().add(Identifier.fromNamespaceAndPath(NeroArcadeCommon.MOD_ID, "arcade_hud"),
-                    (g, delta) -> ArcadeHud.render(g));
-        });
         RegisterKeyMappingsEvent.BUS.addListener(event -> {
             ArcadeKeys.all().forEach(event::register);
         });
@@ -89,10 +82,6 @@ public final class ForgeClientSetup {
             event.registerBlockEntityRenderer(ModBlockEntities.GAME_BENCH.get(), ctx -> new GameBenchRenderer());
             event.registerBlockEntityRenderer(ModBlockEntities.CARTRIDGE_DUPLICATOR.get(), ctx -> new DuplicatorRenderer());
             event.registerBlockEntityRenderer(ModBlockEntities.ARCADE_EXCHANGE.get(), ctx -> new ExchangeRenderer());
-        });
-        AddGuiOverlayLayersEvent.getBus(context.getModBusGroup()).addListener(event -> {
-            event.getLayeredDraw().add(Identifier.fromNamespaceAndPath(NeroArcadeCommon.MOD_ID, "arcade_hud"),
-                    (g, delta) -> ArcadeHud.render(g));
         });
         RegisterKeyMappingsEvent.getBus(context.getModBusGroup()).addListener(event -> {
             ArcadeKeys.all().forEach(event::register);
@@ -124,9 +113,6 @@ public final class ForgeClientSetup {
             event.registerBlockEntityRenderer(ModBlockEntities.CARTRIDGE_DUPLICATOR.get(), ctx -> new DuplicatorRenderer());
             event.registerBlockEntityRenderer(ModBlockEntities.ARCADE_EXCHANGE.get(), ctx -> new ExchangeRenderer());
         });
-        modBus.addListener((AddGuiOverlayLayersEvent event) ->
-                event.getLayeredDraw().add(Identifier.fromNamespaceAndPath(NeroArcadeCommon.MOD_ID, "arcade_hud"),
-                        (g, delta) -> ArcadeHud.render(g)));
         modBus.addListener((RegisterKeyMappingsEvent event) -> ArcadeKeys.all().forEach(event::register));
         MinecraftForge.EVENT_BUS.addListener((TickEvent.ClientTickEvent.Post event) -> ArcadeClient.tick());
         MinecraftForge.EVENT_BUS.addListener((RegisterClientCommandsEvent event) ->
@@ -134,6 +120,9 @@ public final class ForgeClientSetup {
         MinecraftForge.EVENT_BUS.addListener((ClientPlayerNetworkEvent.LoggingOut event) ->
                 ArcadeNetwork.clearClientCaches());
         *///?}
+        // The HUD layer's event is missing from some older Forge builds of a supported major; register it from a
+        // separate class, only when the event exists, so its absence cannot crash mod construction.
+        registerHudLayer(context);
         // Before 1.21.4 item tints come from item colour handlers (no item model definitions).
         //? if <1.21.4 {
         /*context.getModEventBus().addListener((net.minecraftforge.client.event.RegisterColorHandlersEvent.Item event) ->
@@ -143,5 +132,25 @@ public final class ForgeClientSetup {
                 za.co.neroland.neroarcade.registry.ModItems.BLANK_CARTRIDGE.get(),
                 za.co.neroland.neroarcade.registry.ModItems.BLANK_CHIP.get()));
         *///?}
+    }
+
+    /**
+     * Registers the seated-player HUD layer through {@link ForgeHudOverlays} when this Forge build has the overlay
+     * event. Without it the arcade still works, minus the HUD; a warning names the cause (no personal data).
+     */
+    private static void registerHudLayer(FMLJavaModLoadingContext context) {
+        try {
+            Class.forName(ForgeHudOverlays.EVENT_CLASS, false, ForgeClientSetup.class.getClassLoader());
+        } catch (ClassNotFoundException | LinkageError e) {
+            NeroArcadeCommon.LOGGER.warn("[NeroArcade] This Forge build has no GUI overlay layer event; the arcade HUD"
+                    + " is disabled. Update Forge to the latest build for your Minecraft version.");
+            return;
+        }
+        try {
+            ForgeHudOverlays.register(context);
+        } catch (LinkageError e) {
+            NeroArcadeCommon.LOGGER.warn("[NeroArcade] Could not register the arcade HUD layer on this Forge build ({});"
+                    + " the HUD is disabled.", e.getClass().getSimpleName());
+        }
     }
 }

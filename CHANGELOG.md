@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.2.4-beta.1] - 2026-11-14
+
+### Fixed
+
+- **Forge: a missing HUD overlay event can no longer crash the game on launch.** The arcade HUD layer is now
+  registered from its own class, only when the running Forge build has the overlay event. If it does not, the
+  arcade loads without its HUD and logs a warning to update Forge, instead of crashing while the mod is built.
+
 ## [0.2.3-beta.1] - 2026-11-06
 
 ### Fixed

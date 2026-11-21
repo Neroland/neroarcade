@@ -1,5 +1,6 @@
 package za.co.neroland.neroarcade.client.screen;
 
+import java.util.ArrayList;
 import java.util.List;
 
 import net.minecraft.client.gui.GuiGraphicsExtractor;
@@ -13,6 +14,8 @@ import net.minecraft.world.item.ItemStack;
 import org.jetbrains.annotations.Nullable;
 
 import za.co.neroland.neroarcade.client.ArcadeColours;
+import za.co.neroland.neroarcade.client.GaugeMath;
+import za.co.neroland.neroarcade.client.GaugeTooltips;
 import za.co.neroland.neroarcade.client.widget.ArcadeButton;
 import za.co.neroland.neroarcade.duplicator.DuplicatorMenu;
 import za.co.neroland.neroarcade.duplicator.DuplicatorRules;
@@ -21,7 +24,8 @@ import za.co.neroland.neroarcade.registry.ModItems;
 /**
  * "Copy a game" — the Cartridge Duplicator (004 §8.4) on the family hull: the original and blank slots with their
  * labels, a cyan progress bar, {@code [COPY]}, the two output slots, and one sentence that says what happened or why
- * not ("Made 1 copy — credit kept"). A disabled {@code [COPY]} says why on hover. CLIENT-ONLY.
+ * not ("Made 1 copy — credit kept"). A disabled {@code [COPY]} says why on hover; so does the progress bar, with
+ * its percent and time left while copying. CLIENT-ONLY.
  */
 public class DuplicatorScreen extends AbstractContainerScreen<DuplicatorMenu> {
 
@@ -35,6 +39,8 @@ public class DuplicatorScreen extends AbstractContainerScreen<DuplicatorMenu> {
     static final int STATUS_Y = 76;
 
     private @Nullable ArcadeButton copyButton;
+    /** Copy progress in permille over the last second, for the bar's time-left estimate (a new copy resets it). */
+    private final GaugeMath.RateWindow progressWindow = new GaugeMath.RateWindow(300);
 
     public DuplicatorScreen(DuplicatorMenu menu, Inventory inventory, Component title) {
         super(menu, inventory, title, W, H);
@@ -133,6 +139,34 @@ public class DuplicatorScreen extends AbstractContainerScreen<DuplicatorMenu> {
         for (int i = 0; i < wrapped.size() && i < 2; i++) {
             g.text(font, wrapped.get(i), x + PAD, y + STATUS_Y + i * 10, colour, false);
         }
+        sampleProgress();
+        if (mouseX >= bx - 1 && mouseX <= bx + BAR_W && mouseY >= by - 1 && mouseY <= by + 6
+                && (hoveredSlot == null || !hoveredSlot.hasItem())) {
+            GaugeTooltips.show(g, font, progressTooltip(), width, mouseX, mouseY);
+        }
+    }
+
+    /** Copy progress in permille (0..1000). */
+    private int progressPermille() {
+        return Math.max(0, Math.min(1000, menu.progress() * 1000 / DuplicatorRules.COPY_TICKS));
+    }
+
+    /** One sample per game tick of the synced progress, for the rate; cleared while nothing is copying. */
+    private void sampleProgress() {
+        if (!menu.copying()) {
+            progressWindow.reset();
+            return;
+        }
+        long tick = minecraft == null || minecraft.level == null ? 0L : minecraft.level.getGameTime();
+        progressWindow.sample(tick, progressPermille());
+    }
+
+    /** The progress bar's hover: what it is, how far, time left; or the status line's reason when it is not running. */
+    private List<Component> progressTooltip() {
+        List<Component> lines = new ArrayList<>();
+        GaugeTooltips.progress(lines, Component.translatable("neroarcade.gui.gauge.copy"), menu.copying(),
+                progressPermille(), progressWindow.perTick(), menu.copying() ? null : statusLine());
+        return lines;
     }
 
     private Component statusLine() {

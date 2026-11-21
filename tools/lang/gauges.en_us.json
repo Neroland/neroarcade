@@ -1,0 +1,7 @@
+{
+  "neroarcade.gui.gauge.copy": "Copy progress",
+  "neroarcade.gui.gauge.progress.estimating": "Working out the time left…",
+  "neroarcade.gui.gauge.progress.idle": "Idle: nothing is being copied",
+  "neroarcade.gui.gauge.progress.left": "%s left at this speed",
+  "neroarcade.gui.gauge.progress.percent": "%s%% done"
+}

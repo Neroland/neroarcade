@@ -162,7 +162,9 @@ and `you_are`, which is always `author` in this version (a listing's author is t
 be deleted); and whether you are seated now and how many listings you hearted this session (a count, never which).
 It never contains another player's id, name or data. One export per `privacy.exportCooldownSeconds` (60); the file
 is restricted to the server's own user where the file system allows it and is deleted after 7 days. Your arcade
-milestones are yes/no flags in Neroland Core's progression store; Core exports and erases them.
+milestones are yes/no flags in Neroland Core's progression store; Core exports and erases them. The arcade wins
+you are credited with also add one to the vanilla statistic `neroarcade:matches_won`, a plain counter in your vanilla
+statistics file next to every other vanilla stat (NeroArcade keeps no copy; it holds no cartridge, score or opponent).
 
 **Erasure.** NeroArcade is registered with Neroland Core's shared per-player erasure hook, so one request removes
 you from every Neroland mod: `/neroland data eraseme`, an operator's `/neroland data erase <uuid>`, or Core's

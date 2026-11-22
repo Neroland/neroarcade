@@ -70,6 +70,8 @@ public final class QuestHooks {
             } catch (IllegalArgumentException e) {
                 return;
             }
+            // The lasting record first, online or not: the hook itself is closed again on delivery.
+            ArcadeMilestones.insertCoinComplete(running, id);
             ServerPlayer player = running.getPlayerList().getPlayer(id);
             if (player != null) {
                 deliver(player);
@@ -97,6 +99,7 @@ public final class QuestHooks {
         for (ServerPlayer player : running.getPlayerList().getPlayers()) {
             now.add(player.getUUID());
             if (ONLINE.add(player.getUUID()) && ProgressionGates.isOpen(player, BLANK_CARTRIDGES)) {
+                ArcadeMilestones.insertCoinComplete(running, player.getUUID());
                 deliver(player);
                 ProgressionGates.close(player, BLANK_CARTRIDGES);
             }

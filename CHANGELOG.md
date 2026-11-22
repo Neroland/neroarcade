@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.2.5] - 2026-11-26
+
+### Added
+
+- New milestone `neroarcade:first_record`, opened for the player who sets a new top score on any board (a tie for the top score credits nobody).
+- New milestone `neroarcade:insert_coin_complete`, opened when you complete the Insert Coin chapter finale. Unlike the finale's reward hook, it stays open, so trophies can read it later.
+- New statistic **Arcade Matches Won** (`neroarcade:matches_won`): one for every credited win (never hot-seat). NeroTrophies uses it for win trophies.
+
 ## [0.2.4] - 2026-11-21
 
 ### Changed

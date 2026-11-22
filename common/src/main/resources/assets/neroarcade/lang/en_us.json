@@ -639,6 +639,7 @@
   "slot.neroarcade.rule.desc": "How a match is won or lost.",
   "slot.neroarcade.theme": "Theme",
   "slot.neroarcade.theme.desc": "The colours, sprites and sounds of the screen.",
+  "stat.neroarcade.matches_won": "Arcade Matches Won",
   "subtitles.neroarcade.bench.save": "Game saved to cartridge",
   "subtitles.neroarcade.cabinet.deny": "Arcade cabinet buzzes",
   "subtitles.neroarcade.cabinet.insert": "Cartridge clicks in",

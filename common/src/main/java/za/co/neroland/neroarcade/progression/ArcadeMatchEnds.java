@@ -1,10 +1,13 @@
 package za.co.neroland.neroarcade.progression;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.server.level.ServerPlayer;
 
 import za.co.neroland.neroarcade.cabinet.BusMatchResult;
 import za.co.neroland.neroarcade.cabinet.MatchListener;
@@ -13,6 +16,8 @@ import za.co.neroland.neroarcade.compat.tournament.Tournaments;
 import za.co.neroland.neroarcade.exchange.Exchange;
 import za.co.neroland.neroarcade.module.ModuleFlag;
 import za.co.neroland.neroarcade.module.ModuleType;
+import za.co.neroland.neroarcade.privacy.Tombstones;
+import za.co.neroland.neroarcade.registry.ModStats;
 import za.co.neroland.neroarcade.runtime.MatchResult;
 
 /**
@@ -55,9 +60,14 @@ public final class ArcadeMatchEnds {
         if (!end.hotSeat()) {
             if (end.outcome().won()) {
                 ArcadeMilestones.matchWon(result.cartridgeId(), end.outcome().wins());
+                for (UUID winner : winners(result)) {
+                    awardWin(server, winner);
+                }
             }
             if (end.outcome().recordSet()) {
                 ArcadeMilestones.recordSet(result.cartridgeId(), end.outcome().records());
+                recordHolder(result, end.outcome().enteredTopMask())
+                        .ifPresent(holder -> ArcadeMilestones.firstRecord(server, holder));
             }
             versusWinner(end).ifPresent(winner -> ArcadeMilestones.firstVersusWin(server, winner));
             Tournaments.publish(result);
@@ -101,5 +111,57 @@ public final class ArcadeMatchEnds {
             }
         }
         return Optional.ofNullable(winner);
+    }
+
+    /**
+     * The seats credited with a win: on a {@code WIN} outcome, every non-dropped human seat ranked first (a solo win
+     * is its one seat; tied co-op winners all count). Empty otherwise. Pure.
+     */
+    public static List<UUID> winners(BusMatchResult result) {
+        List<UUID> out = new ArrayList<>();
+        if (result.outcome() != MatchResult.Outcome.WIN) {
+            return out;
+        }
+        for (BusMatchResult.SeatResult seat : result.seats()) {
+            if (seat.rank() == 1 && !seat.dropped() && !out.contains(seat.uuid())) {
+                out.add(seat.uuid());
+            }
+        }
+        return out;
+    }
+
+    /**
+     * Who set the board's new top score: among the seats that entered the top window this match
+     * ({@code enteredTopMask}, a bit per seat index), the one with the highest score. Empty when two seats share
+     * that score, so a tie never credits the wrong player. Pure.
+     */
+    public static Optional<UUID> recordHolder(BusMatchResult result, int enteredTopMask) {
+        UUID holder = null;
+        int best = Integer.MIN_VALUE;
+        boolean tied = false;
+        for (BusMatchResult.SeatResult seat : result.seats()) {
+            if (seat.dropped() || seat.seat() < 0 || seat.seat() > 30 || (enteredTopMask & (1 << seat.seat())) == 0) {
+                continue;
+            }
+            if (seat.score() > best) {
+                best = seat.score();
+                holder = seat.uuid();
+                tied = false;
+            } else if (seat.score() == best && !seat.uuid().equals(holder)) {
+                tied = true;
+            }
+        }
+        return tied ? Optional.empty() : Optional.ofNullable(holder);
+    }
+
+    /** One more credited win on the winner's vanilla {@code neroarcade:matches_won} stat, if they are online. */
+    private static void awardWin(MinecraftServer server, UUID winner) {
+        if (server == null || winner == null || Tombstones.isTombstone(winner)) {
+            return;
+        }
+        ServerPlayer player = server.getPlayerList().getPlayer(winner);
+        if (player != null) {
+            player.awardStat(ModStats.MATCHES_WON.get());
+        }
     }
 }

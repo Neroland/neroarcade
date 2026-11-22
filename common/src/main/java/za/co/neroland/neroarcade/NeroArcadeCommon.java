@@ -72,6 +72,7 @@ public final class NeroArcadeCommon {
         ModBlockEntities.init();
         ModMenus.init();
         ModSounds.init();
+        za.co.neroland.neroarcade.registry.ModStats.init();
         ModCreativeTab.init();
 
         // 4. Player-data erasure registration. Registered before any store can exist on purpose:

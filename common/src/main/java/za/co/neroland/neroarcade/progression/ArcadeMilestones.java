@@ -21,7 +21,7 @@ import za.co.neroland.neroarcade.privacy.Tombstones;
  *       board's key), or {@code "exchange"} — <b>never a player</b>; the value is the world's running count and the threshold
  *       the highest rung at or below it.</li>
  *   <li><b>Player gates</b> (personal milestones, offline-safe): {@link #FIRST_CARTRIDGE}, {@link #FIRST_PUBLISHED},
- *       {@link #FIRST_VERSUS_WIN}, defined in {@code data/neroarcade/neroland_gates/}. Opening one twice is a no-op.</li>
+ *       {@link #FIRST_VERSUS_WIN}, {@link #FIRST_RECORD}, defined in {@code data/neroarcade/neroland_gates/}. Opening one twice is a no-op.</li>
  * </ul>
  *
  * Everything goes through a {@link Sink} so the rules run in a plain JVM; the game installs {@link #CORE}. Server
@@ -36,6 +36,13 @@ public final class ArcadeMilestones {
     public static final Identifier FIRST_CARTRIDGE = id("first_cartridge");
     public static final Identifier FIRST_PUBLISHED = id("first_published");
     public static final Identifier FIRST_VERSUS_WIN = id("first_versus_win");
+    /** The player set a new top score on any board. */
+    public static final Identifier FIRST_RECORD = id("first_record");
+    /**
+     * The player completed the Insert Coin chapter finale. A lasting record: the finale's reward hook
+     * ({@code hook/blank_cartridges}) is closed again once delivered, so it cannot be read later.
+     */
+    public static final Identifier INSERT_COIN_COMPLETE = id("insert_coin_complete");
 
     /** The Exchange's scope string. */
     public static final String EXCHANGE_SCOPE = "exchange";
@@ -86,7 +93,7 @@ public final class ArcadeMilestones {
 
     /** Every player gate id. */
     public static List<Identifier> gates() {
-        return List.of(FIRST_CARTRIDGE, FIRST_PUBLISHED, FIRST_VERSUS_WIN);
+        return List.of(FIRST_CARTRIDGE, FIRST_PUBLISHED, FIRST_VERSUS_WIN, FIRST_RECORD, INSERT_COIN_COMPLETE);
     }
 
     /** The highest rung at or below {@code count} (at least the first rung). */
@@ -140,6 +147,14 @@ public final class ArcadeMilestones {
 
     public static boolean firstVersusWin(MinecraftServer server, UUID player) {
         return open(server, player, FIRST_VERSUS_WIN);
+    }
+
+    public static boolean firstRecord(MinecraftServer server, UUID player) {
+        return open(server, player, FIRST_RECORD);
+    }
+
+    public static boolean insertCoinComplete(MinecraftServer server, UUID player) {
+        return open(server, player, INSERT_COIN_COMPLETE);
     }
 
     private static boolean open(MinecraftServer server, UUID player, Identifier gate) {

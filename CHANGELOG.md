@@ -7,6 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.3.0] - 2026-11-22
+
+### Added
+
+- NeroArcade's data now appears in Neroland Core's player data export (`/neroland data exportme`). It is the same
+  document as `/neroarcade privacy export`, built on request and never written to a file. Needs Neroland Core 1.20.1.
+
+### Fixed
+
+- Crash reports now go through NeroArcade's own Sentry client instead of the shared global one, so another mod
+  starting Sentry can no longer silence NeroArcade's reports or have its own dropped.
+
 ## [0.2.5] - 2026-11-26
 
 ### Added

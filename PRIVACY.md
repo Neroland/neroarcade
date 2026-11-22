@@ -166,6 +166,10 @@ milestones are yes/no flags in Neroland Core's progression store; Core exports a
 you are credited with also add one to the vanilla statistic `neroarcade:matches_won`, a plain counter in your vanilla
 statistics file next to every other vanilla stat (NeroArcade keeps no copy; it holds no cartridge, score or opponent).
 
+**Neroland Core export.** The same document is also NeroArcade's section of Neroland Core's player data export
+(`/neroland data exportme`; operators: `/neroland data export <uuid>`). That path writes no file and has no cooldown:
+Core builds the document on request, hands it to you in chat and keeps no copy, and nothing about you is logged.
+
 **Erasure.** NeroArcade is registered with Neroland Core's shared per-player erasure hook, so one request removes
 you from every Neroland mod: `/neroland data eraseme`, an operator's `/neroland data erase <uuid>`, or Core's
 inactivity sweep if the server owner enabled one. For NeroArcade it:
@@ -248,7 +252,8 @@ NeroArcade sends opt-out, anonymous crash reports through [Sentry](https://sentr
 
 Never your IP address (`sendDefaultPii` is off), username, UUID, machine name, world data or chat. Your account name
 and home folder are replaced with `[user]`/`~` and anything shaped like a UUID with a placeholder before sending;
-absolute file paths are removed. At most 10 reports per session. NeroArcade's own logs carry no player names or
+absolute file paths are removed. At most 10 reports per session. NeroArcade reports through its own Sentry
+client, never the shared global one, so other mods' errors cannot reach its project and its errors cannot reach theirs. NeroArcade's own logs carry no player names or
 UUIDs at info, warn or error level. To opt out, set `telemetryEnabled=false` in `config/neroarcade.properties`
 (a per-computer setting a server cannot override; takes effect on restart).
 

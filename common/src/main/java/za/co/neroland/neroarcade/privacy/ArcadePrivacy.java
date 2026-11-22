@@ -72,6 +72,7 @@ public final class ArcadePrivacy {
         initialised = true;
         NeroArcadeData.addStore(LoadedBenches.ERASER);
         NeroArcadeData.addStore(EXPORTS_ERASER);
+        registerCoreExport();
         // credit opt-out reaches every loaded Game Bench too (compliance review F5)
         CreditOptIn.onOptOut(BENCH_CREDIT_OPT_OUT);
         ServerHooks.onTick(ArcadePrivacy::onServerTick);
@@ -81,6 +82,23 @@ public final class ArcadePrivacy {
             sweptFor = null;
             ticksSinceSweep = 0;
         });
+    }
+
+    /**
+     * Registers NeroArcade's part of Neroland Core's player data export ({@code /neroland data exportme}). It is the
+     * same document as {@code /neroarcade privacy export}, built on request and handed to Core: no file is written,
+     * nothing is logged, and the export cooldown does not apply because nothing is stored.
+     */
+    static void registerCoreExport() {
+        za.co.neroland.nerolandcore.data.PlayerDataExport.register(NeroArcadeCommon.MOD_ID,
+                (server, subject) -> document(server, subject, System.currentTimeMillis()));
+    }
+
+    /** The export document for {@code subject}, shared by the file export and Core's export. Server thread. */
+    static JsonObject document(MinecraftServer server, UUID subject, long nowMillis) {
+        return PrivacyExport.build(subject, LeaderboardStore.get(server), ExchangeStore.get(server),
+                CreditOptIn.get(server), settings(), new PrivacyExport.Live(SeatRegistry.SERVER.isSeated(subject),
+                        Exchange.HEARTS.heartsGiven(subject)), nowMillis);
     }
 
     /** The stores this class registers for erasure (conformance tests). */
@@ -133,9 +151,7 @@ public final class ArcadePrivacy {
             return new ExportResult.Cooldown(left);
         }
         try {
-            JsonObject document = PrivacyExport.build(subject, LeaderboardStore.get(server), ExchangeStore.get(server),
-                    CreditOptIn.get(server), settings(), new PrivacyExport.Live(SeatRegistry.SERVER.isSeated(subject),
-                            Exchange.HEARTS.heartsGiven(subject)), now);
+            JsonObject document = document(server, subject, now);
             Path directory = PrivacyExport.directory(server);
             return new ExportResult.Written(PrivacyExport.write(directory, subject, document));
         } catch (IOException | RuntimeException failure) {

@@ -154,6 +154,32 @@ class RecipeFilesTest {
         }
     }
 
+    //? if <1.21.2 {
+    /*@Test
+    void packagedChipRecipesUseTheLegacyModelNumber() throws java.io.IOException {
+        //? if <1.21 {
+        String folder = "recipes";
+        //?} else {
+        String folder = "recipe";
+        //?}
+        for (ArcadeModule module : ModuleRegistry.all()) {
+            String name = "data/neroarcade/" + folder + "/module_chip_"
+                    + module.id().getPath().replace('/', '_') + ".json";
+            try (var stream = getClass().getClassLoader().getResourceAsStream(name)) {
+                org.junit.jupiter.api.Assertions.assertNotNull(stream, name);
+                JsonObject recipe = JsonParser.parseReader(
+                        new java.io.InputStreamReader(stream, java.nio.charset.StandardCharsets.UTF_8)).getAsJsonObject();
+                if (module.id().getPath().equals("arena/ring_24")) {
+                    assertTrue(recipe.getAsJsonArray("ingredients").toString().contains("minecraft:chain"), name);
+                }
+                JsonObject components = recipe.getAsJsonObject("result").getAsJsonObject("components");
+                assertEquals(module.id().toString(), components.get("neroarcade:module_id").getAsString());
+                assertEquals(module.type().ordinal() + 1, components.get("minecraft:custom_model_data").getAsInt());
+            }
+        }
+    }
+    *///?}
+
     @Test
     void cartridgesAreUntradeable() {
         Path tag = TestFiles.repoRoot().resolve("common/src/main/resources/data/neroeconomy/tags/item/untradeable.json");

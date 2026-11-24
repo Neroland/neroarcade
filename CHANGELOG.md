@@ -7,6 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.4.0] - 2026-11-24
+
+### Added
+
+- Minecraft 1.20.5 on Fabric and 1.20.6 on Fabric, Forge and NeoForge. These builds
+  require Neroland Core 1.23.0 and use NeroEconomy 0.7.0 for optional coin-op features.
+
+### Fixed
+
+- Module chip recipes now use the numeric model data required by Minecraft 1.21.1 and the
+  1.20 builds. The Ring 24 recipe uses the matching chain item on each Minecraft version.
+
 ## [0.3.0] - 2026-11-22
 
 ### Added

@@ -29,6 +29,8 @@ ext.legacyRenames = [
     // 1.21.11 renamed ResourceLocation -> Identifier and ResourceKey.location() -> identifier().
     [below: '1.21.11', from: /\bIdentifier\b/, to: 'ResourceLocation'],
     [below: '1.21.11', from: /\.identifier\(\)/, to: '.location()'],
+    [below: '1.21', from: /\b((?:net\.minecraft\.resources\.)?ResourceLocation)\s*\.(?:fromNamespaceAndPath|parse|withDefaultNamespace)\(/,
+            to: 'new $1('],
     // 26.1 renamed GuiGraphics -> GuiGraphicsExtractor and its drawString(..) -> text(..). The text()
     // rename is keyed on the receiver names this codebase uses for the graphics object (g / graphics).
     [below: '26.1', from: /\bGuiGraphicsExtractor\b/, to: 'GuiGraphics'],
@@ -116,6 +118,23 @@ subprojects {
     // Java 22+ language features). 26.x cells stay on Java 25. A node's project name IS its MC version.
     def javaRelease = project.name.startsWith('1.') ? 21 : 25
     ext.javaRelease = javaRelease
+
+    if (project.name in ['1.20.5', '1.20.6']) {
+        tasks.named('processResources') {
+            eachFile { file ->
+                file.path = file.path.replaceFirst(/^(data\/[^\/]+\/)(advancement|loot_table|recipe)\//, '$1$2s/')
+                        .replaceFirst(/^(data\/[^\/]+\/tags\/)(block|entity_type|fluid|item)\//, '$1$2s/')
+            }
+            includeEmptyDirs = false
+            doLast {
+                def metadata = new File(destinationDir, 'pack.mcmeta')
+                def pack = new groovy.json.JsonSlurper().parse(metadata).pack
+                metadata.setText(groovy.json.JsonOutput.toJson([
+                        pack: [description: pack.description, pack_format: 32, supported_formats: [32, 41]]
+                ]), 'UTF-8')
+            }
+        }
+    }
 
     java {
         toolchain.languageVersion = JavaLanguageVersion.of(javaRelease)
@@ -343,12 +362,17 @@ subprojects {
             def outDir = node.file('build/generated/legacy-recipes')
             def legacyRecipes = node.tasks.register('legacyRecipes') {
                 group = 'stonecutter'
-                description = 'Rewrites short-form recipe ingredients to the pre-1.21.2 object form.'
+                description = 'Converts ingredients and chip models to the older recipe format.'
                 inputs.dir(base)
                 outputs.dir(outDir)
                 doLast {
                     node.delete(outDir)
                     def slurper = new groovy.json.JsonSlurper()
+                    def chipModel = slurper.parse(new File(base, 'assets/neroarcade/models/item/module_chip.json'))
+                    def chipModelNumbers = chipModel.overrides.collectEntries { override ->
+                        [(override.model.substring('neroarcade:item/module_chip_'.length())):
+                                override.predicate.custom_model_data]
+                    }
                     def conv
                     conv = { v ->
                         if (v instanceof String) {
@@ -362,6 +386,15 @@ subprojects {
                             return
                         }
                         def json = slurper.parse(f)
+                        if (json.result instanceof Map && json.result.id == 'neroarcade:module_chip') {
+                            def components = json.result.components
+                            def modelData = components['minecraft:custom_model_data']
+                            def number = chipModelNumbers[modelData.strings.first()]
+                            if (number == null) {
+                                throw new GradleException("Missing legacy chip model for " + rel)
+                            }
+                            components['minecraft:custom_model_data'] = number
+                        }
                         if (json.key instanceof Map) {
                             json.key = json.key.collectEntries { k, v -> [(k): conv(v)] }
                         }
@@ -382,6 +415,15 @@ subprojects {
             node.sourceSets.main.resources.srcDir(node.files(outDir).builtBy(legacyRecipes))
             node.tasks.named('processResources') {
                 duplicatesStrategy = DuplicatesStrategy.INCLUDE
+            }
+        }
+    }
+    if (isNode && stonecutter.eval(stonecutter.current.version, '<1.21.9')) {
+        tasks.named('processResources') {
+            inputs.property('ringChipChain', 'minecraft:chain')
+            filesMatching(['data/neroarcade/recipe/module_chip_arena_ring_24.json',
+                           'data/neroarcade/recipes/module_chip_arena_ring_24.json']) {
+                filter { line -> line.replace('minecraft:iron_chain', 'minecraft:chain') }
             }
         }
     }

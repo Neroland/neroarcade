@@ -3,6 +3,9 @@
 Player- and server-owner documentation for **NeroArcade**, part of the Neroland mod family. Built on
 **Neroland Core**.
 
+Minecraft 1.20.5 is supported on Fabric. Minecraft 1.20.6 is supported on Fabric,
+Forge and NeoForge. These builds use Java 21 and require Neroland Core 1.23.0.
+
 NeroArcade lets you make mini games inside Minecraft and play them with friends. A game is built from **module
 chips**: ten slots, each deciding one thing — the board, what you steer, how you win, what threatens you, what you
 collect, the controls, the speed, one twist, how many play, and the look. Put the chips in a **Game Bench**, try the

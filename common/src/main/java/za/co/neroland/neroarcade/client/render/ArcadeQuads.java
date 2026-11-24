@@ -53,12 +53,27 @@ public final class ArcadeQuads {
 
     public static void vertex(VertexConsumer c, PoseStack.Pose pose, float[] p, float u, float v, int argb,
             int light, float[] n) {
+        vertex(c, pose, p, u, v, argb, light, n[0], n[1], n[2]);
+    }
+
+    static void vertex(VertexConsumer c, PoseStack.Pose pose, float[] p, float u, float v, int argb,
+            int light, float nx, float ny, float nz) {
+        //? if >=1.21 {
         c.addVertex(pose, p[0], p[1], p[2])
                 .setColor((argb >> 16) & 0xFF, (argb >> 8) & 0xFF, argb & 0xFF, (argb >>> 24) & 0xFF)
                 .setUv(u, v)
                 .setOverlay(OverlayTexture.NO_OVERLAY)
                 .setLight(light)
-                .setNormal(pose, n[0], n[1], n[2]);
+                .setNormal(pose, nx, ny, nz);
+        //?} else {
+        /*c.vertex(pose.pose(), p[0], p[1], p[2])
+                .color((argb >> 16) & 0xFF, (argb >> 8) & 0xFF, argb & 0xFF, (argb >>> 24) & 0xFF)
+                .uv(u, v)
+                .overlayCoords(OverlayTexture.NO_OVERLAY)
+                .uv2(light)
+                .normal(pose, nx, ny, nz)
+                .endVertex();
+        *///?}
     }
 
     /**

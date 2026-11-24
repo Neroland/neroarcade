@@ -76,6 +76,7 @@ sourceSets.main.resources.srcDir rootProject.ext.commonResources
 // line, and leaves the optional manifest entry out, so the mod builds with no NeroEconomy artifact at all.
 // Per-MC override neroeconomy_compat_<mc> wins (NeroEconomy has no 1.21.x builds yet, see gradle.properties).
 def economyOn = (rootProject.findProperty("neroeconomy_compat_${mc}") ?: rootProject.findProperty('neroeconomy_compat') ?: 'true').toString().trim() == 'true'
+def economyVersion = rootProject.findProperty("neroeconomy_version_${mc}") ?: rootProject.neroeconomy_version
 if (!economyOn) {
     sourceSets.main.java.exclude 'za/co/neroland/neroarcade/compat/economy/bridge/NeroEconomyCoinOp.java'
     sourceSets.main.resources.exclude 'META-INF/services/za.co.neroland.neroarcade.compat.economy.CoinOpSeam'
@@ -108,10 +109,10 @@ dependencies {
 
     // NeroEconomy - OPTIONAL (see the compat block above). compileOnly: never bundled, never a hard requirement.
     if (economyOn) {
-        compileOnly "za.co.neroland.neroeconomy:neroeconomy-fabric-${mc}:${rootProject.neroeconomy_version}"
+        compileOnly "za.co.neroland.neroeconomy:neroeconomy-fabric-${mc}:${economyVersion}"
         // Dev clients load NeroEconomy only with -PwithNeroEconomy; the default run proves it stays optional.
         if (project.hasProperty('withNeroEconomy')) {
-            runtimeOnly "za.co.neroland.neroeconomy:neroeconomy-fabric-${mc}:${rootProject.neroeconomy_version}"
+            runtimeOnly "za.co.neroland.neroeconomy:neroeconomy-fabric-${mc}:${economyVersion}"
         }
     }
 
@@ -158,7 +159,7 @@ def generateModMetadata = tasks.register('generateModMetadata', ProcessResources
         minecraft_version_ceiling: mcCeiling,
         nerolandcore_version : nerolandcoreVersion,
         // The optional NeroEconomy suggestion (floor = the compiled version), or "" when neroeconomy_compat=false.
-        neroeconomy_suggest : economyOn ? ",\n  \"suggests\": {\n    \"neroeconomy\": \">=${rootProject.neroeconomy_version}\"\n  }" : "",
+        neroeconomy_suggest : economyOn ? ",\n  \"suggests\": {\n    \"neroeconomy\": \">=${economyVersion}\"\n  }" : "",
     ]
     inputs.properties(props)
     expand(props)
@@ -207,7 +208,7 @@ eclipse.synchronizationTasks generateModMetadata
 // The access widener's namespace differs by era: 26.x is `official` (de-obfuscated), 1.21.x is `named`
 // (Mojang mappings, remapped to intermediary in remapJar). Each 1.21.x line has its own file under
 // src/main/accesswidener/, swapped into the jar under the name fabric.mod.json declares.
-def awFile = obfuscated ? file("${branchDir}/src/main/accesswidener/${mc}.accesswidener")
+def awFile = obfuscated ? file("${branchDir}/src/main/accesswidener/${mc in ['1.20.5', '1.20.6'] ? '1.21.1' : mc}.accesswidener")
         : file("${branchDir}/src/main/resources/neroarcade.accesswidener")
 if (obfuscated) {
     tasks.named('processResources', ProcessResources) {

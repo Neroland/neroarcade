@@ -9,7 +9,6 @@ import net.minecraft.client.renderer.feature.ModelFeatureRenderer;
 import net.minecraft.client.renderer.rendertype.RenderType;
 import net.minecraft.client.renderer.rendertype.RenderTypes;
 import net.minecraft.client.renderer.state.level.CameraRenderState;
-import net.minecraft.client.renderer.texture.OverlayTexture;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.resources.Identifier;
@@ -226,11 +225,6 @@ public class ArcadeCabinetRenderer implements BlockEntityRenderer<ArcadeCabinetB
 
     private static void vertex(VertexConsumer c, PoseStack.Pose pose, float[] p, float u, float v, float nx, float ny,
             float nz) {
-        c.addVertex(pose, p[0], p[1], p[2])
-                .setColor(255, 255, 255, 255)
-                .setUv(u, v)
-                .setOverlay(OverlayTexture.NO_OVERLAY)
-                .setLight(ArcadeColours.FULL_BRIGHT)
-                .setNormal(pose, nx, ny, nz);
+        ArcadeQuads.vertex(c, pose, p, u, v, 0xFFFFFFFF, ArcadeColours.FULL_BRIGHT, nx, ny, nz);
     }
 }

@@ -9,8 +9,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
-import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
+import net.minecraft.network.FriendlyByteBuf;
 
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -50,7 +50,7 @@ class ExchangeSlotChipsTest {
     }
 
     private static ExchangePagePayload roundTrip(ExchangePagePayload page) {
-        ByteBuf buf = Unpooled.buffer();
+        FriendlyByteBuf buf = new FriendlyByteBuf(Unpooled.buffer());
         ExchangePagePayload.STREAM_CODEC.encode(buf, page);
         return ExchangePagePayload.STREAM_CODEC.decode(buf);
     }

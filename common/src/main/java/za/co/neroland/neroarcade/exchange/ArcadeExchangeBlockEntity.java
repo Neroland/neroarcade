@@ -138,8 +138,10 @@ public class ArcadeExchangeBlockEntity extends BlockEntity implements MenuProvid
         if (!legacyTray.isEmpty()) {
             //? if >=1.21.6 {
             ContainerHelper.saveAllItems(output, legacyTray.getItems());
-            //?} else {
+            //?} else if >=1.20.5 {
             /*ContainerHelper.saveAllItems(tag, legacyTray.getItems(), registries);
+            *///?} else {
+            /*za.co.neroland.neroarcade.compat.LegacyInventory.save(tag, legacyTray);
             *///?}
         }
     }
@@ -157,8 +159,10 @@ public class ArcadeExchangeBlockEntity extends BlockEntity implements MenuProvid
         legacyTray.clearContent();
         //? if >=1.21.6 {
         ContainerHelper.loadAllItems(input, legacyTray.getItems());
-        //?} else {
+        //?} else if >=1.20.5 {
         /*ContainerHelper.loadAllItems(tag, legacyTray.getItems(), registries);
+        *///?} else {
+        /*za.co.neroland.neroarcade.compat.LegacyInventory.load(tag, legacyTray);
         *///?}
         // the update tag's rows (absent in saved data, so a server load always reads none)
         clientBoard = input.read(KEY_BOARD, KioskBoard.LIST_CODEC).orElse(List.of());

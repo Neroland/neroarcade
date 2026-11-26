@@ -1,7 +1,11 @@
 package za.co.neroland.neroarcade.forge;
 
 import net.minecraft.resources.Identifier;
+//? if >=1.20.5 {
 import net.minecraftforge.client.event.AddGuiOverlayLayersEvent;
+//?} else {
+/*import net.minecraftforge.client.event.RegisterGuiOverlaysEvent;
+*///?}
 import net.minecraftforge.fml.javafmlmod.FMLJavaModLoadingContext;
 
 import za.co.neroland.neroarcade.NeroArcadeCommon;
@@ -20,7 +24,11 @@ import za.co.neroland.neroarcade.client.hud.ArcadeHud;
 final class ForgeHudOverlays {
 
     /** Fully-qualified name of the event this class needs; checked before the class is first touched. */
+    //? if >=1.20.5 {
     static final String EVENT_CLASS = "net.minecraftforge.client.event.AddGuiOverlayLayersEvent";
+    //?} else {
+    /*static final String EVENT_CLASS = "net.minecraftforge.client.event.RegisterGuiOverlaysEvent";
+    *///?}
 
     private ForgeHudOverlays() {
     }
@@ -37,10 +45,13 @@ final class ForgeHudOverlays {
             event.getLayeredDraw().add(Identifier.fromNamespaceAndPath(NeroArcadeCommon.MOD_ID, "arcade_hud"),
                     (g, delta) -> ArcadeHud.render(g));
         });
-        *///?} else {
+        *///?} else if >=1.20.5 {
         /*context.getModEventBus().addListener((AddGuiOverlayLayersEvent event) ->
                 event.getLayeredDraw().add(Identifier.fromNamespaceAndPath(NeroArcadeCommon.MOD_ID, "arcade_hud"),
                         (g, delta) -> ArcadeHud.render(g)));
+        *///?} else {
+        /*context.getModEventBus().addListener((RegisterGuiOverlaysEvent event) ->
+                event.registerAboveAll("arcade_hud", (gui, graphics, delta, width, height) -> ArcadeHud.render(graphics)));
         *///?}
     }
 }

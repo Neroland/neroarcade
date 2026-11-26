@@ -169,12 +169,19 @@ class RecipeFilesTest {
                 org.junit.jupiter.api.Assertions.assertNotNull(stream, name);
                 JsonObject recipe = JsonParser.parseReader(
                         new java.io.InputStreamReader(stream, java.nio.charset.StandardCharsets.UTF_8)).getAsJsonObject();
-                if (module.id().getPath().equals("arena/ring_24")) {
-                    assertTrue(recipe.getAsJsonArray("ingredients").toString().contains("minecraft:chain"), name);
-                }
+                //? if <1.20.5 {
+                //assertEquals("neroarcade:chip_shapeless", recipe.get("type").getAsString());
+                //assertEquals(module.id().toString(), recipe.get("module").getAsString());
+                //recipe = recipe.getAsJsonObject("recipe");
+                //assertEquals("neroarcade:module_chip", recipe.getAsJsonObject("result").get("item").getAsString());
+                //?} else {
                 JsonObject components = recipe.getAsJsonObject("result").getAsJsonObject("components");
                 assertEquals(module.id().toString(), components.get("neroarcade:module_id").getAsString());
                 assertEquals(module.type().ordinal() + 1, components.get("minecraft:custom_model_data").getAsInt());
+                //?}
+                if (module.id().getPath().equals("arena/ring_24")) {
+                    assertTrue(recipe.getAsJsonArray("ingredients").toString().contains("minecraft:chain"), name);
+                }
             }
         }
     }

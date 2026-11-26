@@ -10,7 +10,11 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.NbtOps;
 import net.minecraft.nbt.Tag;
+//? if >=1.20.5 {
 import net.minecraft.network.codec.ByteBufCodecs;
+//?} else {
+/*import net.minecraft.network.FriendlyByteBuf;
+*///?}
 import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.resources.Identifier;
@@ -40,9 +44,15 @@ public record BenchStatePayload(BlockPos bench, GameDef draft, List<BenchWarning
     /** Upper bound of the encoded draft (twice the cartridge cap; the server never sends more than the cap). */
     public static final long MAX_DRAFT_NBT = 16384;
 
+    //? if >=1.20.5 {
     public static final CustomPacketPayload.Type<BenchStatePayload> TYPE =
             new CustomPacketPayload.Type<>(Identifier.fromNamespaceAndPath("neroarcade", "bench_state"));
+    //?} else {
+    /*public static final CustomPacketPayload.Type<BenchStatePayload> TYPE =
+            new CustomPacketPayload.Type<>(Identifier.fromNamespaceAndPath("neroarcade", "bench_state"), BenchStatePayload.class);
+    *///?}
 
+    //? if >=1.20.5 {
     private static final StreamCodec<ByteBuf, GameDef> DRAFT_CODEC = ByteBufCodecs.compoundTagCodec(
             () -> net.minecraft.nbt.NbtAccounter.create(MAX_DRAFT_NBT)).map(
             tag -> GameDef.CODEC.parse(NbtOps.INSTANCE, tag)
@@ -78,6 +88,48 @@ public record BenchStatePayload(BlockPos bench, GameDef draft, List<BenchWarning
             ByteBufCodecs.BOOL, BenchStatePayload::testing,
             ByteBufCodecs.BOOL, BenchStatePayload::canSave,
             BenchStatePayload::new);
+    *///?}
+    //?} else {
+    /*public static final StreamCodec<FriendlyByteBuf, BenchStatePayload> STREAM_CODEC = StreamCodec.of(
+            (buf, payload) -> {
+                buf.writeBlockPos(payload.bench());
+                Tag tag = GameDef.CODEC.encodeStart(NbtOps.INSTANCE, payload.draft()).result().orElseThrow();
+                buf.writeNbt(tag instanceof CompoundTag compound ? compound : new CompoundTag());
+                buf.writeVarInt(maskOf(payload.warnings()));
+                buf.writeVarInt(payload.ghostMask());
+                buf.writeUtf(payload.statusKey(), 128);
+                buf.writeVarInt(payload.statusArgs().size());
+                for (String argument : payload.statusArgs()) {
+                    buf.writeUtf(argument, 64);
+                }
+                buf.writeBoolean(payload.testing());
+                buf.writeBoolean(payload.canSave());
+            }, buf -> {
+                BlockPos bench = buf.readBlockPos();
+                //? if >=1.20.2 {
+                //Tag tag = buf.readNbt(net.minecraft.nbt.NbtAccounter.create(MAX_DRAFT_NBT));
+                //?} else {
+                Tag tag = buf.readNbt(new net.minecraft.nbt.NbtAccounter(MAX_DRAFT_NBT));
+                //?}
+                if (!(tag instanceof CompoundTag draftTag)) {
+                    throw new DecoderException("Missing bench draft");
+                }
+                GameDef draft = GameDef.CODEC.parse(NbtOps.INSTANCE, draftTag).result()
+                        .orElseThrow(() -> new DecoderException("Invalid bench draft"));
+                List<BenchWarning> warnings = warningsFromMask(buf.readVarInt());
+                int ghostMask = buf.readVarInt();
+                String statusKey = buf.readUtf(128);
+                int argumentCount = buf.readVarInt();
+                if (argumentCount < 0 || argumentCount > 4) {
+                    throw new DecoderException("Too many bench status arguments");
+                }
+                List<String> arguments = new ArrayList<>(argumentCount);
+                for (int index = 0; index < argumentCount; index++) {
+                    arguments.add(buf.readUtf(64));
+                }
+                return new BenchStatePayload(bench, draft, warnings, ghostMask, statusKey, arguments,
+                        buf.readBoolean(), buf.readBoolean());
+            });
     *///?}
 
     public BenchStatePayload {

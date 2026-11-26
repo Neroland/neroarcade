@@ -5,7 +5,11 @@ import java.util.List;
 
 import io.netty.buffer.ByteBuf;
 
+//? if >=1.20.5 {
 import net.minecraft.network.codec.ByteBufCodecs;
+//?} else {
+/*import net.minecraft.network.FriendlyByteBuf;
+*///?}
 import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.resources.Identifier;
@@ -91,11 +95,21 @@ public record ExchangePagePayload(int tab, int page, int pageCount, int total, L
         }
     }
 
+    //? if >=1.20.5 {
     public static final CustomPacketPayload.Type<ExchangePagePayload> TYPE =
             new CustomPacketPayload.Type<>(Identifier.fromNamespaceAndPath("neroarcade", "exchange_page"));
+    //?} else {
+    /*public static final CustomPacketPayload.Type<ExchangePagePayload> TYPE =
+            new CustomPacketPayload.Type<>(Identifier.fromNamespaceAndPath("neroarcade", "exchange_page"), ExchangePagePayload.class);
+    *///?}
 
+    //? if >=1.20.5 {
     public static final StreamCodec<ByteBuf, ExchangePagePayload> STREAM_CODEC = StreamCodec.of(
             ExchangePagePayload::write, ExchangePagePayload::read);
+    //?} else {
+    /*public static final StreamCodec<FriendlyByteBuf, ExchangePagePayload> STREAM_CODEC = StreamCodec.of(
+            ExchangePagePayload::write, ExchangePagePayload::read);
+    *///?}
 
     public ExchangePagePayload {
         rows = List.copyOf(rows.size() > MAX_ROWS ? rows.subList(0, MAX_ROWS) : rows);
@@ -118,6 +132,7 @@ public record ExchangePagePayload(int tab, int page, int pageCount, int total, L
         return s.codePointCount(0, s.length()) > max ? s.substring(0, s.offsetByCodePoints(0, max)) : s;
     }
 
+    //? if >=1.20.5 {
     private static final StreamCodec<ByteBuf, String> TEXT = ByteBufCodecs.stringUtf8(MAX_TITLE * 4);
     private static final StreamCodec<ByteBuf, String> WORD = ByteBufCodecs.stringUtf8(64);
     private static final StreamCodec<ByteBuf, String> CHIPS = ByteBufCodecs.stringUtf8(MAX_SLOT_CHIPS);
@@ -200,6 +215,86 @@ public record ExchangePagePayload(int tab, int page, int pageCount, int total, L
         int max = ByteBufCodecs.VAR_INT.decode(buf);
         return new ExchangePagePayload(tab, page, pageCount, total, rows, flags, statusKey, args, kind, used, max);
     }
+    //?} else {
+    /*private static void write(FriendlyByteBuf buf, ExchangePagePayload p) {
+        buf.writeByte(p.tab);
+        buf.writeVarInt(p.page);
+        buf.writeVarInt(p.pageCount);
+        buf.writeVarInt(p.total);
+        buf.writeByte(p.rows.size());
+        for (Row r : p.rows) {
+            buf.writeVarInt(r.id());
+            buf.writeUtf(r.title(), MAX_TITLE * 4);
+            buf.writeUtf(r.credit(), MAX_TITLE * 4);
+            buf.writeByte(r.tags().size());
+            for (String t : r.tags()) {
+                buf.writeUtf(t, 64);
+            }
+            buf.writeVarInt(r.plays());
+            buf.writeVarInt(r.hearts());
+            for (int c : r.slotColours()) {
+                buf.writeMedium(c & 0xFFFFFF);
+            }
+            for (String chips : r.slotChips()) {
+                buf.writeUtf(chips, MAX_SLOT_CHIPS);
+            }
+            buf.writeByte(r.flags());
+            buf.writeVarInt(r.ageDays());
+        }
+        buf.writeByte(p.flags);
+        buf.writeUtf(p.statusKey, 64);
+        buf.writeByte(p.statusArgs.size());
+        for (String a : p.statusArgs) {
+            buf.writeUtf(a, MAX_TITLE * 4);
+        }
+        buf.writeByte(p.statusKind);
+        buf.writeVarInt(p.draftsUsed);
+        buf.writeVarInt(p.draftsMax);
+    }
+
+    private static ExchangePagePayload read(FriendlyByteBuf buf) {
+        int tab = buf.readUnsignedByte();
+        int page = buf.readVarInt();
+        int pageCount = buf.readVarInt();
+        int total = buf.readVarInt();
+        int n = Math.min(buf.readUnsignedByte(), MAX_ROWS);
+        List<Row> rows = new ArrayList<>(n);
+        for (int i = 0; i < n; i++) {
+            int id = buf.readVarInt();
+            String title = buf.readUtf(MAX_TITLE * 4);
+            String credit = buf.readUtf(MAX_TITLE * 4);
+            int tagCount = Math.min(buf.readUnsignedByte(), MAX_TAGS);
+            List<String> tags = new ArrayList<>(tagCount);
+            for (int t = 0; t < tagCount; t++) {
+                tags.add(buf.readUtf(64));
+            }
+            int plays = buf.readVarInt();
+            int hearts = buf.readVarInt();
+            int[] colours = new int[SLOTS];
+            for (int s = 0; s < SLOTS; s++) {
+                colours[s] = buf.readUnsignedMedium();
+            }
+            List<String> chips = new ArrayList<>(SLOTS);
+            for (int s = 0; s < SLOTS; s++) {
+                chips.add(buf.readUtf(MAX_SLOT_CHIPS));
+            }
+            int flags = buf.readUnsignedByte();
+            int age = buf.readVarInt();
+            rows.add(new Row(id, title, credit, tags, plays, hearts, colours, chips, flags, age));
+        }
+        int flags = buf.readUnsignedByte();
+        String statusKey = buf.readUtf(64);
+        int argCount = Math.min(buf.readUnsignedByte(), MAX_ARGS);
+        List<String> args = new ArrayList<>(argCount);
+        for (int a = 0; a < argCount; a++) {
+            args.add(buf.readUtf(MAX_TITLE * 4));
+        }
+        int kind = buf.readUnsignedByte();
+        int used = buf.readVarInt();
+        int max = buf.readVarInt();
+        return new ExchangePagePayload(tab, page, pageCount, total, rows, flags, statusKey, args, kind, used, max);
+    }
+    *///?}
 
     @Override
     public CustomPacketPayload.Type<ExchangePagePayload> type() {

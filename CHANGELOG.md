@@ -7,6 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.4.1]
+
+### Added
+
+- Exact Minecraft 1.20 through 1.20.4 builds on Fabric and Forge, plus builds for 1.20.4 and
+  1.20.5 on NeoForge. NeoForge 1.20.5 uses loader 20.5.21-beta.
+- Pre-component cartridges and chips retain their data in item tags and use legacy recipe unlocks.
+
+### Changed
+
+- All builds use Neroland Core 1.24.0 and NeroEconomy 0.8.1. NeroEconomy remains optional.
+
 ## [0.4.0] - 2026-11-24
 
 ### Added

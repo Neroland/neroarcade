@@ -101,18 +101,28 @@ public final class TestModules {
         List<HazardModule> hazards = new ArrayList<>();
         List<PickupModule> pickups = new ArrayList<>();
         for (ArcadeModule m : modules) {
-            switch (m) {
-                case ArenaModule a -> arena = a;
-                case PawnModule p -> pawn = p;
-                case RuleModule r -> rule = r;
-                case HazardModule h -> hazards.add(h);
-                case PickupModule p -> pickups.add(p);
-                case ControlModule c -> control = c;
-                case PaceModule p -> pace = p;
-                case ModifierModule mo -> modifier = mo;
-                case MultiplayerModule mp -> multiplayer = mp;
-                case ThemeModule t -> theme = t;
-                default -> throw new IllegalArgumentException("not a hook module: " + m);
+            if (m instanceof ArenaModule value) {
+                arena = value;
+            } else if (m instanceof PawnModule value) {
+                pawn = value;
+            } else if (m instanceof RuleModule value) {
+                rule = value;
+            } else if (m instanceof HazardModule value) {
+                hazards.add(value);
+            } else if (m instanceof PickupModule value) {
+                pickups.add(value);
+            } else if (m instanceof ControlModule value) {
+                control = value;
+            } else if (m instanceof PaceModule value) {
+                pace = value;
+            } else if (m instanceof ModifierModule value) {
+                modifier = value;
+            } else if (m instanceof MultiplayerModule value) {
+                multiplayer = value;
+            } else if (m instanceof ThemeModule value) {
+                theme = value;
+            } else {
+                throw new IllegalArgumentException("not a hook module: " + m);
             }
         }
         Map<ModuleType, List<SlotEntry>> slots = new EnumMap<>(ModuleType.class);

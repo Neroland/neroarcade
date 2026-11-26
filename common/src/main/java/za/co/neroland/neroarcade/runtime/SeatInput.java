@@ -2,7 +2,11 @@ package za.co.neroland.neroarcade.runtime;
 
 import io.netty.buffer.ByteBuf;
 
+//? if >=1.20.5 {
 import net.minecraft.network.codec.ByteBufCodecs;
+//?} else {
+/*import net.minecraft.network.FriendlyByteBuf;
+*///?}
 import net.minecraft.network.codec.StreamCodec;
 
 /**
@@ -23,8 +27,13 @@ public record SeatInput(int packed) {
     public static final SeatInput NONE = new SeatInput(0);
 
     /** VarInt of {@link #packed}. */
+    //? if >=1.20.5 {
     public static final StreamCodec<ByteBuf, SeatInput> STREAM_CODEC =
             ByteBufCodecs.VAR_INT.map(SeatInput::new, SeatInput::packed);
+    //?} else {
+    /*public static final StreamCodec<FriendlyByteBuf, SeatInput> STREAM_CODEC = StreamCodec.of(
+            (buffer, input) -> buffer.writeVarInt(input.packed()), buffer -> new SeatInput(buffer.readVarInt()));
+    *///?}
 
     public SeatInput {
         packed &= 0x00FF_FF7F; // bit 7 reserved; nothing above aimY

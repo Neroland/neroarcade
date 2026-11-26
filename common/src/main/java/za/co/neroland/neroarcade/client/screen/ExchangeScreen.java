@@ -448,7 +448,7 @@ public class ExchangeScreen extends AbstractContainerScreen<ExchangeMenu> {
     private static List<Component> slotTooltip(ExchangePagePayload.Row row, int index) {
         ModuleType type = ModuleType.values()[index];
         List<Component> lines = new ArrayList<>(2);
-        lines.add(Component.translatable(ExchangeSlotTips.slotKey(index)).withColor(type.colour));
+        lines.add(Component.translatable(ExchangeSlotTips.slotKey(index)).withStyle(style -> style.withColor(type.colour)));
         boolean empty = row.chipsIn(index).isEmpty();
         MutableComponent names = Component.empty();
         List<String> keys = ExchangeSlotTips.chipKeys(row, index);
@@ -458,7 +458,7 @@ public class ExchangeScreen extends AbstractContainerScreen<ExchangeMenu> {
             }
             names.append(Component.translatable(keys.get(i)));
         }
-        lines.add(names.withColor(empty ? ArcadeColours.TEXT_SUBTLE : ArcadeColours.TEXT_LIGHT));
+        lines.add(names.withStyle(style -> style.withColor(empty ? ArcadeColours.TEXT_SUBTLE : ArcadeColours.TEXT_LIGHT)));
         return lines;
     }
 

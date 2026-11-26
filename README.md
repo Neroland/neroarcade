@@ -10,6 +10,8 @@ to a **Cartridge**, and play it on an **Arcade Cabinet** whose screen everyone n
 not code: they can be copied, published, downloaded and remixed. Cabinets joined by a **Link Bus** play versus and
 co-op on one server-side simulation.
 
+Minecraft 1.20.5 on NeoForge requires loader 20.5.21-beta.
+
 ## What it does
 
 - **Module contract** (`module`, `module.hook`, `module.pack`). Ten fixed slots — ARENA, PAWN, RULE, HAZARD,
@@ -54,25 +56,26 @@ co-op on one server-side simulation.
 
 - **Minecraft** 1.21.1, 1.21.4, 1.21.5, 1.21.8 (also 1.21.7), 1.21.10 (also 1.21.9), 1.21.11, 26.1.2, 26.2 or 26.3
   on **NeoForge**, **MinecraftForge** or **Fabric**.
-- **Neroland Core 1.23.0** or newer (below 2.0). Every loader manifest floors it at the compiled version.
-- **Minecraft 1.20** builds cover 1.20.5 on Fabric and 1.20.6 on Fabric, Forge and NeoForge.
-- **Java 21** for the 1.20.x and 1.21.x builds, **Java 25** for 26.x.
+- **Neroland Core 1.24.0** or newer (below 2.0). Every loader manifest floors it at the compiled version.
+- **Minecraft 1.20.x** builds cover 1.20 through 1.20.6 on Fabric, 1.20 through 1.20.4 and
+  1.20.6 on Forge, and 1.20.4 through 1.20.6 on NeoForge. Legacy NeoForge 1.20.1 uses the Forge jar.
+- **Java 17** through Minecraft 1.20.4, **Java 21** for later 1.x builds, and **Java 25** for 26.x.
 
 Optional, each detected at start-up; NeroArcade is complete without them:
 
 | Mod | Minimum | What it adds |
 | --- | --- | --- |
-| NeroEconomy | 0.7.0 on 1.20 builds, 0.5.1-beta.1 on later builds | Coin-op seats and paid downloads (`economy.coinOp`, off by default). |
+| NeroEconomy | 0.8.1 | Coin-op seats and paid downloads (`economy.coinOp`, off by default). |
 | NeroLink | 1.0.0 (1.1.0 for rich notification text) | The companion-app module: library, leaderboards, export/import, notifications. |
 | NeroQuests | — | Loads the "Insert Coin" chapter shipped as data. |
 
 ## Supported cells
 
-31 cells, each a Stonecutter node `:<loader>:<mc>`, for `<loader>` in `neoforge`, `forge`, `fabric`:
+43 cells, each a Stonecutter node `:<loader>:<mc>`, for `<loader>` in `neoforge`, `forge`, `fabric`:
 
 | Line | Cells |
 | --- | --- |
-| 1.20.x | `1.20.5` (Fabric), `1.20.6` (Fabric, Forge and NeoForge) |
+| 1.20.x | 1.20–1.20.6 (Fabric), 1.20–1.20.4 and 1.20.6 (Forge), 1.20.4–1.20.6 (NeoForge) |
 | 1.21.x | `1.21.1`, `1.21.4`, `1.21.5`, `1.21.8` (runs on 1.21.7-1.21.8), `1.21.10` (runs on 1.21.9-1.21.10), `1.21.11` |
 | 26.x | `26.1.2`, `26.2`, `26.3` |
 

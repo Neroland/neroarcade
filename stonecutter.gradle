@@ -26,6 +26,32 @@ allprojects {
 // AFTER Stonecutter's own //? processing. Only for pure renames Mojang made with no behaviour change;
 // anything else uses //? if blocks in the source. Loader src/ trees do NOT get these (use //? there).
 ext.legacyRenames = [
+    [below: '1.20.5', from: /protected void extractWidgetRenderState\(/, to: 'public void renderWidget('],
+    [below: '1.20.2', from: /boolean mouseScrolled\(double x, double y, double scrollX, double scrollY\)/,
+            to: 'boolean mouseScrolled(double x, double y, double scrollY)'],
+    [below: '1.20.5', from: /\.normal\(pose, nx, ny, nz\)/, to: '.normal(pose.normal(), nx, ny, nz)'],
+    [below: '1.20.5', from: /Value(Input|Output)\.of\(tag, registries\)/, to: 'Value$1.of(tag, null)'],
+    [below: '1.20.5', from: /Item\.TooltipContext context, (java\.util\.List<Component> lines)/, to: 'net.minecraft.world.level.Level level, $1'],
+    [below: '1.20.5', from: /\.appendHoverText\(stack, context, lines, flag\)/, to: '.appendHoverText(stack, level, lines, flag)'],
+    [below: '1.20.5', from: /\bprotected InteractionResult useWithoutItem\(BlockState state, Level level, BlockPos pos, Player player,\s*BlockHitResult hit\)/,
+            to: 'public InteractionResult use(BlockState state, Level level, BlockPos pos, Player player, net.minecraft.world.InteractionHand hand, BlockHitResult hit)'],
+    [below: '1.20.5', from: /\bprotected ([\w.]+ (?:getRenderShape|getShape|rotate|mirror|onRemove|updateShape)\()/, to: 'public $1'],
+    [below: '1.20.3', from: /BlockState playerWillDestroy\(/, to: 'void playerWillDestroy('],
+    [below: '1.20.3', from: /return super\.playerWillDestroy\(/, to: 'super.playerWillDestroy('],
+    [below: '1.20.5', from: /void saveAdditional\(((?:net\.minecraft\.nbt\.)?CompoundTag \w+), (?:net\.minecraft\.core\.)?HolderLookup\.Provider registries\)/, to: 'void saveAdditional($1)'],
+    [below: '1.20.5', from: /protected void loadAdditional\(((?:net\.minecraft\.nbt\.)?CompoundTag \w+), (?:net\.minecraft\.core\.)?HolderLookup\.Provider registries\)/, to: 'public void load($1)'],
+    [below: '1.20.5', from: /super\.saveAdditional\((\w+), registries\)/, to: 'super.saveAdditional($1)'],
+    [below: '1.20.5', from: /super\.loadAdditional\((\w+), registries\)/, to: 'super.load($1)'],
+    [below: '1.20.5', from: /CompoundTag getUpdateTag\(HolderLookup\.Provider registries\)/, to: 'CompoundTag getUpdateTag()'],
+    [below: '1.20.5', from: /super\.getUpdateTag\(registries\)/, to: 'super.getUpdateTag()'],
+    [below: '1.20.5', from: /ContainerHelper\.(saveAllItems|loadAllItems)\((\w+), ([\w.]+(?:\(\))?), registries\)/, to: 'ContainerHelper.$1($2, $3)'],
+    [below: '1.20.5', from: /\.getOrThrow\(\)/, to: '.result().orElseThrow()'],
+    [below: '1.20.5', from: /import net\.minecraft\.network\.RegistryFriendlyByteBuf;/, to: 'import net.minecraft.network.FriendlyByteBuf;'],
+    [below: '1.20.5', from: /\bRegistryFriendlyByteBuf\b/, to: 'FriendlyByteBuf'],
+    [below: '1.20.5', from: /import net\.minecraft\.network\.codec\.StreamCodec;/, to: 'import za.co.neroland.nerolandcore.network.legacy.LegacyStreamCodec;'],
+    [below: '1.20.5', from: /\bStreamCodec\b/, to: 'LegacyStreamCodec'],
+    [below: '1.20.5', from: /import net\.minecraft\.network\.protocol\.common\.custom\.CustomPacketPayload;/, to: 'import za.co.neroland.nerolandcore.network.legacy.LegacyPayload;'],
+    [below: '1.20.5', from: /(?<![.\w])CustomPacketPayload\b/, to: 'LegacyPayload'],
     // 1.21.11 renamed ResourceLocation -> Identifier and ResourceKey.location() -> identifier().
     [below: '1.21.11', from: /\bIdentifier\b/, to: 'ResourceLocation'],
     [below: '1.21.11', from: /\.identifier\(\)/, to: '.location()'],
@@ -116,21 +142,33 @@ subprojects {
 
     // Minecraft 1.21.x runs on Java 21, so its cells must emit Java 21 bytecode (and may not use
     // Java 22+ language features). 26.x cells stay on Java 25. A node's project name IS its MC version.
-    def javaRelease = project.name.startsWith('1.') ? 21 : 25
+    def java17Versions = ['1.20', '1.20.1', '1.20.2', '1.20.3', '1.20.4']
+    def javaRelease = project.name in java17Versions ? 17 : project.name.startsWith('1.') ? 21 : 25
     ext.javaRelease = javaRelease
 
-    if (project.name in ['1.20.5', '1.20.6']) {
+    if (project.name == '1.20' || project.name.startsWith('1.20.')) {
+        def packFormats = [
+                '1.20': [15, 15], '1.20.1': [15, 15], '1.20.2': [18, 18],
+                '1.20.3': [22, 26], '1.20.4': [22, 26], '1.20.5': [32, 41], '1.20.6': [32, 41]
+        ][project.name]
         tasks.named('processResources') {
+            inputs.property('packFormats', packFormats)
             eachFile { file ->
-                file.path = file.path.replaceFirst(/^(data\/[^\/]+\/)(advancement|loot_table|recipe)\//, '$1$2s/')
+                file.path = file.path.replaceFirst(/^(data\/[^\/]+\/)(advancement|loot_table|recipe|structure)\//, '$1$2s/')
                         .replaceFirst(/^(data\/[^\/]+\/tags\/)(block|entity_type|fluid|item)\//, '$1$2s/')
             }
             includeEmptyDirs = false
+            if (javaRelease == 17) {
+                filesMatching('**/*.mixins.json') {
+                    filter { line -> line.replace('JAVA_21', 'JAVA_17') }
+
+                }
+            }
             doLast {
                 def metadata = new File(destinationDir, 'pack.mcmeta')
                 def pack = new groovy.json.JsonSlurper().parse(metadata).pack
                 metadata.setText(groovy.json.JsonOutput.toJson([
-                        pack: [description: pack.description, pack_format: 32, supported_formats: [32, 41]]
+                        pack: [description: pack.description, pack_format: packFormats[0], supported_formats: packFormats]
                 ]), 'UTF-8')
             }
         }
@@ -362,7 +400,7 @@ subprojects {
             def outDir = node.file('build/generated/legacy-recipes')
             def legacyRecipes = node.tasks.register('legacyRecipes') {
                 group = 'stonecutter'
-                description = 'Converts ingredients and chip models to the older recipe format.'
+                description = 'Converts legacy recipes, chip models, and recipe unlock criteria.'
                 inputs.dir(base)
                 outputs.dir(outDir)
                 doLast {
@@ -382,10 +420,29 @@ subprojects {
                     }
                     base.eachFileRecurse(groovy.io.FileType.FILES) { f ->
                         def rel = base.toPath().relativize(f.toPath()).toString().replace('\\', '/')
-                        if (!(rel ==~ /data\/[^\/]+\/recipe\/.+\.json/)) {
+                        def legacyAdvancement = sc.eval(sc.current.version, '<1.20.5') &&
+                                rel ==~ /data\/[^\/]+\/advancement\/recipes\/.+\.json/
+                        if (!(rel ==~ /data\/[^\/]+\/recipe\/.+\.json/) && !legacyAdvancement) {
                             return
                         }
                         def json = slurper.parse(f)
+                        if (legacyAdvancement) {
+                            json.criteria?.values()?.each { criterion ->
+                                if (criterion.trigger == 'minecraft:inventory_changed') {
+                                    criterion.conditions?.items?.each { predicate ->
+                                        if (predicate.items instanceof String) {
+                                            def item = predicate.items
+                                            if (item.startsWith('#')) {
+                                                predicate.remove('items')
+                                                predicate.tag = item.substring(1)
+                                            } else {
+                                                predicate.items = [item]
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
                         if (json.result instanceof Map && json.result.id == 'neroarcade:module_chip') {
                             def components = json.result.components
                             def modelData = components['minecraft:custom_model_data']
@@ -404,6 +461,13 @@ subprojects {
                         ['ingredient', 'template', 'base', 'addition'].each { k ->
                             if (json[k] != null) {
                                 json[k] = conv(json[k])
+                            }
+                        }
+                        if (sc.eval(sc.current.version, '<1.20.5') && json.result instanceof Map && json.result.id != null) {
+                            def moduleId = json.result.remove('components')?.get('neroarcade:module_id')
+                            json.result.item = json.result.remove('id')
+                            if (moduleId != null) {
+                                json = [type: 'neroarcade:chip_shapeless', recipe: json, module: moduleId]
                             }
                         }
                         def dst = new File(outDir, rel)

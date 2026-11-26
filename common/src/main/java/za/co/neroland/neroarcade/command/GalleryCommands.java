@@ -20,7 +20,9 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
+//? if >=1.21.6 {
 import net.minecraft.util.ProblemReporter;
+//?}
 import net.minecraft.world.entity.item.ItemEntity;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.block.Block;
@@ -273,8 +275,10 @@ public final class GalleryCommands {
         tag.putBoolean("is_waxed", true);
         //? if >=1.21.6 {
         be.loadWithComponents(TagValueInput.create(ProblemReporter.DISCARDING, rec.level.registryAccess(), tag));
-        //?} else {
+        //?} else if >=1.20.5 {
         /*be.loadWithComponents(tag, rec.level.registryAccess());
+        *///?} else {
+        /*be.load(tag);
         *///?}
         be.setChanged();
         rec.level.sendBlockUpdated(pos, sign, sign, FLAGS);

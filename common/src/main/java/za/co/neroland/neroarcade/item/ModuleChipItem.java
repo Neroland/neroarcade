@@ -70,10 +70,13 @@ public class ModuleChipItem extends Item {
 
     /** A property value as tooltip text: a number, on/off, or the enum constant's name. */
     public static MutableComponent valueText(ArcadeModule module, PropertySpec spec, PropertyValue value) {
-        return switch (value) {
-            case PropertyValue.IntValue i -> Component.literal(Integer.toString(i.value()));
-            case PropertyValue.BoolValue b -> Component.translatable(b.value() ? "neroarcade.value.on" : "neroarcade.value.off");
-            case PropertyValue.EnumValue e -> Component.translatable(spec.constantLangKey(module, e.constant()));
-        };
+        if (value instanceof PropertyValue.IntValue number) {
+            return Component.literal(Integer.toString(number.value()));
+        }
+        if (value instanceof PropertyValue.BoolValue toggle) {
+            return Component.translatable(toggle.value() ? "neroarcade.value.on" : "neroarcade.value.off");
+        }
+        PropertyValue.EnumValue choice = (PropertyValue.EnumValue) value;
+        return Component.translatable(spec.constantLangKey(module, choice.constant()));
     }
 }

@@ -2,7 +2,11 @@ package za.co.neroland.neroarcade.network;
 
 import io.netty.buffer.ByteBuf;
 
+//? if >=1.20.5 {
 import net.minecraft.network.codec.ByteBufCodecs;
+//?} else {
+/*import net.minecraft.network.FriendlyByteBuf;
+*///?}
 import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.resources.Identifier;
@@ -34,9 +38,15 @@ public record ExchangeActionPayload(Op op, int listingId, int page) implements C
         DRAFTS
     }
 
+    //? if >=1.20.5 {
     public static final CustomPacketPayload.Type<ExchangeActionPayload> TYPE =
             new CustomPacketPayload.Type<>(Identifier.fromNamespaceAndPath("neroarcade", "exchange_action"));
+    //?} else {
+    /*public static final CustomPacketPayload.Type<ExchangeActionPayload> TYPE =
+            new CustomPacketPayload.Type<>(Identifier.fromNamespaceAndPath("neroarcade", "exchange_action"), ExchangeActionPayload.class);
+    *///?}
 
+    //? if >=1.20.5 {
     private static final StreamCodec<ByteBuf, Op> OP_CODEC = ByteBufCodecs.VAR_INT.map(
             i -> Op.values()[Math.floorMod(i, Op.values().length)], Op::ordinal);
 
@@ -45,6 +55,16 @@ public record ExchangeActionPayload(Op op, int listingId, int page) implements C
             ByteBufCodecs.VAR_INT, ExchangeActionPayload::listingId,
             ByteBufCodecs.VAR_INT, ExchangeActionPayload::page,
             ExchangeActionPayload::new);
+    //?} else {
+    /*public static final StreamCodec<FriendlyByteBuf, ExchangeActionPayload> STREAM_CODEC = StreamCodec.of(
+            (buf, payload) -> {
+                buf.writeVarInt(payload.op().ordinal());
+                buf.writeVarInt(payload.listingId());
+                buf.writeVarInt(payload.page());
+            }, buf -> new ExchangeActionPayload(
+                    Op.values()[Math.floorMod(buf.readVarInt(), Op.values().length)], buf.readVarInt(),
+                    buf.readVarInt()));
+    *///?}
 
     @Override
     public CustomPacketPayload.Type<ExchangeActionPayload> type() {

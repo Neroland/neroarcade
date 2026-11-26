@@ -4,12 +4,17 @@
 plugins {
     id 'net.minecraftforge.gradle'
     id 'net.minecraftforge.jarjar'
+    id 'net.minecraftforge.renamer' apply false
     id 'eclipse'
     id 'maven-publish'
 }
 
 // MC version comes from the Stonecutter node (e.g. :forge:26.1.2), not a global property.
 def mc = stonecutter.current.version
+def preComponents = stonecutter.eval(mc, '<1.20.5')
+if (preComponents) {
+    apply plugin: 'net.minecraftforge.renamer'
+}
 // Upper bound of this cell's Minecraft range: the next minor line (26.1.2 -> 26.2, 26.2 -> 26.3), same
 // expression as Neroland Core, so each cell's jar declares only its own MC line.
 def mcCeiling = project.findProperty("mc_ceiling_${mc}") ?: mc.tokenize('.').with { "${it[0]}.${it[1].toInteger() + 1}" }
@@ -78,7 +83,7 @@ sourceSets.main.resources.srcDir rootProject.ext.commonResources
 // line, and leaves the optional manifest entry out, so the mod builds with no NeroEconomy artifact at all.
 // Per-MC override neroeconomy_compat_<mc> wins (NeroEconomy has no 1.21.x builds yet, see gradle.properties).
 def economyOn = (rootProject.findProperty("neroeconomy_compat_${mc}") ?: rootProject.findProperty('neroeconomy_compat') ?: 'true').toString().trim() == 'true'
-def economyVersion = rootProject.findProperty("neroeconomy_version_${mc}") ?: rootProject.neroeconomy_version
+def economyVersion = rootProject.neroeconomy_version
 if (!economyOn) {
     sourceSets.main.java.exclude 'za/co/neroland/neroarcade/compat/economy/bridge/NeroEconomyCoinOp.java'
     sourceSets.main.resources.exclude 'META-INF/services/za.co.neroland.neroarcade.compat.economy.CoinOpSeam'
@@ -151,6 +156,18 @@ dependencies {
 }
 
 // Expand mods.toml from src/main/templates into generated resources.
+if (preComponents) {
+    renamer.mappings.from minecraft.dependency.toSrgFile
+    def bundled = tasks.named('jarJar', Jar) {
+        archiveClassifier = 'dev-all'
+    }
+    renamer.classes('renameReleaseJar', bundled) {
+        archiveClassifier = 'all'
+    }
+    tasks.named('assemble') { dependsOn 'renameReleaseJar' }
+}
+
+
 def generateModMetadata = tasks.register('generateModMetadata', ProcessResources) {
     def props = [
         mod_id                    : rootProject.mod_id,

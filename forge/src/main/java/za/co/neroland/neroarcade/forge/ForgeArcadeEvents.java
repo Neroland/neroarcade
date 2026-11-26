@@ -43,8 +43,16 @@ public final class ForgeArcadeEvents {
         /*// Before Forge's EventBus 7 (1.21.6) game events go through the global MinecraftForge.EVENT_BUS.
         MinecraftForge.EVENT_BUS.addListener((RegisterCommandsEvent event) -> ArcadeCommands.register(event.getDispatcher()));
         MinecraftForge.EVENT_BUS.addListener((ServerStoppingEvent event) -> ServerHooks.fireStopping(event.getServer()));
+        //? if >=1.20.5 {
         MinecraftForge.EVENT_BUS.addListener((TickEvent.ServerTickEvent.Post event) ->
                 ServerHooks.fireTick(net.minecraftforge.server.ServerLifecycleHooks.getCurrentServer()));
+        //?} else {
+        //MinecraftForge.EVENT_BUS.addListener((TickEvent.ServerTickEvent event) -> {
+        //    if (event.phase == TickEvent.Phase.END) {
+        //        ServerHooks.fireTick(event.getServer());
+        //    }
+        //});
+        //?}
         MinecraftForge.EVENT_BUS.addListener((PlayerEvent.PlayerLoggedOutEvent event) -> {
             if (event.getEntity() instanceof ServerPlayer player) {
                 ServerHooks.firePlayerLeave(player);

@@ -735,7 +735,7 @@ public class GameBenchScreen extends AbstractContainerScreen<GameBenchMenu> {
             if (mouseX >= leftPos + RACK_L && mouseX < textRight && mouseY >= rowTop
                     && mouseY < rowTop + BenchLayout.RACK_ROW && hoveredSlot == null) {
                 List<Component> tip = new ArrayList<>();
-                tip.add(Component.translatable(type.langKey()).withColor(type.colour));
+                tip.add(Component.translatable(type.langKey()).withStyle(style -> style.withColor(type.colour)));
                 tip.add(Component.translatable(type.descLangKey()));
                 tip.add(effectLine(type));
                 Optional<ArcadeModule> only = singleChip(type);

@@ -114,7 +114,15 @@ public final class ForgeClientSetup {
             event.registerBlockEntityRenderer(ModBlockEntities.ARCADE_EXCHANGE.get(), ctx -> new ExchangeRenderer());
         });
         modBus.addListener((RegisterKeyMappingsEvent event) -> ArcadeKeys.all().forEach(event::register));
+        //? if >=1.20.5 {
         MinecraftForge.EVENT_BUS.addListener((TickEvent.ClientTickEvent.Post event) -> ArcadeClient.tick());
+        //?} else {
+        //MinecraftForge.EVENT_BUS.addListener((TickEvent.ClientTickEvent event) -> {
+        //    if (event.phase == TickEvent.Phase.END) {
+        //        ArcadeClient.tick();
+        //    }
+        //});
+        //?}
         MinecraftForge.EVENT_BUS.addListener((RegisterClientCommandsEvent event) ->
                 GalleryCapture.registerClientCommands(event.getDispatcher()));
         MinecraftForge.EVENT_BUS.addListener((ClientPlayerNetworkEvent.LoggingOut event) ->

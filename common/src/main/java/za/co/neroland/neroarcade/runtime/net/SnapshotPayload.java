@@ -3,7 +3,11 @@ package za.co.neroland.neroarcade.runtime.net;
 import io.netty.buffer.ByteBuf;
 
 import net.minecraft.core.BlockPos;
+//? if >=1.20.5 {
 import net.minecraft.network.codec.ByteBufCodecs;
+//?} else {
+/*import net.minecraft.network.FriendlyByteBuf;
+*///?}
 import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.resources.Identifier;
@@ -20,14 +24,28 @@ public record SnapshotPayload(BlockPos cabinet, int matchId, byte[] body) implem
     /** Hard wire ceiling: the largest {@code runtime.snapshotMaxBytes} an admin can set. */
     public static final int MAX_BODY_BYTES = 16384;
 
+    //? if >=1.20.5 {
     public static final CustomPacketPayload.Type<SnapshotPayload> TYPE =
             new CustomPacketPayload.Type<>(Identifier.fromNamespaceAndPath("neroarcade", "snapshot"));
+    //?} else {
+    /*public static final CustomPacketPayload.Type<SnapshotPayload> TYPE =
+            new CustomPacketPayload.Type<>(Identifier.fromNamespaceAndPath("neroarcade", "snapshot"), SnapshotPayload.class);
+    *///?}
 
+    //? if >=1.20.5 {
     public static final StreamCodec<ByteBuf, SnapshotPayload> STREAM_CODEC = StreamCodec.composite(
             BlockPos.STREAM_CODEC, SnapshotPayload::cabinet,
             ByteBufCodecs.VAR_INT, SnapshotPayload::matchId,
             ByteBufCodecs.byteArray(MAX_BODY_BYTES), SnapshotPayload::body,
             SnapshotPayload::new);
+    //?} else {
+    /*public static final StreamCodec<FriendlyByteBuf, SnapshotPayload> STREAM_CODEC = StreamCodec.of(
+            (buf, payload) -> {
+                buf.writeBlockPos(payload.cabinet());
+                buf.writeVarInt(payload.matchId());
+                buf.writeByteArray(payload.body());
+            }, buf -> new SnapshotPayload(buf.readBlockPos(), buf.readVarInt(), buf.readByteArray(MAX_BODY_BYTES)));
+    *///?}
 
     public SnapshotPayload {
         if (body.length > MAX_BODY_BYTES) {

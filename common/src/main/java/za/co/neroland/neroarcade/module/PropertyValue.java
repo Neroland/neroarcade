@@ -69,11 +69,14 @@ public sealed interface PropertyValue permits PropertyValue.IntValue, PropertyVa
 
         @Override
         public <T> T write(DynamicOps<T> ops, PropertyValue value) {
-            return switch (value) {
-                case IntValue i -> ops.createInt(i.value());
-                case BoolValue b -> ops.createBoolean(b.value());
-                case EnumValue e -> ops.createString(e.constant());
-            };
+            if (value instanceof IntValue number) {
+                return ops.createInt(number.value());
+            }
+            if (value instanceof BoolValue toggle) {
+                return ops.createBoolean(toggle.value());
+            }
+            EnumValue choice = (EnumValue) value;
+            return ops.createString(choice.constant());
         }
 
         @Override

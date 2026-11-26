@@ -8,7 +8,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
+//? if >=1.20.5 {
 import net.minecraft.core.component.DataComponentType;
+//?}
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.NbtOps;
 import net.minecraft.nbt.Tag;
@@ -50,17 +52,24 @@ class CartridgeComponentTest {
                 Optional.of(42L), slots, 1760976000L, 3);
     }
 
+    //? if >=1.20.5 {
     /** The component type exactly as {@code ModDataComponents} builds it. */
     private static DataComponentType<StoredCartridge> componentType() {
         return DataComponentType.<StoredCartridge>builder().persistent(StoredCartridge.CODEC).build();
     }
 
+    //?}
+
     @Test
-    void gameDefRoundTripsThroughTheComponentCodec() throws ValidationError {
+    void gameDefRoundTripsThroughPersistentStorage() throws ValidationError {
         GameDef def = sample();
         StoredCartridge stored = StoredCartridge.of(def);
+        //? if >=1.20.5 {
         Tag written = componentType().codecOrThrow().encodeStart(NbtOps.INSTANCE, stored).getOrThrow();
         StoredCartridge read = componentType().codecOrThrow().parse(NbtOps.INSTANCE, written).getOrThrow();
+        //?} else {
+        /*StoredCartridge read = new StoredCartridge(stored.tag());
+        *///?}
         assertEquals(def, read.decode());
         assertEquals(stored, read);
         assertEquals("Neon Dodge", read.rawTitle());

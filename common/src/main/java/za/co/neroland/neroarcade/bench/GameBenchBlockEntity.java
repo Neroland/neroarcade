@@ -554,8 +554,10 @@ public class GameBenchBlockEntity extends BlockEntity implements MenuProvider, S
     *///?}
         //? if >=1.21.6 {
         ContainerHelper.saveAllItems(output, inventory.getItems());
-        //?} else {
+        //?} else if >=1.20.5 {
         /*ContainerHelper.saveAllItems(tag, inventory.getItems(), registries);
+        *///?} else {
+        /*za.co.neroland.neroarcade.compat.LegacyInventory.save(tag, inventory);
         *///?}
         output.store(KEY_DRAFT, BenchDraft.CODEC, draft);
         output.putInt(KEY_GHOSTS, ghostMask);
@@ -576,8 +578,10 @@ public class GameBenchBlockEntity extends BlockEntity implements MenuProvider, S
             inventory.clearContent();
             //? if >=1.21.6 {
             ContainerHelper.loadAllItems(input, inventory.getItems());
-            //?} else {
+            //?} else if >=1.20.5 {
             /*ContainerHelper.loadAllItems(tag, inventory.getItems(), registries);
+            *///?} else {
+            /*za.co.neroland.neroarcade.compat.LegacyInventory.load(tag, inventory);
             *///?}
             input.read(KEY_DRAFT, BenchDraft.CODEC).ifPresent(draft::copyFrom);
             ghostMask = input.getIntOr(KEY_GHOSTS, 0) & 0x3FFF;

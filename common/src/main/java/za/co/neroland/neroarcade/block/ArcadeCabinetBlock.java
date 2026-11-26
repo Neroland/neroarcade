@@ -93,7 +93,7 @@ public class ArcadeCabinetBlock extends TwoHighBlock {
         }
         return InteractionResult.TRY_WITH_EMPTY_HAND;
     }
-    //?} else {
+    //?} else if >=1.20.5 {
     /*// Before 1.21.2 an item use on a block answers with an ItemInteractionResult.
     @Override
     protected net.minecraft.world.ItemInteractionResult useItemOn(ItemStack stack, BlockState state, Level level,
@@ -118,6 +118,16 @@ public class ArcadeCabinetBlock extends TwoHighBlock {
     @Override
     protected InteractionResult useWithoutItem(BlockState state, Level level, BlockPos pos, Player player,
             BlockHitResult hit) {
+        //? if <1.20.5 {
+        /*ItemStack held = player.getItemInHand(hand);
+        if (CabinetInteraction.isCartridgeLike(held)) {
+            if (level instanceof ServerLevel && player instanceof ServerPlayer serverPlayer
+                    && controller(level, pos, state) instanceof ArcadeCabinetBlockEntity cabinet) {
+                return CabinetInteraction.insert(cabinet, serverPlayer, held);
+            }
+            return InteractionResult.SUCCESS;
+        }
+        *///?}
         if (!(level instanceof ServerLevel) || !(player instanceof ServerPlayer serverPlayer)) {
             return InteractionResult.SUCCESS;
         }

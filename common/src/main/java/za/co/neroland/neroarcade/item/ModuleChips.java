@@ -3,10 +3,12 @@ package za.co.neroland.neroarcade.item;
 import java.util.List;
 import java.util.Optional;
 
+//? if >=1.20.5 {
 import net.minecraft.core.component.DataComponents;
+import net.minecraft.world.item.component.CustomModelData;
+//?}
 import net.minecraft.resources.Identifier;
 import net.minecraft.world.item.ItemStack;
-import net.minecraft.world.item.component.CustomModelData;
 
 import za.co.neroland.neroarcade.module.ArcadeModule;
 import za.co.neroland.neroarcade.module.ModuleRegistry;
@@ -27,11 +29,16 @@ public final class ModuleChips {
     /** The chip stack for a registered module. */
     public static ItemStack stackFor(ArcadeModule module) {
         ItemStack stack = new ItemStack(ModItems.MODULE_CHIP.get());
-        stack.set(ModDataComponents.MODULE_ID.get(), module.id());
+        ModDataComponents.writeModule(stack, module.id());
+        //? if >=1.20.5 {
         stack.set(DataComponents.CUSTOM_MODEL_DATA, modelData(module.type()));
+        //?} else {
+        /*stack.getOrCreateTag().putInt("CustomModelData", module.type().ordinal() + 1);
+        *///?}
         return stack;
     }
 
+    //? if >=1.20.5 {
     /** {@code CustomModelData(strings=[slot key], colors=[slot colour])}. */
     public static CustomModelData modelData(ModuleType type) {
         //? if >=1.21.4 {
@@ -43,12 +50,14 @@ public final class ModuleChips {
         *///?}
     }
 
+    //?}
+
     /** The module id a stack carries (any item; empty when it is not a chip or has no id). */
     public static Optional<Identifier> idOf(ItemStack stack) {
         if (stack.isEmpty() || !stack.is(ModItems.MODULE_CHIP.get())) {
             return Optional.empty();
         }
-        return Optional.ofNullable(stack.get(ModDataComponents.MODULE_ID.get()));
+        return Optional.ofNullable(ModDataComponents.readModule(stack));
     }
 
     /** The registered module a chip stack names, if this server has it. */

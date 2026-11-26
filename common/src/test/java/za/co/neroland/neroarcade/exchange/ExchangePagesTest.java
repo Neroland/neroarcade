@@ -6,8 +6,8 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.List;
 
-import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
+import net.minecraft.network.FriendlyByteBuf;
 
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -66,7 +66,7 @@ class ExchangePagesTest {
         ExchangeFixtures.publish(table, ExchangeFixtures.game(1, ExchangeFixtures.ALICE, "Alice"), 1, 200);
         ExchangePagePayload page = ExchangePages.listings(table.browse(), 0, 8, ExchangeFixtures.BOB, (u, id) -> false,
                 true, true, ExchangePages.Status.ok("neroarcade.exchange.ok.hearted", "Game"), 2, 8);
-        ByteBuf buf = Unpooled.buffer();
+        FriendlyByteBuf buf = new FriendlyByteBuf(Unpooled.buffer());
         ExchangePagePayload.STREAM_CODEC.encode(buf, page);
         byte[] bytes = new byte[buf.readableBytes()];
         buf.getBytes(0, bytes);

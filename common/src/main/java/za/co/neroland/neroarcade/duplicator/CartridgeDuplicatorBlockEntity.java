@@ -247,8 +247,10 @@ public class CartridgeDuplicatorBlockEntity extends BlockEntity implements MenuP
     *///?}
         //? if >=1.21.6 {
         ContainerHelper.saveAllItems(output, inventory.getItems());
-        //?} else {
+        //?} else if >=1.20.5 {
         /*ContainerHelper.saveAllItems(tag, inventory.getItems(), registries);
+        *///?} else {
+        /*za.co.neroland.neroarcade.compat.LegacyInventory.save(tag, inventory);
         *///?}
         output.putInt(KEY_PROGRESS, progress);
     }
@@ -263,13 +265,13 @@ public class CartridgeDuplicatorBlockEntity extends BlockEntity implements MenuP
         super.loadAdditional(tag, registries);
         ValueInput input = ValueInput.of(tag, registries);
     *///?}
-        for (int i = 0; i < DuplicatorMenu.SIZE; i++) {
-            inventory.getItems().set(i, ItemStack.EMPTY);
-        }
+        inventory.clearContent();
         //? if >=1.21.6 {
         ContainerHelper.loadAllItems(input, inventory.getItems());
-        //?} else {
+        //?} else if >=1.20.5 {
         /*ContainerHelper.loadAllItems(tag, inventory.getItems(), registries);
+        *///?} else {
+        /*za.co.neroland.neroarcade.compat.LegacyInventory.load(tag, inventory);
         *///?}
         progress = Math.max(0, Math.min(DuplicatorRules.COPY_TICKS, input.getIntOr(KEY_PROGRESS, 0)));
     }

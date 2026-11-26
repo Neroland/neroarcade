@@ -3,7 +3,11 @@ package za.co.neroland.neroarcade.network;
 import io.netty.buffer.ByteBuf;
 
 import net.minecraft.core.BlockPos;
+//? if >=1.20.5 {
 import net.minecraft.network.codec.ByteBufCodecs;
+//?} else {
+/*import net.minecraft.network.FriendlyByteBuf;
+*///?}
 import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.resources.Identifier;
@@ -34,11 +38,21 @@ public record MatchPhasePayload(BlockPos host, int matchId, BusPhase phase, int 
         int readyMask, int mySeat, int[] ranks, int[] scores, int newBestMask, int ticksLeftInPhase, boolean paused,
         int outcome, BlockPos seatAt) implements CustomPacketPayload {
 
+    //? if >=1.20.5 {
     public static final CustomPacketPayload.Type<MatchPhasePayload> TYPE =
             new CustomPacketPayload.Type<>(Identifier.fromNamespaceAndPath("neroarcade", "match_phase"));
+    //?} else {
+    /*public static final CustomPacketPayload.Type<MatchPhasePayload> TYPE =
+            new CustomPacketPayload.Type<>(Identifier.fromNamespaceAndPath("neroarcade", "match_phase"), MatchPhasePayload.class);
+    *///?}
 
+    //? if >=1.20.5 {
     public static final StreamCodec<ByteBuf, MatchPhasePayload> STREAM_CODEC = StreamCodec.of(
             MatchPhasePayload::write, MatchPhasePayload::read);
+    //?} else {
+    /*public static final StreamCodec<FriendlyByteBuf, MatchPhasePayload> STREAM_CODEC = StreamCodec.of(
+            MatchPhasePayload::write, MatchPhasePayload::read);
+    *///?}
 
     public MatchPhasePayload {
         ranks = ranks == null ? new int[0] : ranks.clone();
@@ -79,6 +93,7 @@ public record MatchPhasePayload(BlockPos host, int matchId, BusPhase phase, int 
                 newBestMask, ticksLeftInPhase, paused, outcome, at);
     }
 
+    //? if >=1.20.5 {
     private static void write(ByteBuf buf, MatchPhasePayload p) {
         BlockPos.STREAM_CODEC.encode(buf, p.host);
         ByteBufCodecs.VAR_INT.encode(buf, p.matchId);
@@ -127,6 +142,56 @@ public record MatchPhasePayload(BlockPos host, int matchId, BusPhase phase, int 
         return new MatchPhasePayload(host, matchId, phase, seatCount, bound, ready, mySeat, ranks, scores, newBest,
                 ticksLeft, paused, outcome, seatAt);
     }
+    //?} else {
+    /*private static void write(FriendlyByteBuf buf, MatchPhasePayload p) {
+        buf.writeBlockPos(p.host);
+        buf.writeVarInt(p.matchId);
+        buf.writeByte(p.phase.ordinal());
+        buf.writeByte(p.seatCount);
+        buf.writeByte(p.boundMask);
+        buf.writeByte(p.readyMask);
+        buf.writeByte(p.mySeat);
+        buf.writeByte(p.ranks.length);
+        for (int rank : p.ranks) {
+            buf.writeByte(rank);
+        }
+        buf.writeByte(p.scores.length);
+        for (int score : p.scores) {
+            buf.writeVarInt(score);
+        }
+        buf.writeByte(p.newBestMask);
+        buf.writeVarInt(p.ticksLeftInPhase);
+        buf.writeBoolean(p.paused);
+        buf.writeByte(p.outcome);
+        buf.writeBlockPos(p.seatAt);
+    }
+
+    private static MatchPhasePayload read(FriendlyByteBuf buf) {
+        BlockPos host = buf.readBlockPos();
+        int matchId = buf.readVarInt();
+        int phaseOrdinal = buf.readUnsignedByte();
+        BusPhase phase = BusPhase.values()[Math.min(phaseOrdinal, BusPhase.values().length - 1)];
+        int seatCount = buf.readUnsignedByte();
+        int bound = buf.readUnsignedByte();
+        int ready = buf.readUnsignedByte();
+        int mySeat = buf.readByte();
+        int[] ranks = new int[Math.min(buf.readUnsignedByte(), Budgets.MAX_SEATS)];
+        for (int i = 0; i < ranks.length; i++) {
+            ranks[i] = buf.readUnsignedByte();
+        }
+        int[] scores = new int[Math.min(buf.readUnsignedByte(), Budgets.MAX_SEATS)];
+        for (int i = 0; i < scores.length; i++) {
+            scores[i] = buf.readVarInt();
+        }
+        int newBest = buf.readUnsignedByte();
+        int ticksLeft = buf.readVarInt();
+        boolean paused = buf.readBoolean();
+        int outcome = buf.readByte();
+        BlockPos seatAt = buf.readBlockPos();
+        return new MatchPhasePayload(host, matchId, phase, seatCount, bound, ready, mySeat, ranks, scores, newBest,
+                ticksLeft, paused, outcome, seatAt);
+    }
+    *///?}
 
     @Override
     public CustomPacketPayload.Type<MatchPhasePayload> type() {

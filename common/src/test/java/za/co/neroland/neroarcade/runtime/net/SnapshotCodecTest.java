@@ -7,8 +7,8 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.nio.ByteBuffer;
 
-import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
+import net.minecraft.network.FriendlyByteBuf;
 
 import net.minecraft.core.BlockPos;
 
@@ -154,7 +154,7 @@ class SnapshotCodecTest {
 
     @Test
     void payloadCodecsRoundTrip() {
-        ByteBuf buf = Unpooled.buffer();
+        FriendlyByteBuf buf = new FriendlyByteBuf(Unpooled.buffer());
         SnapshotPayload snapshot = new SnapshotPayload(new BlockPos(1, -2, 3), 7, new byte[] {1, 2, 3});
         SnapshotPayload.STREAM_CODEC.encode(buf, snapshot);
         SnapshotPayload back = SnapshotPayload.STREAM_CODEC.decode(buf);

@@ -96,18 +96,21 @@ public class LinkBusBlockEntity extends BlockEntity {
         BusRegistry.SERVER.put(dim, next);
         if (previous != null) {
             for (BlockPos gone : previous.cabinets()) {
-                if (!next.cabinets().contains(gone) && cabinetAt(gone) instanceof ArcadeCabinetBlockEntity c) {
+                ArcadeCabinetBlockEntity c = cabinetAt(gone);
+                if (!next.cabinets().contains(gone) && c != null) {
                     c.leaveBus(busId);
                 }
             }
             for (BlockPos gone : previous.marquees()) {
-                if (!next.marquees().contains(gone) && marqueeAt(gone) instanceof MarqueeScreenBlockEntity m) {
+                MarqueeScreenBlockEntity m = marqueeAt(gone);
+                if (!next.marquees().contains(gone) && m != null) {
                     m.leaveBus(busId);
                 }
             }
         }
         for (BlockPos gone : fullCabinets) {
-            if (!next.overflow().contains(gone) && cabinetAt(gone) instanceof ArcadeCabinetBlockEntity c) {
+            ArcadeCabinetBlockEntity c = cabinetAt(gone);
+            if (!next.overflow().contains(gone) && c != null) {
                 c.leaveBus(busId);
             }
         }
@@ -162,7 +165,8 @@ public class LinkBusBlockEntity extends BlockEntity {
             }
         }
         for (BlockPos pos : t.marquees()) {
-            if (marqueeAt(pos) instanceof MarqueeScreenBlockEntity m) {
+            MarqueeScreenBlockEntity m = marqueeAt(pos);
+            if (m != null) {
                 m.assignBus(busId, hostPos);
             }
         }
@@ -276,7 +280,8 @@ public class LinkBusBlockEntity extends BlockEntity {
         }
         fullCabinets.clear();
         for (BlockPos pos : t.marquees()) {
-            if (marqueeAt(pos) instanceof MarqueeScreenBlockEntity m) {
+            MarqueeScreenBlockEntity m = marqueeAt(pos);
+            if (m != null) {
                 m.leaveBus(busId);
             }
         }

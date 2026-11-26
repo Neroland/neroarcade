@@ -5,14 +5,16 @@ import java.util.Optional;
 import java.util.function.Consumer;
 
 import net.minecraft.ChatFormatting;
+//? if >=1.21.4 {
 import net.minecraft.core.component.DataComponents;
+import net.minecraft.world.item.component.CustomModelData;
+//?}
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.MutableComponent;
 import net.minecraft.network.chat.TextColor;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.TooltipFlag;
-import net.minecraft.world.item.component.CustomModelData;
 //? if >=1.21.5 {
 import net.minecraft.world.item.component.TooltipDisplay;
 //?}
@@ -48,7 +50,7 @@ public class CartridgeItem extends Item {
 
     /** Writes {@code def} into an existing cartridge stack (component + tint). */
     public static void write(ItemStack stack, GameDef def) throws ValidationError {
-        stack.set(ModDataComponents.GAME_DEF.get(), StoredCartridge.of(def));
+        ModDataComponents.writeGame(stack, StoredCartridge.of(def));
         //? if >=1.21.4 {
         stack.set(DataComponents.CUSTOM_MODEL_DATA,
                 new CustomModelData(List.of(), List.of(), List.of(), List.of(CartridgeTint.of(def))));
@@ -60,12 +62,12 @@ public class CartridgeItem extends Item {
         if (stack.isEmpty() || !stack.is(ModItems.CARTRIDGE.get())) {
             return null;
         }
-        return stack.get(ModDataComponents.GAME_DEF.get());
+        return ModDataComponents.readGame(stack);
     }
 
     @Override
     public Component getName(ItemStack stack) {
-        StoredCartridge stored = stack.get(ModDataComponents.GAME_DEF.get());
+        StoredCartridge stored = ModDataComponents.readGame(stack);
         if (stored != null) {
             String title = stored.rawTitle();
             if (!title.isEmpty()) {
@@ -87,7 +89,7 @@ public class CartridgeItem extends Item {
         super.appendHoverText(stack, context, lines, flag);
         Consumer<Component> tooltip = lines::add;
     *///?}
-        StoredCartridge stored = stack.get(ModDataComponents.GAME_DEF.get());
+        StoredCartridge stored = ModDataComponents.readGame(stack);
         if (stored == null) {
             tooltip.accept(Component.translatable("item.neroarcade.cartridge.empty").withStyle(ChatFormatting.GRAY));
             return;

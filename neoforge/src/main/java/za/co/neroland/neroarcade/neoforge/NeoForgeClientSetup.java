@@ -5,9 +5,14 @@ import net.minecraft.resources.Identifier;
 import net.neoforged.bus.api.IEventBus;
 import net.neoforged.fml.ModContainer;
 import net.neoforged.neoforge.client.event.ClientPlayerNetworkEvent;
-import net.neoforged.neoforge.client.event.ClientTickEvent;
 import net.neoforged.neoforge.client.event.EntityRenderersEvent;
+//? if >=1.20.5 {
+import net.neoforged.neoforge.client.event.ClientTickEvent;
 import net.neoforged.neoforge.client.event.RegisterGuiLayersEvent;
+//?} else {
+/*import net.neoforged.neoforge.client.event.RegisterGuiOverlaysEvent;
+import net.neoforged.neoforge.event.TickEvent;
+*///?}
 import net.neoforged.neoforge.client.event.RegisterKeyMappingsEvent;
 import net.neoforged.neoforge.client.event.RegisterMenuScreensEvent;
 import net.neoforged.neoforge.common.NeoForge;
@@ -53,8 +58,14 @@ public final class NeoForgeClientSetup {
             event.registerBlockEntityRenderer(ModBlockEntities.CARTRIDGE_DUPLICATOR.get(), ctx -> new DuplicatorRenderer());
             event.registerBlockEntityRenderer(ModBlockEntities.ARCADE_EXCHANGE.get(), ctx -> new ExchangeRenderer());
         });
+        //? if >=1.20.5 {
         modEventBus.addListener((RegisterGuiLayersEvent event) -> event.registerAboveAll(
                 Identifier.fromNamespaceAndPath(NeroArcadeCommon.MOD_ID, "arcade_hud"), (g, delta) -> ArcadeHud.render(g)));
+        //?} else {
+        /*modEventBus.addListener((RegisterGuiOverlaysEvent event) -> event.registerAboveAll(
+                Identifier.fromNamespaceAndPath(NeroArcadeCommon.MOD_ID, "arcade_hud"),
+                (gui, graphics, delta, width, height) -> ArcadeHud.render(graphics)));
+        *///?}
         modEventBus.addListener((RegisterKeyMappingsEvent event) -> ArcadeKeys.all().forEach(event::register));
         // Before 1.21.4 item tints come from item colour handlers (no item model definitions).
         //? if <1.21.4 {
@@ -65,7 +76,15 @@ public final class NeoForgeClientSetup {
                 za.co.neroland.neroarcade.registry.ModItems.BLANK_CARTRIDGE.get(),
                 za.co.neroland.neroarcade.registry.ModItems.BLANK_CHIP.get()));
         *///?}
+        //? if >=1.20.5 {
         NeoForge.EVENT_BUS.addListener((ClientTickEvent.Post event) -> ArcadeClient.tick());
+        //?} else {
+        /*NeoForge.EVENT_BUS.addListener((TickEvent.ClientTickEvent event) -> {
+            if (event.phase == TickEvent.Phase.END) {
+                ArcadeClient.tick();
+            }
+        });
+        *///?}
         // the client-only /nsarcgallery capture and /nsarcber
         NeoForge.EVENT_BUS.addListener((RegisterClientCommandsEvent event) ->
                 GalleryCapture.registerClientCommands(event.getDispatcher()));

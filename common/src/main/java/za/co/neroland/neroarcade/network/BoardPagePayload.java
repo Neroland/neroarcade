@@ -5,7 +5,11 @@ import java.util.List;
 
 import io.netty.buffer.ByteBuf;
 
+//? if >=1.20.5 {
 import net.minecraft.network.codec.ByteBufCodecs;
+//?} else {
+/*import net.minecraft.network.FriendlyByteBuf;
+*///?}
 import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.resources.Identifier;
@@ -30,17 +34,28 @@ public record BoardPagePayload(String cartridgeId, List<Row> rows, int myBest) i
         }
     }
 
+    //? if >=1.20.5 {
     public static final CustomPacketPayload.Type<BoardPagePayload> TYPE =
             new CustomPacketPayload.Type<>(Identifier.fromNamespaceAndPath("neroarcade", "board_page"));
+    //?} else {
+    /*public static final CustomPacketPayload.Type<BoardPagePayload> TYPE =
+            new CustomPacketPayload.Type<>(Identifier.fromNamespaceAndPath("neroarcade", "board_page"), BoardPagePayload.class);
+    *///?}
 
+    //? if >=1.20.5 {
     public static final StreamCodec<ByteBuf, BoardPagePayload> STREAM_CODEC = StreamCodec.of(
             BoardPagePayload::write, BoardPagePayload::read);
+    //?} else {
+    /*public static final StreamCodec<FriendlyByteBuf, BoardPagePayload> STREAM_CODEC = StreamCodec.of(
+            BoardPagePayload::write, BoardPagePayload::read);
+    *///?}
 
     public BoardPagePayload {
         cartridgeId = cartridgeId == null ? "" : cartridgeId;
         rows = List.copyOf(rows.size() > MAX_ROWS ? rows.subList(0, MAX_ROWS) : rows);
     }
 
+    //? if >=1.20.5 {
     private static void write(ByteBuf buf, BoardPagePayload p) {
         ByteBufCodecs.stringUtf8(64).encode(buf, p.cartridgeId);
         buf.writeByte(p.rows.size());
@@ -65,6 +80,32 @@ public record BoardPagePayload(String cartridgeId, List<Row> rows, int myBest) i
         int myBest = ByteBufCodecs.VAR_INT.decode(buf);
         return new BoardPagePayload(root, rows, myBest);
     }
+    //?} else {
+    /*private static void write(FriendlyByteBuf buf, BoardPagePayload p) {
+        buf.writeUtf(p.cartridgeId, 64);
+        buf.writeByte(p.rows.size());
+        for (Row row : p.rows) {
+            buf.writeByte(row.rank());
+            buf.writeUtf(row.name(), MAX_NAME * 4);
+            buf.writeVarInt(row.score());
+        }
+        buf.writeVarInt(p.myBest);
+    }
+
+    private static BoardPagePayload read(FriendlyByteBuf buf) {
+        String root = buf.readUtf(64);
+        int n = Math.min(buf.readUnsignedByte(), MAX_ROWS);
+        List<Row> rows = new ArrayList<>(n);
+        for (int i = 0; i < n; i++) {
+            int rank = buf.readUnsignedByte();
+            String name = buf.readUtf(MAX_NAME * 4);
+            int score = buf.readVarInt();
+            rows.add(new Row(rank, name, score));
+        }
+        int myBest = buf.readVarInt();
+        return new BoardPagePayload(root, rows, myBest);
+    }
+    *///?}
 
     @Override
     public CustomPacketPayload.Type<BoardPagePayload> type() {

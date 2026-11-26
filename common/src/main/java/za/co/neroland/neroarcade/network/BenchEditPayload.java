@@ -3,7 +3,11 @@ package za.co.neroland.neroarcade.network;
 import io.netty.buffer.ByteBuf;
 
 import net.minecraft.core.BlockPos;
+//? if >=1.20.5 {
 import net.minecraft.network.codec.ByteBufCodecs;
+//?} else {
+/*import net.minecraft.network.FriendlyByteBuf;
+*///?}
 import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.resources.Identifier;
@@ -40,9 +44,15 @@ public record BenchEditPayload(BlockPos bench, Op op, int slot, int stackIndex, 
         CLEAR_SLOT
     }
 
+    //? if >=1.20.5 {
     public static final CustomPacketPayload.Type<BenchEditPayload> TYPE =
             new CustomPacketPayload.Type<>(Identifier.fromNamespaceAndPath("neroarcade", "bench_edit"));
+    //?} else {
+    /*public static final CustomPacketPayload.Type<BenchEditPayload> TYPE =
+            new CustomPacketPayload.Type<>(Identifier.fromNamespaceAndPath("neroarcade", "bench_edit"), BenchEditPayload.class);
+    *///?}
 
+    //? if >=1.20.5 {
     private static final StreamCodec<ByteBuf, Op> OP_CODEC = ByteBufCodecs.VAR_INT.map(
             i -> Op.values()[Math.floorMod(i, Op.values().length)], Op::ordinal);
 
@@ -69,6 +79,22 @@ public record BenchEditPayload(BlockPos bench, Op op, int slot, int stackIndex, 
             ByteBufCodecs.BOOL, BenchEditPayload::boolValue,
             ByteBufCodecs.stringUtf8(MAX_TITLE_WIRE), BenchEditPayload::title,
             BenchEditPayload::new);
+    *///?}
+    //?} else {
+    /*public static final StreamCodec<FriendlyByteBuf, BenchEditPayload> STREAM_CODEC = StreamCodec.of(
+            (buf, payload) -> {
+                buf.writeBlockPos(payload.bench());
+                buf.writeVarInt(payload.op().ordinal());
+                buf.writeVarInt(payload.slot());
+                buf.writeVarInt(payload.stackIndex());
+                buf.writeUtf(payload.propKey(), MAX_PROP_KEY);
+                buf.writeVarInt(payload.intValue());
+                buf.writeBoolean(payload.boolValue());
+                buf.writeUtf(payload.title(), MAX_TITLE_WIRE);
+            }, buf -> new BenchEditPayload(buf.readBlockPos(),
+                    Op.values()[Math.floorMod(buf.readVarInt(), Op.values().length)], buf.readVarInt(),
+                    buf.readVarInt(), buf.readUtf(MAX_PROP_KEY), buf.readVarInt(), buf.readBoolean(),
+                    buf.readUtf(MAX_TITLE_WIRE)));
     *///?}
 
     public BenchEditPayload {
